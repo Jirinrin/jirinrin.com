@@ -69,6 +69,38 @@ body, #root {
   position: relative;
 }
 
+.color-grade {
+  filter: url(#landscape-color-grade);
+}
+
+.color-grade-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.color-grade-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  backdrop-filter: url(#landscape-color-grade);
+  -webkit-backdrop-filter: url(#landscape-color-grade);
+}
+
+// When the full-page overlay is doing the color grading, the per-element
+// filters must stand down or the already-graded pixels get run through the
+// gradient map a second time.
+.color-grade-via-overlay .color-grade {
+  filter: none;
+}
+
+// On engines where the per-element filter measurably tanks scroll performance
+// (Firefox — see getColorGradeMode), it's switched off entirely.
+.color-grade-disabled .color-grade {
+  filter: none;
+}
+
 code {
   font-family: 'JMH Typewriter mono' !important;
 }

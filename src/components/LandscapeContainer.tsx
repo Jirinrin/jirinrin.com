@@ -302,60 +302,62 @@ function LandscapeContainer() {
       }
     >
       <div className="rel-container overflow-hidden">
-        <img
-          src={shine3}
-          className="landscape full-width"
-          id="shining-effect" alt="shining effect"
-          style={{ bottom: -frameOffset - (C.CANVAS_HEIGHT / C.CANVAS_WIDTH) * window.innerWidth * 0.27 }}
-        />
-        <img
-          src={sunrays}
-          className="landscape full-width"
-          id="sunrays" alt="sunrays"
-          style={{ bottom: -frameOffset - (C.CANVAS_HEIGHT / C.CANVAS_WIDTH) * window.innerWidth * 0.27 }}
-        />
-        <img src={jiriHead} className="landscape full-width" id="jiri-head" alt="floating head"
-          style={{ bottom: -frameOffset }}/>
-
-        <CSSTransition
-          nodeRef={landscape1Ref}
-          in={currentPage.landscape === 1 && !!projects[0].book.xOffset}
-          classNames="landscape--1"
-          mountOnEnter
-          unmountOnExit
-          timeout={{ enter: 1000, exit: 1200 }}
-          onExited={() => setAnimationOngoing(false)}
-        >
-          <Landscape1
-            ref={landscape1Ref}
-            scaleFactor={scaleFactor}
-            zoomInCanvas={zoomInCanvas}
-            zoomOutCanvas={zoomOutCanvas}
-            zoomIn={zoomIn}
-            scrollDown={scrollDown}
-            setPageName={setPageName}
+        <div className="color-grade-layer color-grade">
+          <img
+            src={shine3}
+            className="landscape full-width"
+            id="shining-effect" alt="shining effect"
+            style={{ bottom: -frameOffset - (C.CANVAS_HEIGHT / C.CANVAS_WIDTH) * window.innerWidth * 0.27 }}
           />
-        </CSSTransition>
-
-        <CSSTransition
-          nodeRef={landscape2Ref}
-          in={currentPage.landscape === 2}
-          classNames="landscape--2"
-          mountOnEnter
-          unmountOnExit
-          timeout={{ enter: 1200, exit: 1000 }}
-          onExited={() => setAnimationOngoing(false)}
-        >
-          <Landscape2
-            ref={landscape2Ref}
-            scaleFactor={scaleFactor}
-            zoomInCanvas={zoomInCanvas}
-            zoomOutCanvas={zoomOutCanvas}
-            zoomIn={zoomIn}
-            bottom={frameOffset}
-            scrollDown={scrollDown}
+          <img
+            src={sunrays}
+            className="landscape full-width"
+            id="sunrays" alt="sunrays"
+            style={{ bottom: -frameOffset - (C.CANVAS_HEIGHT / C.CANVAS_WIDTH) * window.innerWidth * 0.27 }}
           />
-        </CSSTransition>
+          <img src={jiriHead} className="landscape full-width" id="jiri-head" alt="floating head"
+            style={{ bottom: -frameOffset }}/>
+
+          <CSSTransition
+            nodeRef={landscape1Ref}
+            in={currentPage.landscape === 1 && !!projects[0].book.xOffset}
+            classNames="landscape--1"
+            mountOnEnter
+            unmountOnExit
+            timeout={{ enter: 1000, exit: 1200 }}
+            onExited={() => setAnimationOngoing(false)}
+          >
+            <Landscape1
+              ref={landscape1Ref}
+              scaleFactor={scaleFactor}
+              zoomInCanvas={zoomInCanvas}
+              zoomOutCanvas={zoomOutCanvas}
+              zoomIn={zoomIn}
+              scrollDown={scrollDown}
+              setPageName={setPageName}
+            />
+          </CSSTransition>
+
+          <CSSTransition
+            nodeRef={landscape2Ref}
+            in={currentPage.landscape === 2}
+            classNames="landscape--2"
+            mountOnEnter
+            unmountOnExit
+            timeout={{ enter: 1200, exit: 1000 }}
+            onExited={() => setAnimationOngoing(false)}
+          >
+            <Landscape2
+              ref={landscape2Ref}
+              scaleFactor={scaleFactor}
+              zoomInCanvas={zoomInCanvas}
+              zoomOutCanvas={zoomOutCanvas}
+              zoomIn={zoomIn}
+              bottom={frameOffset}
+              scrollDown={scrollDown}
+            />
+          </CSSTransition>
+        </div>
 
         <CSSTransition
           nodeRef={popupRef}
