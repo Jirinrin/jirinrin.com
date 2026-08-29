@@ -19,7 +19,7 @@ const NAV_ITEM_REFERENCE: Record<string, string> = {
   'about': 'ABOUT',
   'projects': 'PROJECTS',
   'awards': 'AWARDS',
-  'soul': '侍鈴のSOUL',
+  'soul': 'ゆーりのSOUL',
   'life': 'LIFE',
   'technologies': 'TECHNOLOGIES',
   'passions': 'PLEASURES',
