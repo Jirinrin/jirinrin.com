@@ -1,14 +1,13 @@
 # TODO
 Toevoegen
-- [ ] Services sectie: 'zwevende bubbels' met wat websites van me waar je op kan klikken
-- [ ] Projecten indelen in categorieen ofzo, beetje behapbaar. Archief bevat 'oude' dingen, main 'bubbels' in begin bevatten insta en fukaku enzo
+- [ ] 'Main Services' (ServiceBubbles) sectie: 'zwevende bubbels' met wat websites van me waar je op kan klikken. Maak de bubbels echt 3D bubbel-achtig en laat ze op een mooie manier rondzweven.
+- [ ] Projecten indelen in categorieen ofzo, beetje behapbaar. Archief bevat 'oude' dingen, main 'bubbels' in begin bevatten insta en projekt kinoko enzo
 - [ ] in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe
 - [ ] wat kunst-dingetjes die ik heb getekend op ipad toevoegen in een soort 'art gallery'
 Aanpassen
 - [ ] Door alle copy heen gaan
-- [ ] techno forest: spuugt muzieknoot-wolkjes uit en wordt de muziekfabriek!
+- [ ] techno forest: spuugt muzieknoot-wolkjes uit en wordt de muziekfabriek / groove grove! -> done maar moet nog copy schrijven alleen.
 - [ ] telefoonnummer nog wat minder makkelijk scrapebaar maken
-- [ ] kleuren! het hele landschap over-verven met iedere keer weer een ander kleurenschema die ge-color-grade is op de grayscale, bijv groengeel->groen, of cyaan->purple.
 
 Projecten toe te voegen
 - [ ] karaoke.jirinrin.com / USDX / https://engineering.q42.nl/karaoke-machine/
