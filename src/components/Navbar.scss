@@ -24,6 +24,10 @@ nav {
   align-items: center;
 }
 
+.nav-filler {
+  flex-grow: 10;
+}
+
 li.nav-item {
     margin: 0 0;
     font-size: 2.3vh;
@@ -67,12 +71,12 @@ li.nav-item {
       margin-top: 3vh;
       overflow: visible;
       font-weight: 100;
-      flex-grow: 10;
       font-family: serif;
       white-space: nowrap;
       word-wrap: break-word !important;
       word-break: break-all !important;
       z-index: 110;
+      padding: 0;
 
       display: flex;
       flex-direction: column;

@@ -132,6 +132,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
         {displayForThreshold1() && renderNavItem('contact', () => goToPopup('text', 'contact-details'))}
         {displayForThreshold2() && renderNavItem('about',   () => goTo({ landscape: 1 }))}
 
+        <div className="nav-filler"></div>
         <li
           onClick={() => setOverlayMode(true)}
           className="nav-item"
@@ -149,6 +150,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
             transdimensional tree elf
           </p>
         </li>
+        <div className="nav-filler"></div>
 
         {displayForThreshold2() && renderNavItem('projects', () => goTo({ landscape: 2 }))}
         {displayForThreshold1() && renderNavItem('awards',   () => goToPopup('text', 'awards-cup'))}
