@@ -42,7 +42,7 @@ const objects: ObjectsMap = {
   },
   'octopus-tree': {
     id: 'octopus-tree',
-    name: 'The OctoTree of Life',
+    name: 'The Tree of Life',
     left: 1321,
     top: 4205,
     hasText: true,
