@@ -1,4 +1,4 @@
-# Portfolio website
+# Jirinrin.com
 
 That's where you're at now! (/^▽^)/  
 This website started as some _really_ wild thoughts in my head and gradually came down to most of the form that it is now over the course of an (intense) week.  

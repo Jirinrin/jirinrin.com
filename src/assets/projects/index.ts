@@ -96,7 +96,7 @@ const projects: ProjectBase[] = [
   },
   {
     id: 'jirinrin.com',
-    title: 'Portfolio website',
+    title: 'Jirinrin.com',
     github: true,
     images: []
   },
