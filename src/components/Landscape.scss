@@ -301,6 +301,11 @@ div.landscape--2-enter.landscape--2-enter-active {
   padding: 5vw;
   overflow-y: scroll;
   cursor: default;
+  // No color was ever set here, so it fell back to the browser's dark-mode
+  // default text color (near-white) on a dark-mode system - unreadable
+  // against this light parchment box. Matches `.tooltip__white`, which uses
+  // the same background image and was already set up correctly.
+  color: rgb(44, 44, 44);
   font-family: 'Cormorant', serif;
   font-weight: 300;
   transition: all 0.2s ease;
