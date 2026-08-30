@@ -38,6 +38,10 @@ const getProjectImage = (img: string): string =>
 const getObjectDetailImage = (src: string): string =>
   objectDetailImages[`../assets/objects/images/${src}`] ?? '';
 
+// Rotates digits back so the real phone number never appears as plain text in source/bundle
+const deobfuscateDigits = (s: string, shift = 4): string =>
+  s.replace(/\d/g, d => String((Number(d) + 10 - shift) % 10));
+
 function LandscapeContainer() {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(state => state.projects);
@@ -227,6 +231,7 @@ function LandscapeContainer() {
       case 'about':
         return (
           <ReactMarkdown
+            urlTransform={(url) => url}
             components={{
               img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
                 <img
@@ -236,11 +241,21 @@ function LandscapeContainer() {
                   title={popup.id === 'groove-grove' ? `${title} | ${getExperienceLevel(alt)} experience` : undefined}
                 />
               ),
-              a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
-                <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
-                  {children}
-                </a>
-              )
+              a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+                if (href?.startsWith('tel-obf:')) {
+                  const realTel = `tel:${deobfuscateDigits(href.slice('tel-obf:'.length))}`;
+                  return (
+                    <a href={realTel} onClick={() => window.open(realTel, '_blank')}>
+                      {deobfuscateDigits(String(children))}
+                    </a>
+                  );
+                }
+                return (
+                  <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                    {children}
+                  </a>
+                );
+              }
             }}
           >
             {popup.text ?? ''}

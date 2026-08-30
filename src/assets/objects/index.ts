@@ -76,7 +76,7 @@ const objects: ObjectsMap = {
   },
   'contact-details': {
     id: 'contact-details',
-    name: 'Search Envelope',
+    name: 'A Mysterious Envelope',
     left: 1247,
     top: 5225,
     hasText: true,
