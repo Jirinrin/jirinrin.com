@@ -32,92 +32,52 @@ const projects: ProjectBase[] = [
     ]
   },
   {
-    id: 'bath-srpn',
-    title: 'SRPN',
-    github: true,
-    images: [
-      'srpn-1.gif'
-    ]
-  },
-  {
-    id: 'bath-dungeon-of-doom',
-    title: 'Dungeon of Doom',
-    github: true,
-    images: [
-      'dod-2.gif',
-      'dod-3.gif',
-      'dod-4.gif'
-    ]
-  },
-  {
-    id: 'first-ever-website',
-    title: 'First Evarrr Website',
-    github: true,
-    images: [
-      'first-website.jpg'
-    ]
-  },
-  {
-    id: 'codaisseur-project-cowbell',
-    title: 'Project Cowbell',
-    github: true,
-    images: [
-      'cowbell-1.gif'
-    ]
-  },
-  {
-    id: 'semicolon-spammer',
-    title: ';;;;;;;;',
-    github: true,
-    images: [
-      'semicolon-spammer-1.gif',
-      'semicolon-spammer-2.gif'
-    ]
-  },
-  {
-    id: 'week7-bomberman-game',
-    title: 'Bomberman clone',
-    github: true,
-    images: [
-      'bomberman-1.gif',
-      'bomberman-2.gif',
-      'bomberman-3.gif'
-    ]
-  },
-  {
-    id: 'week8-ticket-uber-fullstack',
-    title: 'Ticket Uber',
-    github: true,
-    images: [
-      'ticket-uber-2.gif',
-      'ticket-uber-3.gif',
-      'ticket-uber-4.gif'
-    ]
-  },
-  {
     id: 'jirinrin.com',
     title: 'Jirinrin.com',
     github: true,
     images: []
   },
   {
-    id: 'questionnaires-appjection',
-    title: 'Questionnaire creator',
+    id: 'projekt-kinoko',
+    title: 'LOOK WITHIN',
     github: false,
-    images: [
-      'appjection-1.gif',
-      'appjection-2.gif',
-      'appjection-3.gif',
-      'appjection-4.gif'
-    ]
+    images: []
   },
   {
-    id: 'osu-collection-manipulator',
-    title: 'osu! db manipulator',
+    id: 'kodamap',
+    title: 'KODAMAP',
     github: false,
-    images: [
-      'osu-collection-manipulator-1.gif'
-    ]
+    images: []
+  },
+  {
+    id: 'karaokeq',
+    title: 'Karaokeq',
+    github: true,
+    images: []
+  },
+  {
+    id: 'aya',
+    title: 'AYA',
+    github: true,
+    images: []
+  },
+  {
+    id: 'projectdansurando',
+    title: 'Project Dansurando',
+    github: false,
+    images: []
+  },
+  {
+    id: 'umu',
+    title: 'umu',
+    github: true,
+    images: []
+  },
+  {
+    id: 'irukadrive',
+    title: 'Iruka Drive',
+    github: true,
+    images: []
   },
 ];
 
