@@ -69,8 +69,14 @@ body, #root {
   position: relative;
 }
 
+// See ColorGradeFilter.tsx for what #landscape-color-grade actually does.
+// `saturate(1)` is chained on deliberately (rather than just `url(#...)`
+// alone) so the popup-dimming rule below can transition smoothly: as long as
+// the filter *list* keeps the same shape (url + saturate, always both
+// present), a plain CSS transition can interpolate just the saturate value.
 .color-grade {
-  filter: url(#landscape-color-grade);
+  filter: url(#landscape-color-grade) saturate(1);
+  transition: filter 0.6s ease;
 }
 
 .color-grade-layer {
@@ -79,26 +85,30 @@ body, #root {
   height: 100%;
 }
 
-.color-grade-overlay {
+// A dedicated, always-present layer behind everything so the page's base
+// background gets graded too, not just the landscape/bubbles - without this,
+// filtering only those two subtrees leaves the surrounding gray untouched.
+// It can't just be the grading applied straight to `.App`/`#main`: `filter`
+// on an ancestor becomes the containing block for any `position: fixed`
+// descendant (per spec), which would break the fixed navbar and the fixed
+// popup backdrop (they'd stop tracking the real viewport and start tracking
+// this element's own, much taller, box). This layer has no descendants that
+// need real viewport-fixed positioning, so it's safe to grade directly.
+.color-grade-background {
   position: fixed;
   inset: 0;
+  z-index: -1;
   pointer-events: none;
-  z-index: 2147483647;
-  backdrop-filter: url(#landscape-color-grade);
-  -webkit-backdrop-filter: url(#landscape-color-grade);
+  background-image: $background-url;
+  background-color: #282c34;
+  background-repeat: repeat;
+  background-size: cover;
 }
 
-// When the full-page overlay is doing the color grading, the per-element
-// filters must stand down or the already-graded pixels get run through the
-// gradient map a second time.
-.color-grade-via-overlay .color-grade {
-  filter: none;
-}
-
-// On engines where the per-element filter measurably tanks scroll performance
-// (Firefox — see getColorGradeMode), it's switched off entirely.
-.color-grade-disabled .color-grade {
-  filter: none;
+// A popup's text needs to stay readable, so the grading smoothly backs off
+// while one is open rather than fighting for contrast right behind it.
+body.color-grade-dimmed .color-grade {
+  filter: url(#landscape-color-grade) saturate(0.3);
 }
 
 code {
