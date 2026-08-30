@@ -165,8 +165,8 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
       >
         <div ref={overlayNodeRef} className="nav-overlay" onClick={hideOverlay}>
           <li className="nav-item" id="nav-overlay-x" onClick={() => setOverlayMode(false)}>X</li>
-          {renderNavItem('contact', () => goToPopup('about', 'contact-details'))}
           {renderNavItem('about',   () => setShowAboutOptions(!showAboutOptions))}
+          {renderNavItem('contact', () => goToPopup('about', 'contact-details'))}
           {showAboutOptions &&
             <div>
               {renderNavItem('soul',         () => goToPopup('about', 'jiri-soul'),         true)}
