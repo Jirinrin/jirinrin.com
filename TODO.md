@@ -1,30 +1,17 @@
 # TODO
-Toevoegen
-- [ ] 'Main Services' (ServiceBubbles) sectie: 'zwevende bubbels' met wat websites van me waar je op kan klikken. Maak de bubbels echt 3D bubbel-achtig en laat ze op een mooie manier rondzweven.
-- [ ] Projecten indelen in categorieen ofzo, beetje behapbaar. Archief bevat 'oude' dingen, main 'bubbels' in begin bevatten insta en projekt kinoko enzo
-- [ ] in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe
-- [ ] wat kunst-dingetjes die ik heb getekend op ipad toevoegen in een soort 'art gallery'
-Aanpassen
-- [ ] Door alle copy heen gaan
-- [ ] techno forest: spuugt muzieknoot-wolkjes uit en wordt de muziekfabriek / groove grove! -> done maar moet nog copy schrijven alleen.
-- [ ] telefoonnummer nog wat minder makkelijk scrapebaar maken
+## Toevoegen
+- [ ] wat kunst-dingetjes die ik heb getekend op ipad toevoegen in een soort 'art gallery', ook ergens in de kaart verwerken. maybe awards-plek/dingest ervoor repurposen? The Gallery.
+- [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing.
 
-Projecten toe te voegen
-- [ ] karaoke.jirinrin.com / USDX / https://engineering.q42.nl/karaoke-machine/
-- [ ] hanna album
-- [ ] instagram / conekt.it / youtube voor dj mixes enzo
-- [ ] kinoko.nosk.be
-- [ ] dansurando.jirinrin.com
-- [ ] irukadrive.jirinrin.com
-- [ ] umu.jirinrin.com
-- [ ] AYA
-Projecten weghalen
-- [ ] SRPN
-- [ ] dungeon of doom
-- [ ] First evarrr website
-- [ ] Project Cowbell
-- [ ] ;;;;;;;;
-- [ ] bomberman clone
-- [ ] ticket uber
-- [ ] questionnaire creator
-- [ ] osu db manipulator
+## Aanpassen
+- [ ] Door alle copy heen gaan
+- [ ] Doora alle projects heen gaan, invullen
+- Groove Grove
+  - [ ] hanna album (zet in groove grove ook? / eigenlijk alleen maar :)
+  - [ ] instagram / conekt.it / youtube voor dj mixes enzo
+
+Leuk misschien ooit maar niet voor livegang v2
+- [ ] heel misschien de custom svg filter toch switchen naar webgl shader
+- [ ] deeplinks laten werken, dat je naar /contact kan gaan / als je op de envelop klikt dat hij dan onderwater ook /contact ervan maakt in de URL stilletjes
+- [ ] in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe
+
