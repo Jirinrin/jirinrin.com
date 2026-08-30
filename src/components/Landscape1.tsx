@@ -191,7 +191,9 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     if (prevZoomIn.current !== zoomIn) {
       prevZoomIn.current = zoomIn;
       if (zoomIn && currentPage.popup?.id) {
-        const obj = document.querySelector<HTMLImageElement & HTMLDivElement>(`#${currentPage.popup.id}`);
+        // Scoped to .landscape-object because the navbar's "gallery" nav item
+        // also uses id="gallery", and a plain #id selector would pick that up instead.
+        const obj = document.querySelector<HTMLImageElement & HTMLDivElement>(`.landscape-object#${currentPage.popup.id}`);
         if (!obj) return;
         setPageName(obj.getAttribute('name'));
         updateZoomData({
@@ -231,7 +233,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     return { left, top };
   };
 
-  const zoomPopup = (id: string, type: 'text' | 'about') => {
+  const zoomPopup = (id: string, type: 'text' | 'about' | 'gallery') => {
     dispatch(changePage({
       popup: { type, id, text: abouts[id]?.text }
     }));
@@ -273,7 +275,9 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     e.preventDefault();
     const id = e.currentTarget.id;
     switch (id) {
-      case 'awards-cup':
+      case 'gallery':
+        scrollDown(true, () => zoomPopup(id, 'gallery'));
+        return;
       case 'contact-details':
       case 'jiri-soul':
         scrollDown(true, () => zoomPopup(id, 'text'));

@@ -18,7 +18,7 @@ const NAV_ITEM_REFERENCE: Record<string, string> = {
   'contact': 'CONTACT',
   'about': 'ABOUT',
   'projects': 'PROJECTS',
-  'awards': 'AWARDS',
+  'gallery': 'GALLERY',
   'soul': 'ゆーりのSOUL',
   'life': 'LIFE',
   'technologies': 'TECHNOLOGIES',
@@ -98,7 +98,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
       document.title = SITE_NAME;
   }, [yOffset, currentPage.landscape]);
 
-  const goToPopup = (type: 'text' | 'about', id: string) => {
+  const goToPopup = (type: 'text' | 'about' | 'gallery', id: string) => {
     dispatch(changePage({
       landscape: 1,
       popup: { type, id, text: abouts[id]?.text },
@@ -116,7 +116,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
   const displayForThreshold2 = () => windowWidth > threshold2;
 
   const hideOverlay = (e: React.MouseEvent) => {
-    if (!(e.target as HTMLElement).className.includes('nav-overlay')) return;
+    if (e.target !== e.currentTarget) return;
     setOverlayMode(false);
   };
 
@@ -153,7 +153,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
         <div className="nav-filler"></div>
 
         {displayForThreshold2() && renderNavItem('projects', () => goTo({ landscape: 2 }))}
-        {displayForThreshold1() && renderNavItem('awards',   () => goToPopup('text', 'awards-cup'))}
+        {displayForThreshold1() && renderNavItem('gallery',  () => goToPopup('gallery', 'gallery'))}
       </nav>
 
       <CSSTransition
@@ -178,7 +178,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
             </div>
           }
           {renderNavItem('projects', () => goTo({ landscape: 2 }))}
-          {renderNavItem('awards',   () => goToPopup('text', 'awards-cup'))}
+          {renderNavItem('gallery',   () => goToPopup('gallery', 'gallery'))}
           <li className="nav-item" id="nav-filler-bottom" key="filler" />
         </div>
       </CSSTransition>

@@ -542,7 +542,7 @@ svg {
       // margin: auto auto;
       // display: flex;
 
-      img {
+      img, video {
         max-height: 100%;
         max-width: 100%;
         width: unset !important;
@@ -553,7 +553,7 @@ svg {
       }
     }
 
-    &:not(.center) {
+    &:not(.image-gallery-center) {
       opacity: 0;
       filter: blur(20px);
     }
@@ -561,16 +561,12 @@ svg {
 }
 
 .image-gallery-left-nav, .image-gallery-right-nav {
-  text-shadow: none;
+  text-shadow: none !important;
   mix-blend-mode: multiply;
+  color: rgb(199, 199, 199) !important;
 
-  &::before {
-    text-shadow: none !important;
-    color: rgb(199, 199, 199) !important;
-  }
-
-  &:hover::before {
-    color: rgb(80, 80, 80) !important;
+  &:hover {
+    color: rgb(140, 140, 140) !important;
   }
 }
 

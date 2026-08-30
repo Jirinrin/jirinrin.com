@@ -6,12 +6,12 @@ import type { AboutObject } from '../../types';
 type ObjectsMap = Record<string, AboutObject>;
 
 const objects: ObjectsMap = {
-  'awards-cup': {
-    id: 'awards-cup',
-    name: 'Endowment Shrine (construction中)',
+  'gallery': {
+    id: 'gallery',
+    name: 'The Gallery',
     left: 2731,
     top: 3542,
-    hasText: true,
+    hasText: false,
     extension: 'png'
   },
   'future-building': {

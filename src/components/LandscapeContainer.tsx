@@ -5,6 +5,7 @@ import ImageGallery from 'react-image-gallery';
 
 import * as C from '../constants';
 import { SITE_NAME } from '../assets/SITE_NAME';
+import artGallery from '../assets/art-gallery';
 
 import { updateWidths } from '../store/projectsSlice';
 import { changePage } from '../store/currentPageSlice';
@@ -31,12 +32,26 @@ const objectDetailImages = import.meta.glob<string>(
   '../assets/objects/images/*',
   { eager: true, import: 'default' }
 );
+const artGalleryImages = import.meta.glob<string>(
+  '../assets/art-gallery/images/*',
+  { eager: true, import: 'default' }
+);
+const artGalleryVideos = import.meta.glob<string>(
+  '../assets/art-gallery/videos/*',
+  { eager: true, import: 'default' }
+);
 
 const getProjectImage = (img: string): string =>
   projectImages[`../assets/projects/images/${img}`] ?? '';
 
 const getObjectDetailImage = (src: string): string =>
   objectDetailImages[`../assets/objects/images/${src}`] ?? '';
+
+const getArtGalleryImage = (id: string): string =>
+  artGalleryImages[`../assets/art-gallery/images/${id}.jpg`] ?? '';
+
+const getArtGalleryVideo = (id: string): string =>
+  artGalleryVideos[`../assets/art-gallery/videos/${id}.mp4`] ?? '';
 
 // Rotates digits back so the real phone number never appears as plain text in source/bundle
 const deobfuscateDigits = (s: string, shift = 4): string =>
@@ -140,7 +155,7 @@ function LandscapeContainer() {
         (!oldPopup
           || popup.id !== oldPopup.id
           || (currentPage.showPopup !== prev.showPopup && currentPage.showPopup)) &&
-        (popup.type === 'about' || popup.type === 'text')) {
+        (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery')) {
       zoomInCanvas();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,7 +209,7 @@ function LandscapeContainer() {
 
   const hidePopup = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!(e.target as HTMLElement).className.includes('popup-window-background')) return;
+    if (e.target !== e.currentTarget) return;
     zoomOutCanvas();
   };
 
@@ -298,6 +313,37 @@ function LandscapeContainer() {
               />
             }
           </div>
+        );
+      case 'gallery':
+        return (
+          <ImageGallery
+            items={artGallery
+              .slice()
+              .sort((a, b) => a.rank - b.rank)
+              .map(piece => ({
+                original: getArtGalleryImage(piece.image),
+                description: piece.title,
+                renderItem: piece.video
+                  ? () => (
+                    <div className="image-gallery-image">
+                      <video
+                        src={getArtGalleryVideo(piece.video!)}
+                        poster={getArtGalleryImage(piece.image)}
+                        controls={!piece.loopSilently}
+                        autoPlay={piece.loopSilently}
+                        loop={piece.loopSilently}
+                        muted={piece.loopSilently}
+                        playsInline
+                      />
+                    </div>
+                  )
+                  : undefined
+              }))}
+            showFullscreenButton={false}
+            autoPlay={false}
+            showPlayButton={false}
+            showThumbnails={false}
+          />
         );
       default:
         throw new Error('Nonexisting popup type');
