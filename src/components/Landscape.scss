@@ -502,10 +502,10 @@ svg {
   left: 4vw;
   top: calc(50vh - 4vw);
   z-index: 30;
-  mix-blend-mode: color-burn;
+  mix-blend-mode: color-dodge;
 
   transition: 0.4s all ease;
-  opacity: 0.7;
+  opacity: 0.5;
 
   &:hover {
     &:not(.back-arrow-exit) {

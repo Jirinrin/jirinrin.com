@@ -1,5 +1,6 @@
 # Architecture highlight reel
 
 These are some of the projects from my time studying Architecture that I'm the most proud of.  
-Just so that you can get a feel for the creativity I displayed at the time... or something like that...  
+Just fun to look through, even if you're not particularly an architecture person~!
+
 (You can use the ← → arrow keys if you want)
