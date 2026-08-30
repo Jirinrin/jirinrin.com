@@ -1,5 +1,4 @@
 # TODO
-- [ ] the gallery mooier laten werken, niet een 'popup text bubbel' maar een scroll van allemaal art pieces in een leuke soort random mozaiek (behalve dat het eigenlijk niet zo mozaiek achtig moet eerder random achtig, geen overlap), waar je op ieder item kan klikken om het te vergroten. missch zelfs om ieder item een soort lijst maken, aantal varianten in de huisstijl van de website? variant per verhouding: eentje voor ongeveer 1:1, dan 4:3, 16:9, etc. meer info: I want the gallery to not open a standard popup, but open a scroll container directly over the blurred bg. it comes in very smoothly from the bottom in a nice-feeling, ease-out kind of way. there's enough space between artworks but not too much. they seem kind of randomly distributed. they get put there in the order of their 'rank' etc. according to the gallery index.ts. for videos, they'll have their cover image shown, and an elegant play button hand-drawn by me. everything moves smoothly, with weight, elegantly. ah and by the way, the gallery items don't need titles displayed for now, just have them as little alt texts.
 - [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing. I can draw some clouds for this. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
 - [ ] light box van de project stack ook wat fijner maken, zo met die arrows is gewoon vrij lelijk. en plaatjes worden nu nogal gecropt als ze te portrait voor de lightbox zijn.
 - [ ] Door alle copy heen gaan:
@@ -27,8 +26,7 @@
   - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
   - [x] [gallery.md](src/assets/objects/gallery.md) 
-    - [ ] object art afmaken
-    - [ ] gallery zelf echt mooi maken, zie hierboven.
+    - [ ] lijsten. aantal varianten in de huisstijl van de website? variant per verhouding: eentje voor ongeveer 1:1, dan 4:3, 16:9, etc.
   - [x] [contact-details.md](src/assets/objects/contact-details.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
   - [ ] [karaokeq.md](src/assets/projects/karaokeq.md) 

@@ -5,7 +5,6 @@ import ImageGallery from 'react-image-gallery';
 
 import * as C from '../constants';
 import { SITE_NAME } from '../assets/SITE_NAME';
-import artGallery from '../assets/art-gallery';
 
 import { updateWidths } from '../store/projectsSlice';
 import { changePage } from '../store/currentPageSlice';
@@ -13,6 +12,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
+import ArtGallery from './ArtGallery';
 
 import './Landscape.scss';
 import 'react-image-gallery/styles/css/image-gallery.css';
@@ -32,26 +32,12 @@ const objectDetailImages = import.meta.glob<string>(
   '../assets/objects/images/*',
   { eager: true, import: 'default' }
 );
-const artGalleryImages = import.meta.glob<string>(
-  '../assets/art-gallery/images/*',
-  { eager: true, import: 'default' }
-);
-const artGalleryVideos = import.meta.glob<string>(
-  '../assets/art-gallery/videos/*',
-  { eager: true, import: 'default' }
-);
 
 const getProjectImage = (img: string): string =>
   projectImages[`../assets/projects/images/${img}`] ?? '';
 
 const getObjectDetailImage = (src: string): string =>
   objectDetailImages[`../assets/objects/images/${src}`] ?? '';
-
-const getArtGalleryImage = (id: string): string =>
-  artGalleryImages[`../assets/art-gallery/images/${id}.jpg`] ?? '';
-
-const getArtGalleryVideo = (id: string): string =>
-  artGalleryVideos[`../assets/art-gallery/videos/${id}.mp4`] ?? '';
 
 // Rotates digits back so the real phone number never appears as plain text in source/bundle
 const deobfuscateDigits = (s: string, shift = 4): string =>
@@ -315,36 +301,8 @@ function LandscapeContainer() {
           </div>
         );
       case 'gallery':
-        return (
-          <ImageGallery
-            items={artGallery
-              .slice()
-              .sort((a, b) => a.rank - b.rank)
-              .map(piece => ({
-                original: getArtGalleryImage(piece.image),
-                description: piece.title,
-                renderItem: piece.video
-                  ? () => (
-                    <div className="image-gallery-image">
-                      <video
-                        src={getArtGalleryVideo(piece.video!)}
-                        poster={getArtGalleryImage(piece.image)}
-                        controls={!piece.loopSilently}
-                        autoPlay={piece.loopSilently}
-                        loop={piece.loopSilently}
-                        muted={piece.loopSilently}
-                        playsInline
-                      />
-                    </div>
-                  )
-                  : undefined
-              }))}
-            showFullscreenButton={false}
-            autoPlay={false}
-            showPlayButton={false}
-            showThumbnails={false}
-          />
-        );
+        // Rendered separately by <ArtGallery>, outside this generic popup box.
+        return null;
       default:
         throw new Error('Nonexisting popup type');
     }
@@ -422,7 +380,7 @@ function LandscapeContainer() {
 
         <CSSTransition
           nodeRef={popupRef}
-          in={currentPage.showPopup}
+          in={currentPage.showPopup && currentPage.popup?.type !== 'gallery'}
           classNames="popup-window-background"
           unmountOnExit
           timeout={{ enter: 700, exit: 500 }}
@@ -433,6 +391,11 @@ function LandscapeContainer() {
             </div>
           </div>
         </CSSTransition>
+
+        <ArtGallery
+          open={currentPage.showPopup && currentPage.popup?.type === 'gallery'}
+          onClose={zoomOutCanvas}
+        />
       </div>
 
       <CSSTransition
