@@ -1,5 +1,12 @@
 .ServiceBubbles {
-  height: 170vh;
+  // Total rendered height is this plus padding-top below (content-box
+  // sizing), so the section's real height is height + padding-top. This
+  // also drives the height of #main (and therefore the whole landscape
+  // section below it), so making this taller pushes the landscape further
+  // down the page - giving the bubbles more room before the next section's
+  // title comes into range, and more scroll distance before the section
+  // needs to dissolve away under the navbar.
+  height: 210vh;
   width: 100vw;
   position: relative;
   display: flex;
@@ -10,6 +17,16 @@
   z-index: 100;
   pointer-events: none;
   perspective: 1000px;
+  // Smooths the scroll-driven fade-out that dissolves the whole section
+  // before it would otherwise scroll up underneath the fixed navbar.
+  transition: opacity 0.6s ease;
+
+  // Wider viewports lay the bubbles out in a single row (shorter cluster)
+  // sitting closer to where the landscape title appears below, so give the
+  // section extra breathing room there on top of the general increase above.
+  @media (min-width: 900px) {
+    height: 260vh;
+  }
 }
 
 .service-bubbles {
@@ -181,13 +198,16 @@
   animation-delay: var(--drift-delay, 0s);
 }
 
+// Travels a good chunk of a viewport height rather than a token amount, so
+// the rise actually reads as bubbles floating up past the screen rather
+// than a small bob in place.
 @keyframes bubble-rise {
-  0%   { opacity: 0;    translate: 0 0;         scale: 0.8; }
+  0%   { opacity: 0;    translate: 0 0;            scale: 0.8; }
   12%  { opacity: 0.8; }
-  45%  { opacity: 0.3;  translate: 14px -60px;  scale: 1; }
-  70%  { opacity: 0.55; translate: -10px -110px; scale: 0.92; }
-  90%  { opacity: 0.15; translate: 6px -150px;  scale: 1.05; }
-  100% { opacity: 0;    translate: 0 -170px;    scale: 0.8; }
+  45%  { opacity: 0.3;  translate: 5vw -22vh;       scale: 1; }
+  70%  { opacity: 0.55; translate: -4vw -40vh;      scale: 0.92; }
+  90%  { opacity: 0.15; translate: 2vw -54vh;       scale: 1.05; }
+  100% { opacity: 0;    translate: 0 -62vh;         scale: 0.8; }
 }
 
 @media (prefers-reduced-motion: reduce) {
