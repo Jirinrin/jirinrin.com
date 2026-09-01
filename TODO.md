@@ -57,5 +57,5 @@
   - heavenly express / liqidwave
   - nog meer projecten op github die ik over het hoofd zie...?
 - Jiri's Diary maken op substack -> Jiri's Diary website maken -> een 'diary' dingetje ergens hier laten liggen in het landschap en toevoegen aan project stack
-- De custom svg filter toch switchen naar webgl shader?
+- De custom svg filter toch switchen naar webgl shader voor performance?
 - in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe

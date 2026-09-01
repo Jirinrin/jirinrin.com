@@ -66,7 +66,7 @@ const objects: ObjectsMap = {
   },
   'book-stack': {
     id: 'book-stack',
-    name: 'Stack \'o\' Projects',
+    name: 'The Archive',
     left: C.TINY_BOOK_BASE_LEFT,
     top: C.getTinyBookStackTop(projects.length),
     width: C.TINY_BOOK_WIDTH * C.CANVAS_SCALE,
