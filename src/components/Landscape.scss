@@ -359,6 +359,13 @@ div.landscape--2-enter.landscape--2-enter-active {
     line-height: 4rem;
     margin-bottom: 2rem;
     margin-top: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
+    @media (max-width: 999px) {
+      font-size: 2.6rem;
+      line-height: 2.8rem;
+    }
   }
 
   h2 {
