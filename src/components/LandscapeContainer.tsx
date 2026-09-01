@@ -22,6 +22,8 @@ import shine3 from '../assets/landscape/shine-3.png';
 import sunrays from '../assets/landscape/sunrays.png';
 import jiriHead from '../assets/landscape/jiri-head.png';
 import githubIcon from '../assets/objects/images/github.png';
+import landscape2Img from '../assets/landscape/landscape-2.png';
+import boxDarkSmall from '../assets/box-dark-small.png';
 
 // Pre-import dynamic project images and markdown images (Vite replaces require())
 const projectImages = import.meta.glob<string>(
@@ -82,9 +84,22 @@ function LandscapeContainer() {
   const landscape1Ref = useRef<HTMLDivElement>(null);
   const landscape2Ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const backArrowRef = useRef<HTMLImageElement>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Preload eagerly: the back arrow, and Landscape2's own background/book images,
+  // only ever load once the user first reaches Projects (mountOnEnter/unmountOnExit
+  // above and in Landscape2). On that first visit the browser fetching+decoding
+  // landscape-2.png and box-dark-small.png (much heavier than the arrow itself)
+  // jams the main thread right as the back arrow's fade-in starts, so it drops
+  // frames and appears to pop in instead of fading. Warming the cache for all of
+  // them ahead of time keeps that first visit as cheap as every later one.
+  useEffect(() => {
+    for (const src of [backArrow, landscape2Img, boxDarkSmall]) {
+      const img = new Image();
+      img.src = src;
+    }
+  }, []);
 
   const calculateScaleFactor = (windowSize = window.innerWidth) => windowSize / C.CANVAS_WIDTH;
 
@@ -509,16 +524,12 @@ function LandscapeContainer() {
         />
       </div>
 
-      <CSSTransition
-        nodeRef={backArrowRef}
-        in={currentPage.landscape === 2 && !currentPage.showPopup}
-        classNames="back-arrow"
-        mountOnEnter
-        unmountOnExit
-        timeout={{ enter: 10000, exit: 10000 }}
-      >
-        <img ref={backArrowRef} src={backArrow} alt="back arrow" className="back-arrow" onClick={goToProjects} />
-      </CSSTransition>
+      <img
+        src={backArrow}
+        alt="back arrow"
+        className={`back-arrow${currentPage.landscape === 2 && !currentPage.showPopup ? '' : ' back-arrow--hidden'}`}
+        onClick={goToProjects}
+      />
 
       <div className="text-test" id="text-test"/>
       <div className="text-test" id="text-test-2"/>

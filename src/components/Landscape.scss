@@ -223,23 +223,23 @@ img.book--large__background {
   pointer-events: none;
 }
 
-.tooltip-enter, .back-arrow-enter {
+.tooltip-enter {
   opacity: 0 !important;
   filter: blur(40px);
 }
 
-.tooltip-enter-active, .back-arrow-enter-active {
+.tooltip-enter-active {
   opacity: 1 !important;
   filter: blur(0);
   transition: all 500ms ease;
 }
 
-.tooltip-exit, .back-arrow-exit, .back-arrow-exit:hover {
+.tooltip-exit {
   opacity: 1 !important;
   filter: blur(0);
 }
 
-.tooltip-exit-active, .back-arrow-exit-active, .back-arrow-exit-active:hover {
+.tooltip-exit-active {
   opacity: 0 !important;
   filter: blur(40px);
   transition: all 500ms ease;
@@ -561,6 +561,11 @@ svg {
   }
 }
 
+// Always mounted (see LandscapeContainer) and faded via the --hidden modifier
+// rather than react-transition-group's mount/unmount enter-exit dance - that
+// combo (mountOnEnter/unmountOnExit) raced the very first fade-in of a session
+// against the freshly-mounted node's own ref attachment and made it pop straight
+// to full opacity instead of fading, only ever on that first visit.
 .back-arrow {
   position: fixed !important;
   width: 8vw;
@@ -570,29 +575,26 @@ svg {
   z-index: 30;
   mix-blend-mode: color-dodge;
 
-  transition: 0.4s all ease;
   opacity: 0.5;
+  filter: blur(0);
+  transition: opacity 0.5s ease, filter 0.5s ease;
 
-  &:hover {
-    &:not(.back-arrow-exit) {
-      filter: sepia(3);
-      cursor: pointer;
-      animation: left-right 0.5s ease-in-out infinite alternate;
-      opacity: 1;
+  &--hidden {
+    opacity: 0 !important;
+    filter: blur(40px);
+    pointer-events: none;
+  }
 
-      @keyframes left-right {
-        to {transform: scale(0.9) translateX(-1rem)}
-      }
-    }
+  &:hover:not(.back-arrow--hidden) {
+    filter: sepia(3);
+    cursor: pointer;
+    animation: left-right 0.5s ease-in-out infinite alternate;
+    opacity: 1;
   }
 }
 
-.back-arrow-enter-active {
-  transition: all 500ms ease 700ms !important;
-}
-
-.back-arrow-exit-active {
-  transition: all 500ms ease !important;
+@keyframes left-right {
+  to { transform: scale(0.9) translateX(-1rem); }
 }
 
 .project-gallery {
