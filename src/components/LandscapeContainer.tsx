@@ -5,9 +5,10 @@ import ReactMarkdown from 'react-markdown';
 import * as C from '../constants';
 import { SITE_NAME } from '../assets/SITE_NAME';
 
-import { updateWidths } from '../store/projectsSlice';
+import { updateWidths, fetchProjectDescriptions } from '../store/projectsSlice';
 import { changePage } from '../store/currentPageSlice';
 import { useAppDispatch, useAppSelector } from '../store';
+import { getDeepLinkPath, resolveDeepLinkPath, OBJECT_POPUP_TYPES } from '../deeplinks';
 
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
@@ -182,39 +183,78 @@ function LandscapeContainer() {
       zoomInCanvas();
     }
 
-    // Deeplink support for /contact: this is the single choke point every way of
-    // opening/closing the contact popup passes through (envelope object click,
-    // navbar item, initial-load effect below), so it's the one place we need to
-    // keep the URL in sync rather than touching every call site individually.
+    // Deeplink support: this is the single choke point every way of changing
+    // page/popup state passes through (object clicks, navbar items, the
+    // initial-load effect below), so it's the one place we need to keep the
+    // URL in sync rather than touching every call site individually.
     // replaceState (not pushState) on purpose: there's no popstate/back-button
     // handling for popup state anywhere in the app, so adding history entries
     // here would make the back button "close" the popup in a way nothing else
     // supports (and would fight the user's real back-navigation expectations).
-    const isContactPopupOpen = currentPage.showPopup && currentPage.popup?.id === 'contact-details';
-    const wasContactPopupOpen = prev.showPopup && prev.popup?.id === 'contact-details';
-    if (isContactPopupOpen && !wasContactPopupOpen) {
-      window.history.replaceState(null, '', '/contact');
-    } else if (!isContactPopupOpen && wasContactPopupOpen) {
-      window.history.replaceState(null, '', '/');
+    const newPath = getDeepLinkPath(currentPage);
+    const oldPath = getDeepLinkPath(prev);
+    if (newPath !== oldPath) {
+      window.history.replaceState(null, '', newPath);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
-  // Deeplink support for /contact: if the page was loaded directly at /contact,
-  // open the contact popup automatically once its text is available (fetched by
-  // Landscape1 on mount). No scroll-down animation here since we're not reacting
-  // to a user click - the generic currentPage effect above already does a
-  // (smooth) scrollDown/zoomInCanvas whenever a popup opens, deeplink or not.
+  // Deeplink support: if the page was loaded directly at a known deeplink path
+  // (/contact, /gallery, /pillar-of-paradigm, /projects, /projects/[id], ...),
+  // play through the same steps a real visitor triggering that navigation
+  // would (scroll into view, then zoom/open), rather than snapping straight to
+  // the end state - see the two branches below for the object-popup and
+  // project cases respectively. Object-popup text and project descriptions are
+  // fetched asynchronously (by Landscape1/Landscape2 on mount, or triggered
+  // explicitly below for the project case since it may not have mounted yet),
+  // so this effect just waits and re-checks as that data arrives.
   const deepLinkHandledRef = useRef(false);
+  const deepLinkFetchedDescriptionsRef = useRef(false);
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
-    const path = window.location.pathname.replace(/\/+$/, '') || '/';
-    if (path !== '/contact') return;
-    const text = abouts['contact-details']?.text;
-    if (!text) return;
+    const link = resolveDeepLinkPath(window.location.pathname);
+    if (!link) { deepLinkHandledRef.current = true; return; }
+
+    if (link.projectId) {
+      const project = projects.find(p => p.id === link.projectId);
+      if (!project) { deepLinkHandledRef.current = true; return; }
+      if (!project.description) {
+        if (!deepLinkFetchedDescriptionsRef.current) {
+          deepLinkFetchedDescriptionsRef.current = true;
+          dispatch(fetchProjectDescriptions());
+        }
+        return;
+      }
+      deepLinkHandledRef.current = true;
+      // Same sequence a click on the book-stack + a click on the book itself
+      // would produce: scroll to the projects landscape (mirrors book-stack's
+      // own onClick), wait for its landscape--2 CSSTransition to finish
+      // sliding in (1200ms enter timeout, see the transition below), then
+      // click the actual book DOM node so Landscape2's own zoom-open
+      // animation runs and opens the popup exactly as it would for a real
+      // click - rather than snapping the popup open immediately.
+      scrollDown(true, () => {
+        dispatch(changePage({ landscape: 2 }));
+        setTimeout(() => document.getElementById(project.id)?.click(), 1200);
+      });
+      return;
+    }
+
+    if (link.popupId) {
+      const type = OBJECT_POPUP_TYPES[link.popupId];
+      const text = abouts[link.popupId]?.text;
+      if (type !== 'gallery' && !text) return;
+      deepLinkHandledRef.current = true;
+      // Same sequence handleObjectClick/goToPopup use: scroll down first,
+      // then open the popup once we're there, so the zoom-in/modal only
+      // appears once the object is actually in view.
+      scrollDown(true, () => dispatch(changePage({ popup: { type, id: link.popupId, text } })));
+      return;
+    }
+
     deepLinkHandledRef.current = true;
-    dispatch(changePage({ popup: { type: 'text', id: 'contact-details', text } }));
-  }, [abouts, dispatch]);
+    dispatch(changePage({ landscape: link.landscape }));
+  }, [abouts, projects, dispatch]);
 
   const scrollTo = (offset = 0, callback?: () => void) => {
     window.scrollTo({ top: C.getBottomScrollPos() - offset, left: 0, behavior: 'auto' });
