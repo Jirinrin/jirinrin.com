@@ -42,6 +42,25 @@ const getObjectDetailImage = (src: string): string =>
 const deobfuscateDigits = (s: string, shift = 4): string =>
   s.replace(/\d/g, d => String((Number(d) + 10 - shift) % 10));
 
+// A markdown paragraph consisting of nothing but a single link (e.g. `[Go visit KODAMAP](https://...)`
+// on its own line) reads as a call-to-action, so render it as a button instead of a plain inline link.
+// react-markdown passes our own overridden `a` renderer's output through as this paragraph's child,
+// so we just check whether the single child is an <a> element and dress it up if so.
+const renderParagraph = ({ children }: { children?: React.ReactNode }) => {
+  const childArray = React.Children.toArray(children);
+  if (childArray.length === 1 && React.isValidElement(childArray[0]) && childArray[0].type === 'a') {
+    const anchor = childArray[0] as React.ReactElement<React.AnchorHTMLAttributes<HTMLAnchorElement>>;
+    return (
+      <p className="popup-window-button-line">
+        {React.cloneElement(anchor, {
+          className: [anchor.props.className, 'popup-window-button'].filter(Boolean).join(' '),
+        })}
+      </p>
+    );
+  }
+  return <p>{children}</p>;
+};
+
 function LandscapeContainer() {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(state => state.projects);
@@ -251,6 +270,7 @@ function LandscapeContainer() {
           <ReactMarkdown
             urlTransform={(url) => url}
             components={{
+              p: renderParagraph,
               img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
                 <img
                   src={getObjectDetailImage(src ?? '')}
@@ -295,6 +315,7 @@ function LandscapeContainer() {
             }
             <ReactMarkdown
               components={{
+                p: renderParagraph,
                 a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
                   <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}

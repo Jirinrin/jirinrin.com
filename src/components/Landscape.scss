@@ -386,6 +386,30 @@ div.landscape--2-enter.landscape--2-enter-active {
     // em {}
   }
 
+  p.popup-window-button-line {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+
+  a.popup-window-button {
+    display: inline-block;
+    padding: 0.6rem 1.8rem;
+    border: 1px solid rgb(87, 87, 87);
+    border-radius: 2rem;
+    filter: sepia(5);
+    color: rgb(87, 87, 87);
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(87, 87, 87, 0.12);
+      border-color: rgb(233, 233, 233);
+      color: rgb(233, 233, 233);
+    }
+  }
+
   a.github-icon {
     float: right;
     opacity: 0.3;
