@@ -101,12 +101,51 @@ const Landscape2 = forwardRef<HTMLDivElement, Landscape2Props>(function Landscap
     const bookStack = zoomBook.parentNode?.parentNode as HTMLElement;
     if (!bookStack) return;
 
-    const small = window.innerWidth <= 1400;
-    zoomBook.style.left   = `calc(-1 * ${bookStack.style.left} + 2.5vw / ${scaleFactor})`;
-    zoomBook.style.top    = `calc(-1 * ${bookStack.style.top.split('calc')[1]} + ${C.CANVAS_HEIGHT}px - (100vh - ${small ? 7.5 : 2.5}vw) / ${scaleFactor} - ${bottom / scaleFactor}px)`;
-    zoomBook.style.width  = `calc(95vw / ${scaleFactor})`;
-    zoomBook.style.height = `calc((100vh - ${small ? 15 : 5}vw) / ${scaleFactor})`;
+    const width = window.innerWidth;
+    // The book grows into the same rect .popup-window/.popup-window-large
+    // settles into (see Landscape.scss), but a bit larger all around so it
+    // reads as a 'frame' the modal is being read inside of: FRAME_VW wider
+    // on each side, both horizontally and vertically. Derive the book's own
+    // width/height/offsets straight from the modal's own width/height
+    // expressions (rather than hand-computed constants) so this stays
+    // correct even where the modal's max-height/max-width caps kick in
+    // above the 1400px breakpoint - keep modalWidthExpr/modalHeightExpr in
+    // sync with .popup-window-large in Landscape.scss whenever it changes.
+    const isMobile = width < 1000;
+    const FRAME_VW = isMobile ? 5 : 3;
+    const modalWidthExpr = isMobile ? '80vw'
+      : width < 1400 ? '85vw'
+      : 'min(85vw, 1400px)';
+    const modalHeightExpr = isMobile ? 'calc(100vh - 23vw)'
+      : width < 1400 ? 'calc(100vh - 20vw)'
+      : 'min(calc(100vh - 15vw), 1000px)';
+
+    const bookWidthExpr = `calc(${modalWidthExpr} + ${2 * FRAME_VW}vw)`;
+    const bookHeightExpr = `calc(${modalHeightExpr} + ${2 * FRAME_VW}vw)`;
+    // Half of the book's own top+bottom margin (modal's margin shrunk by
+    // FRAME_VW on each side) - used below to vertically center the book the
+    // same way the modal centers itself with `margin: auto auto`.
+    const bookHalfMarginExpr = `calc((100vh - ${modalHeightExpr}) / 2 - ${FRAME_VW}vw)`;
+    // How far the book's left edge sits from the viewport's left edge so it
+    // ends up centered like the modal, just FRAME_VW further out.
+    const leftOffsetExpr = `calc((100vw - ${modalWidthExpr}) / 2 - ${FRAME_VW}vw)`;
+
+    zoomBook.style.left   = `calc(-1 * ${bookStack.style.left} + (${leftOffsetExpr}) / ${scaleFactor})`;
+    zoomBook.style.top    = `calc(-1 * ${bookStack.style.top.split('calc')[1]} + ${C.CANVAS_HEIGHT}px - (100vh - ${bookHalfMarginExpr}) / ${scaleFactor} - ${bottom / scaleFactor}px)`;
+    zoomBook.style.width  = `calc((${bookWidthExpr}) / ${scaleFactor})`;
+    zoomBook.style.height = `calc((${bookHeightExpr}) / ${scaleFactor})`;
     zoomBook.className += ' book--large__zoomed';
+
+    // img.book--large__background's border-radius (see Landscape.scss) is
+    // set in pre-transform px and so shrinks visually with scaleFactor -
+    // fine for the small stack thumbnails, but on mobile scaleFactor is
+    // small enough that the now much bigger zoomed frame reads as barely
+    // rounded at all. Bump it here to a bigger on-screen radius, corrected
+    // back by scaleFactor the same way width/height are above.
+    if (isMobile) {
+      const bookImg = zoomBook.querySelector<HTMLImageElement>('img.book--large__background');
+      if (bookImg) bookImg.style.borderRadius = `${20 / scaleFactor}px`;
+    }
 
     const project = projects.find(p => openedBook && p.id === openedBook.book.id);
     if (!project) return;

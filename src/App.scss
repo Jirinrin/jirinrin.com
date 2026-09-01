@@ -108,7 +108,7 @@ body, #root {
 // A popup's text needs to stay readable, so the grading smoothly backs off
 // while one is open rather than fighting for contrast right behind it.
 body.color-grade-dimmed .color-grade {
-  filter: url(#landscape-color-grade) saturate(0.3);
+  filter: url(#landscape-color-grade) saturate(0.5);
 }
 
 code {

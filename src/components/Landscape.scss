@@ -292,38 +292,64 @@ div.landscape--2-enter.landscape--2-enter-active {
 }
 
 .popup-window {
-  background-image: url("../assets/box-light-small.png");
-  background-size: 100% 100%;
+  // `.popup-window-content` (not this element) is the actual scroll
+  // container, so that the ::before backdrop below - positioned absolute
+  // relative to this element - stays put as a backdrop instead of scrolling
+  // away with the text: an absolutely positioned element takes its
+  // containing block's *own* scroll container as its containing block too,
+  // so if this element scrolled, ::before would have scrolled with it.
+  position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: 1rem;
-  opacity: 0.8;
   margin: auto auto;
   z-index: 125;
-  padding: 5vw;
-  overflow-y: scroll;
   cursor: default;
-  // No color was ever set here, so it fell back to the browser's dark-mode
-  // default text color (near-white) on a dark-mode system - unreadable
-  // against this light parchment box. Matches `.tooltip__white`, which uses
-  // the same background image and was already set up correctly.
-  color: rgb(44, 44, 44);
   font-family: 'Cormorant', serif;
   font-weight: 300;
   transition: all 0.2s ease;
   font-size: 1rem;
 
   max-width: 80vw;
-  max-height: calc(100vh - 20vw);
-  @media (max-width: 1400px) {
-    max-height: calc(100vh - 30vw);
+  max-height: calc(100vh - 23vw);
+  @media (min-width: 1000px) {
+    max-width: 85vw;
+    max-height: calc(100vh - 20vw);
+  }
+  @media (min-width: 1400px) {
+    max-width: min(85vw, 1400px);
+    max-height: min(calc(100vh - 15vw), 1000px);
   }
 
   &.popup-window-large {
     width: 80vw;
-    height: calc(100vh - 20vw);
+    height: calc(100vh - 23vw);
 
-    @media (max-width: 1400px) {
-      height: calc(100vh - 30vw);
+    @media (min-width: 1000px) {
+      width: 85vw;
+      height: calc(100vh - 20vw);
     }
+    @media (min-width: 1400px) {
+      width: min(85vw, 1400px);
+      height: min(calc(100vh - 15vw), 1000px);
+    }
+  }
+
+  // The parchment texture + a hint of the page's animated color grade live on
+  // a ::before behind the text rather than directly on the scrollable content
+  // - the color-grade filter remaps every color it's applied to (including
+  // text color), so putting it straight on the content made the text
+  // noticeably harder to read.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: url("../assets/box-light-small.png");
+    background-size: 100% 100%;
+    opacity: 0.93;
+    filter: url(#landscape-color-grade) saturate(0.4);
   }
 
   h1 {
@@ -422,6 +448,15 @@ div.landscape--2-enter.landscape--2-enter-active {
 
   // pre {}
   // blockquote {}
+}
+
+.popup-window-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  padding: 5vw;
+  box-sizing: border-box;
+  color: rgb(20, 20, 20);
 }
 
 .popup-window-background-enter {

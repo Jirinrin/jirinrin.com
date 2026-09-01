@@ -121,6 +121,24 @@ function LandscapeContainer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scaleFactor]);
 
+  // Blocks the page from scrolling behind the modal when the cursor is over
+  // the dimmed background (not the popup box itself, which has its own
+  // internal scroll). Needs a real non-passive listener via ref - React
+  // makes onWheel passive by default, so preventDefault() from JSX would
+  // silently do nothing. Can't just lock scroll globally (e.g. overflow:
+  // hidden on html/body) either: opening a popup can itself trigger a
+  // programmatic window.scrollTo (see zoomInCanvas), which a global lock
+  // would swallow and leave the page snapped to the top.
+  useEffect(() => {
+    const bg = popupRef.current;
+    if (!bg) return;
+    const blockBackgroundScroll = (e: WheelEvent) => {
+      if (e.target === bg) e.preventDefault();
+    };
+    bg.addEventListener('wheel', blockBackgroundScroll, { passive: false });
+    return () => bg.removeEventListener('wheel', blockBackgroundScroll);
+  }, [currentPage.showPopup]);
+
   useEffect(() => {
     const prev = prevCurrentPage.current;
     prevCurrentPage.current = currentPage;
@@ -384,7 +402,9 @@ function LandscapeContainer() {
         >
           <div ref={popupRef} className="popup-window-background" onClick={hidePopup}>
             <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}`}>
-              {renderPopup()}
+              <div className="popup-window-content">
+                {renderPopup()}
+              </div>
             </div>
           </div>
         </CSSTransition>
@@ -397,7 +417,7 @@ function LandscapeContainer() {
 
       <CSSTransition
         nodeRef={backArrowRef}
-        in={currentPage.landscape === 2}
+        in={currentPage.landscape === 2 && !currentPage.showPopup}
         classNames="back-arrow"
         mountOnEnter
         unmountOnExit
