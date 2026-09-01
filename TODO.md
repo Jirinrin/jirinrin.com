@@ -1,17 +1,21 @@
 # TODO
+
 - [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing. I can draw some clouds for this. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
-- [ ] light box van de project stack ook wat fijner maken, zo met die arrows is gewoon vrij lelijk. en plaatjes worden nu nogal gecropt als ze te portrait voor de lightbox zijn.
-- [ ] Door alle copy heen gaan:
+- [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken?
+
+- [ ] Copy objects
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
   - [ ] [spiral-tower.md](src/assets/objects/spiral-tower.md) 
   - [ ] [jiri-soul.md](src/assets/objects/jiri-soul.md) 
   - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
   - [x] [gallery.md](src/assets/objects/gallery.md) 
-  - [ ] [karaokeq.md](src/assets/projects/karaokeq.md) 
-  - [ ] [kodamap.md](src/assets/projects/kodamap.md) 
+
+- [ ] Copy projects
+  - [x] [karaokeq.md](src/assets/projects/karaokeq.md) 
+  - [x] [kodamap.md](src/assets/projects/kodamap.md) 
   - [ ] [umu.md](src/assets/projects/umu.md) 
-  - [ ] [irukadrive.md](src/assets/projects/irukadrive.md) 
+  - [x] [irukadrive.md](src/assets/projects/irukadrive.md) 
   - [ ] [projectdansurando.md](src/assets/projects/projectdansurando.md) 
   - [ ] [projekt-kinoko.md](src/assets/projects/projekt-kinoko.md) 
   - [ ] [aya.md](src/assets/projects/aya.md) 
@@ -19,6 +23,7 @@
   - [ ] [jirinrin.com.md](src/assets/projects/jirinrin.com.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
   - [x] [architecture-highlights.md](src/assets/projects/architecture-highlights.md) 
+
 - [ ] Foto's/video's toevoegen:
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
   - [ ] [spiral-tower.md](src/assets/objects/spiral-tower.md) 
@@ -27,8 +32,11 @@
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
   - [x] [gallery.md](src/assets/objects/gallery.md) 
     - [ ] lijsten. aantal varianten in de huisstijl van de website? variant per verhouding: eentje voor ongeveer 1:1, dan 4:3, 16:9, etc.
+    - [ ] ieder werk toch een titel geven, als een soort 'plate' die op het frame is geplakt onderaan.
   - [x] [contact-details.md](src/assets/objects/contact-details.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
+    - [ ] hanna album
+    - [ ] instagram / conekt.it / youtube voor dj mixes enzo
   - [ ] [karaokeq.md](src/assets/projects/karaokeq.md) 
   - [ ] [kodamap.md](src/assets/projects/kodamap.md) 
   - [ ] [umu.md](src/assets/projects/umu.md) 
@@ -37,8 +45,6 @@
   - [ ] [projekt-kinoko.md](src/assets/projects/projekt-kinoko.md) 
   - [ ] [aya.md](src/assets/projects/aya.md) 
   - [ ] [jirinrin.com.md](src/assets/projects/jirinrin.com.md) 
-    - [ ] hanna album (zet in groove grove ook? / eigenlijk alleen maar :)
-    - [ ] instagram / conekt.it / youtube voor dj mixes enzo
   - [x] [architecture-highlights.md](src/assets/projects/architecture-highlights.md) 
 
 ## TODO uiteindelijk maar niet voor livegang v2
@@ -48,7 +54,8 @@
   - delfschezwervers.nl / de dz app erbij
   - C:\Users\YUURICHAN\Pictures\art van jiri\_laatmaarzitten\dz-ontwikkelingsplan
   - simone wolk-kast tekeningen
+  - heavenly express / liqidwave
+  - nog meer projecten op github die ik over het hoofd zie...?
 - Jiri's Diary maken op substack -> Jiri's Diary website maken -> een 'diary' dingetje ergens hier laten liggen in het landschap en toevoegen aan project stack
 - De custom svg filter toch switchen naar webgl shader?
-- deeplinks laten werken, dat je naar /contact kan gaan / als je op de envelop klikt dat hij dan onderwater ook /contact ervan maakt in de URL stilletjes
 - in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe

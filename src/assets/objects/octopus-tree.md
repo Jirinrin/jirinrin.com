@@ -1,5 +1,30 @@
 ## _I_ am the _Octopus Tree_.  
-### Let me tell you a story that is conveniently written in a first person perspective...
+### Let me tell you a little story that is conveniently written in a first person perspective...
+
+Okay yes so I'm not going to let the Octopus Tree tell you about the story of my life in third person, because that would be a bit jarring to read!
+
+But I will relay that the Octopus Tree wants to be climbed! You might be able to find it on https://kodamap.app if you search deeply enough... *(just kidding, I haven't built that easter egg into it just yet)*
+
+And it might actually be nice to stick to the tree analogy in telling you the story of my life up until this point!
+
+A little seedling of a Jiri was planted in 1997, in a loving family in the Netherlands. Oh, what a pure presence of wonder and magic! A sensitive being, so fragile, so beautiful...
+
+And slowly, she began to sprout and grow roots, growing more and more connected to this world. 
+
+She gained a younger brother and later another one!
+
+
+
+
+
+- seed
+- sprout/sapling etc
+- denken dat ik groot ben maar leeg van binnen
+- hele metamorfose
+- en dan de spirituele awakening want dat heeft echt de laatste jaren ontworteld: wowww ik dacht dat ik een boom was, maar eigenlijk ben ik het hele woud want de wortels stoppen helemaal nergens die gaan gewoon door in andere bomen, en in fact ben ik ook in andere dimensies verbonden met alle insecten en wezens die in het hele bos zijn ik kan ze allemaal sensen omdat ze allemaal ook het systeem zijn, en wowww alles is zo levend en intens, en wowww er zijn ook nog andere wezens in andere dimensies, en wowwwwww...... en dan vervolgens weer gronden in wat ik hier nu ben, hoe mooi is het om deze boom te zijn, om al deze sensaties te hebben, etc!
+
+
+
 
 Yeah yeah, so that's that. Now then, let's talk about my life and how it got to this point.
 

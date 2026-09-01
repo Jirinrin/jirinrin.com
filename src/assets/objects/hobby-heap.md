@@ -1,8 +1,8 @@
 # The exultance of existence
 
 If there is one saying I do _not_ live by, it's 二兎追う者は一兎も得ず:  
-I'm constantly jumping about between things to do in my free time (including coding?), meaning that I'll prolly never get exceptionally good at _one_ thing...  
-But I dunno, I don't think I mind it like this～
+I love jumping about between things to do in my free time, meaning that I'll prolly never get exceptionally good at _one_ thing... Or maybe I will, who knows!  
+Anywayy, life is fun regardless～
 
 Among things I like are:
 
@@ -10,10 +10,28 @@ Among things I like are:
 I like cute things. And cute people. Are you cute today?
 
 **`Music`**  
-Music is love && live && Love Live (hahah). Please don't (or do) ask me about all the genres of music that I listen to, because then I'll feel as though I need to properly give everything its own proper place in my expression and I'll get _real_ stressed out trying to come up with a good comprehensive answer.  
-What this fact does is it gives an indication of my passion for the field. Which is huge.
-I also _'have'_ this cool audio interface + midi keyboard + condenser mic combo setup, that to this day I have barely used for actually producing music.... (o(╥﹏╥)o)  
-If you're interested in the ~2 tracks I made back in the day, I can send you the link to my SoundCloud.
+Music is love & life & WHAT WE ARE. Please don't (or do) ask me about all the genres of music that I listen to, because then I'll feel as though I need to properly give everything its own proper place in my expression and I'll get _real_ stressed out trying to come up with a good comprehensive answer. :>  
+What this sentence does is it gives an indication of my passion for the field. Which is quite big. ♪☺️♫  
+We're talking 300GB organised/tagged music collection with organising scripts, DJ gear sitting in the bedroom, long-ago-bedroom-producer-who-still-has-too-many-synthesizers-laying-around, every day improvising for hours on end on the piano...
+
+Check the Groove Grove for a couple past things I made ♥
+
+**`Dance`**  
+Part of Music but also not part of Music, because it also has to do with the BODY!
+
+---
+
+TODO
+- dance af-schrijven, over raves en dansen in de natuur en somatisch iets oid
+- bomen klimmen en in de natuur zijn
+- spirituality: tjaaa het leven is spiritueel van zichzelf, etc, dit is mijn pad de laatste jaren.
+- paddestoelen / psychedelische exploraties
+- websites creeren
+- experimental cooking
+- lieve insecten zoals isopods en dragonflies, maar alle insecten zijn natuurlijk lief
+
+---
+
 
 **`Fashion`**  
 Ya I reckon you're not gonna find many recent pictures of me online, so you'll have to meet me IRL to get a real sense of my _acquired_ style.  
