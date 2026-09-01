@@ -557,7 +557,7 @@ svg {
   height: 100%;
   object-fit: contain;
   border-radius: 1rem;
-  cursor: grab;
+  cursor: zoom-in;
 
   &:active {
     cursor: grabbing;
@@ -638,6 +638,53 @@ svg {
   &--active {
     background: rgba(44, 44, 44, 0.7);
     transform: scale(1.3);
+  }
+}
+
+.project-gallery-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(4, 3, 3, 0.88);
+  cursor: pointer;
+}
+
+// `img.` (not just `.project-gallery-fullscreen__image`) to out-specificity
+// `.popup-window img`, whose `width: 100%` would otherwise stretch this to
+// fill the backdrop instead of sizing to the image's own aspect ratio.
+img.project-gallery-fullscreen__image {
+  max-width: 92vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.3rem;
+  cursor: default;
+  touch-action: none;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.project-gallery-fullscreen__close {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 210;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: 'Cormorant', serif;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.75);
   }
 }
 

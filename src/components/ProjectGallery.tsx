@@ -2,10 +2,54 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 
 import backArrow from '../assets/back-arrow.png';
+import { usePinchZoom } from '../hooks/usePinchZoom';
 
 interface ProjectGalleryProps {
   images: string[];
   getImage: (img: string) => string;
+}
+
+interface FullscreenImageProps {
+  src: string;
+  onClose: () => void;
+}
+
+// Remounted (via `key`) every time the current image changes, so each image
+// always opens back up at scale 1 - no stale zoom/pan carried over from the
+// previous picture.
+function FullscreenImage({ src, onClose }: FullscreenImageProps) {
+  const pinch = usePinchZoom();
+
+  const handleDragEnd = (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const distance = Math.hypot(info.offset.x, info.offset.y);
+    const velocity = Math.hypot(info.velocity.x, info.velocity.y);
+    if (distance > 110 || velocity > 550) onClose();
+  };
+
+  return (
+    <motion.div
+      className="project-gallery-fullscreen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      onClick={onClose}
+    >
+      <motion.img
+        src={src}
+        alt=""
+        className="project-gallery-fullscreen__image"
+        drag={!pinch.isZoomed}
+        dragElastic={0.65}
+        dragMomentum={false}
+        onDragEnd={handleDragEnd}
+        style={pinch.style}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        {...pinch.handlers}
+      />
+      <button type="button" className="project-gallery-fullscreen__close" onClick={onClose} aria-label="Close">×</button>
+    </motion.div>
+  );
 }
 
 function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
@@ -13,20 +57,22 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
   // way to animate in and out - a plain index alone can't tell "went to 0
   // via next" from "went to 0 via prev".
   const [[index, direction], setState] = useState<[number, number]>([0, 0]);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const go = (delta: number) =>
     setState(([i]) => [(i + delta + images.length) % images.length, delta]);
 
   useEffect(() => {
-    if (images.length <= 1) return;
     const onKeyDown = (e: KeyboardEvent) => {
+      if (fullscreen && e.key === 'Escape') setFullscreen(false);
+      if (images.length <= 1) return;
       if (e.key === 'ArrowLeft') go(-1);
       if (e.key === 'ArrowRight') go(1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images.length]);
+  }, [images.length, fullscreen]);
 
   if (images.length === 0) return null;
 
@@ -49,6 +95,7 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
             dragElastic={0.6}
             dragMomentum={false}
             onDragEnd={handleDragEnd}
+            onTap={() => setFullscreen(true)}
             custom={direction}
             initial={{ opacity: 0, x: direction < 0 ? -60 : 60 }}
             animate={{ opacity: 1, x: 0 }}
@@ -90,6 +137,16 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
           ))}
         </div>
       )}
+
+      <AnimatePresence>
+        {fullscreen && (
+          <FullscreenImage
+            key={index}
+            src={getImage(images[index])}
+            onClose={() => setFullscreen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
