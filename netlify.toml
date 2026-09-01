@@ -4,3 +4,12 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# SPA fallback: this is a single-page app with no server-side routes, so any
+# path (e.g. /contact, for the contact-popup deeplink) needs to resolve to
+# index.html instead of 404ing - client-side JS then reads the path and
+# renders the right state.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

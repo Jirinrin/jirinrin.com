@@ -65,6 +65,7 @@ function LandscapeContainer() {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(state => state.projects);
   const currentPage = useAppSelector(state => state.currentPage);
+  const abouts = useAppSelector(state => state.abouts);
 
   const [scaleFactor, setScaleFactor] = useState(() => window.innerWidth / C.CANVAS_WIDTH);
   const [zoomIn, setZoomIn] = useState(false);
@@ -180,8 +181,40 @@ function LandscapeContainer() {
         (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery')) {
       zoomInCanvas();
     }
+
+    // Deeplink support for /contact: this is the single choke point every way of
+    // opening/closing the contact popup passes through (envelope object click,
+    // navbar item, initial-load effect below), so it's the one place we need to
+    // keep the URL in sync rather than touching every call site individually.
+    // replaceState (not pushState) on purpose: there's no popstate/back-button
+    // handling for popup state anywhere in the app, so adding history entries
+    // here would make the back button "close" the popup in a way nothing else
+    // supports (and would fight the user's real back-navigation expectations).
+    const isContactPopupOpen = currentPage.showPopup && currentPage.popup?.id === 'contact-details';
+    const wasContactPopupOpen = prev.showPopup && prev.popup?.id === 'contact-details';
+    if (isContactPopupOpen && !wasContactPopupOpen) {
+      window.history.replaceState(null, '', '/contact');
+    } else if (!isContactPopupOpen && wasContactPopupOpen) {
+      window.history.replaceState(null, '', '/');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
+
+  // Deeplink support for /contact: if the page was loaded directly at /contact,
+  // open the contact popup automatically once its text is available (fetched by
+  // Landscape1 on mount). No scroll-down animation here since we're not reacting
+  // to a user click - the generic currentPage effect above already does a
+  // (smooth) scrollDown/zoomInCanvas whenever a popup opens, deeplink or not.
+  const deepLinkHandledRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkHandledRef.current) return;
+    const path = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (path !== '/contact') return;
+    const text = abouts['contact-details']?.text;
+    if (!text) return;
+    deepLinkHandledRef.current = true;
+    dispatch(changePage({ popup: { type: 'text', id: 'contact-details', text } }));
+  }, [abouts, dispatch]);
 
   const scrollTo = (offset = 0, callback?: () => void) => {
     window.scrollTo({ top: C.getBottomScrollPos() - offset, left: 0, behavior: 'auto' });
