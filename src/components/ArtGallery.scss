@@ -26,6 +26,27 @@
   overscroll-behavior: contain;
   padding: 4rem 2.5rem 6rem;
 
+  // overflow-y: auto turns this into a hard-edged clip box, so as tiles drift
+  // in and out of view during scroll their hover-scale/drift/drop-shadow gets
+  // sheared off flush against the top edge instead of just leaving frame -
+  // it reads like there's a sealed bar sitting right above the gallery.
+  // Masking the top (and, for symmetry, bottom) edge into a soft fade turns
+  // that hard clip into a vignette so content dissolves before it's cut.
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 3rem,
+    black calc(100% - 3rem),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 3rem,
+    black calc(100% - 3rem),
+    transparent 100%
+  );
+
   @media (max-width: 700px) {
     padding: 3rem 1.1rem 4rem;
   }
