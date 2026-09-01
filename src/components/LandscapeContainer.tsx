@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import ReactMarkdown from 'react-markdown';
-import ImageGallery from 'react-image-gallery';
 
 import * as C from '../constants';
 import { SITE_NAME } from '../assets/SITE_NAME';
@@ -13,9 +12,9 @@ import { useAppDispatch, useAppSelector } from '../store';
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
 import ArtGallery from './ArtGallery';
+import ProjectGallery from './ProjectGallery';
 
 import './Landscape.scss';
-import 'react-image-gallery/styles/css/image-gallery.css';
 
 import backArrow from '../assets/back-arrow.png';
 import shine3 from '../assets/landscape/shine-3.png';
@@ -290,12 +289,10 @@ function LandscapeContainer() {
             <br/>
             <br/>
             {popup.project?.images[0] &&
-              <ImageGallery
-                items={popup.project.images.map(img => ({ original: getProjectImage(img) }))}
-                showFullscreenButton={false}
-                autoPlay={false}
-                showPlayButton={false}
-                showThumbnails={false}
+              <ProjectGallery
+                key={popup.project.id}
+                images={popup.project.images}
+                getImage={getProjectImage}
               />
             }
           </div>
