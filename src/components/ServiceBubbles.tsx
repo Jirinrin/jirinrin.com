@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import OpeningClouds from './OpeningClouds';
+
 import './ServiceBubbles.scss';
 
 // Static so bubbles don't reshuffle on every re-render; values are hand-picked
@@ -89,6 +91,7 @@ function ServiceBubbles() {
 
   return (
     <div className="ServiceBubbles color-grade" style={{ opacity: sectionOpacity }}>
+      <OpeningClouds />
       {AMBIENT_BUBBLES.map((b, i) => (
         <span
           key={i}

@@ -9,6 +9,7 @@ import { updateWidths, fetchProjectDescriptions } from '../store/projectsSlice';
 import { changePage } from '../store/currentPageSlice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { getDeepLinkPath, resolveDeepLinkPath, OBJECT_POPUP_TYPES } from '../deeplinks';
+import { allPlaqueVariants } from '../assets/art-gallery/frames';
 
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
@@ -45,6 +46,16 @@ const getObjectDetailImage = (src: string): string =>
 const deobfuscateDigits = (s: string, shift = 4): string =>
   s.replace(/\d/g, d => String((Number(d) + 10 - shift) % 10));
 
+// Cheap string hash so a given button always lands on the same plaque
+// (stable across re-renders) instead of reshuffling at random.
+const hashString = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+
+const LIGHT_PLAQUES = allPlaqueVariants().map(p => p.light);
+
 // A markdown paragraph consisting of nothing but a single link (e.g. `[Go visit KODAMAP](https://...)`
 // on its own line) reads as a call-to-action, so render it as a button instead of a plain inline link.
 // react-markdown renders a markdown link via *our own* overridden `a` component (see the `components`
@@ -56,10 +67,16 @@ const renderParagraph = ({ children }: { children?: React.ReactNode }) => {
   const only = childArray[0];
   if (childArray.length === 1 && React.isValidElement(only) && typeof (only.props as { href?: unknown }).href === 'string') {
     const anchor = only as React.ReactElement<React.AnchorHTMLAttributes<HTMLAnchorElement>>;
+    // One of the gallery's own light plaque paintings, reused here as the
+    // button's texture - its own torn/irregular edges (rather than a plain
+    // rectangle) are the whole point, so it's stretched across the button
+    // exactly like button-bg.png used to be.
+    const plaque = LIGHT_PLAQUES[hashString(anchor.props.href ?? '') % LIGHT_PLAQUES.length];
     return (
       <p className="popup-window-button-line">
         {React.cloneElement(anchor, {
           className: [anchor.props.className, 'popup-window-button'].filter(Boolean).join(' '),
+          style: { ...anchor.props.style, '--button-plaque-bg': `url(${plaque})` } as React.CSSProperties,
         })}
       </p>
     );
@@ -370,17 +387,17 @@ function LandscapeContainer() {
                   title={popup.id === 'groove-grove' ? `${title} | ${getExperienceLevel(alt)} experience` : undefined}
                 />
               ),
-              a: ({ href, className, children }: { href?: string; className?: string; children?: React.ReactNode }) => {
+              a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => {
                 if (href?.startsWith('tel-obf:')) {
                   const realTel = `tel:${deobfuscateDigits(href.slice('tel-obf:'.length))}`;
                   return (
-                    <a href={realTel} className={className} onClick={() => window.open(realTel, '_blank')}>
+                    <a href={realTel} className={className} style={style} onClick={() => window.open(realTel, '_blank')}>
                       {deobfuscateDigits(String(children))}
                     </a>
                   );
                 }
                 return (
-                  <a href={href} className={className} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                  <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}
                   </a>
                 );
@@ -407,8 +424,8 @@ function LandscapeContainer() {
             <ReactMarkdown
               components={{
                 p: renderParagraph,
-                a: ({ href, className, children }: { href?: string; className?: string; children?: React.ReactNode }) => (
-                  <a href={href} className={className} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
+                  <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}
                   </a>
                 )

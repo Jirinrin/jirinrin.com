@@ -5,9 +5,7 @@ import artGallery from '../assets/art-gallery';
 import type { ArtGalleryItem } from '../assets/art-gallery';
 import {
   allPlaqueVariants,
-  frameCandidates,
   variantsForRatio,
-  type FrameCandidate,
   type FrameSpec,
   type FrameVariant,
   type PlaqueVariant,
@@ -47,13 +45,13 @@ const rand01 = (seed: string): number => (hashString(seed) % 10007) / 10007;
 
 // A quarter-turn count (0-3, i.e. 0/90/180/270deg) plus independent
 // horizontal/vertical mirroring - the full set of ways a frame painting can
-// be reoriented without distorting it. `swapBox` is only true for a portrait
-// frame deliberately turned landscape (candidate.rotated) - it's what tells
-// FrameOverlay to pre-size the frame's box as though width/height were
-// swapped before the turn. A merely decorative turn of the square frame
-// (whose window aspect never changes) must NOT set this, or a tile whose own
-// aspect isn't *exactly* 1 gets asymmetrically stretched by the box-swap math
-// for no reason.
+// be reoriented without distorting it. `swapBox` is only true when a 90/270
+// turn actually changes the window's effective orientation (a non-square
+// frame turned sideways to read as landscape) - it's what tells FrameOverlay
+// to pre-size the frame's box as though width/height were swapped before the
+// turn. A same-shaped turn (square frame, or a plain 180) must NOT set this,
+// or a tile whose own aspect isn't *exactly* square gets asymmetrically
+// stretched by the box-swap math for no reason.
 interface FrameOrientation {
   rotateQuarter: 0 | 1 | 2 | 3;
   mirrorX: boolean;
@@ -72,65 +70,72 @@ interface FrameChoice {
   blendExclude: boolean;
 }
 
-// Picks a frame ratio for a piece: rather than always taking the single
-// closest-matching registered ratio (which, given the actual spread of piece
-// aspects in the gallery, meant the 4:5 frame - and every landscape-shaped
-// piece using a sideways portrait frame - never got picked at all), this
-// ranks every candidate (each registered ratio painted normally, plus a
-// quarter-turned "landscape" reading of every non-square one) by closeness
-// and then randomly picks among the top few, weighted toward the closer
-// ones. A worse-fitting frame just gets stretched a little more (the frame
-// art is already non-uniformly stretched to fit its box regardless), which
-// reads as more varied mounting rather than a mistake.
-function pickFrameCandidate(item: ArtGalleryItem): FrameCandidate {
-  const ranked = frameCandidates()
-    .map(c => ({ c, dist: Math.abs(Math.log(c.effectiveAspect) - Math.log(item.aspect)) }))
-    .sort((a, b) => a.dist - b.dist);
-  const top = ranked.slice(0, Math.min(3, ranked.length));
-  const weights = [3, 2, 1].slice(0, top.length);
-  const total = weights.reduce((a, b) => a + b, 0);
-  let r = rand01(`${item.id}:frame-ratio`) * total;
-  for (let i = 0; i < top.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return top[i].c;
-  }
-  return top[top.length - 1].c;
+// Which registered frame ratio each piece is mounted in, and whether it
+// needs turning to read as landscape - a manual, hand-curated table rather
+// than picking automatically from the piece's raw aspect, so the frame can
+// be matched to the *vibe* of each painting rather than just its geometry
+// (and so the 4:5 frame actually gets used sometimes, which an automatic
+// closest-match never picked). `rotate` is quarter-turns away from upright;
+// omit it (or 0) to mount the frame the normal way up.
+interface FrameAssignment {
+  ratioKey: '1-1' | '3-4' | '4-5';
+  rotate?: 1 | 2 | 3;
 }
 
-function pickOrientation(item: ArtGalleryItem, candidate: FrameCandidate): FrameOrientation {
-  const mirrorX = rand01(`${item.id}:mirror-x`) < 0.5;
-  const mirrorY = rand01(`${item.id}:mirror-y`) < 0.5;
-  let rotateQuarter: 0 | 1 | 2 | 3;
-  if (candidate.ratioKey === '1-1') {
-    // A square window looks equally at-home in any of the 4 orientations -
-    // purely decorative variety on top of the mirroring.
-    rotateQuarter = Math.floor(rand01(`${item.id}:rotate`) * 4) as 0 | 1 | 2 | 3;
-  } else if (candidate.rotated) {
-    // Needs an actual quarter turn to make this portrait frame's window
-    // read as landscape - 90 and 270 both work, so still pick between them.
-    rotateQuarter = rand01(`${item.id}:rotate`) < 0.5 ? 1 : 3;
-  } else {
-    rotateQuarter = 0;
-  }
-  return { rotateQuarter, mirrorX, mirrorY, swapBox: candidate.rotated };
-}
+const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
+  'trippy-landscape':              { ratioKey: '3-4' },
+  'torus':                         { ratioKey: '3-4' },
+  'mystical-hill':                 { ratioKey: '1-1' },
+  'crying':                        { ratioKey: '4-5' },
 
-// Deterministically assigns each piece a frame ratio/orientation and a
-// random variant/plaque among the ones that fit, plus a per-piece flavor of
-// filter tweaks - so pieces sharing the same frame or plaque painting still
-// read as individually mounted rather than stamped copies.
+  'torenrave':                     { ratioKey: '3-4' },
+  'halloween-toren-van-terreur':   { ratioKey: '3-4' },
+  'beautiful-corner':              { ratioKey: '3-4' },
+  'een-leukertje':                 { ratioKey: '3-4' },
+  'hanna-cover':                   { ratioKey: '4-5' },
+  'kitchen-doodle':                { ratioKey: '3-4', rotate: 1 },
+  'yuurisaibou-doodle':            { ratioKey: '3-4' },
+  'mosaic':                        { ratioKey: '3-4' },
+  'umu-worldview':                 { ratioKey: '4-5', rotate: 1 },
+
+  'gefelicitno':                   { ratioKey: '3-4', rotate: 1 },
+  'hanna-cover-purple':            { ratioKey: '1-1' },
+  'golf':                          { ratioKey: '4-5' },
+  'placemat':                      { ratioKey: '3-4', rotate: 1 },
+  'onderwater-cafe':               { ratioKey: '3-4' },
+  'cool':                          { ratioKey: '1-1' },
+  'teeming':                       { ratioKey: '3-4', rotate: 1 },
+
+  'halloween-boom':                { ratioKey: '4-5' },
+  'halloween-hattori-a':           { ratioKey: '3-4' },
+  'halloween-monster':             { ratioKey: '1-1' },
+  'halloween-yukiman':             { ratioKey: '3-4' },
+  'sfeer-foundry':                 { ratioKey: '3-4', rotate: 1 },
+};
+
+// Deterministically assigns each piece its manually-picked frame ratio (see
+// FRAME_ASSIGNMENTS) a random variant/plaque among the ones that fit, and a
+// per-piece flavor of filter/mirror tweaks - so pieces sharing the same frame
+// or plaque painting still read as individually mounted rather than stamped
+// copies.
 function chooseFrame(item: ArtGalleryItem): FrameChoice {
-  const candidate = pickFrameCandidate(item);
-  const variants = variantsForRatio(candidate.ratioKey);
+  const assignment = FRAME_ASSIGNMENTS[item.id];
+  if (!assignment) throw new Error(`ArtGallery: no FRAME_ASSIGNMENTS entry for "${item.id}"`);
+  const variants = variantsForRatio(assignment.ratioKey);
   const frame = variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
-  const orientation = pickOrientation(item, candidate);
+  const rotateQuarter = assignment.rotate ?? 0;
   const plaques = allPlaqueVariants();
   const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
   const invert = rand01(`${item.id}:frame-invert`) < 0.18;
   const blendExclude = !invert && rand01(`${item.id}:frame-blend`) < 0.15;
   return {
     frame,
-    orientation,
+    orientation: {
+      rotateQuarter,
+      mirrorX: rand01(`${item.id}:mirror-x`) < 0.5,
+      mirrorY: rand01(`${item.id}:mirror-y`) < 0.5,
+      swapBox: rotateQuarter % 2 === 1 && assignment.ratioKey !== '1-1',
+    },
     plaque,
     plaqueDark: !!plaque.dark && rand01(`${item.id}:plaque-dark`) < 0.5,
     brightness: 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
@@ -303,35 +308,42 @@ function FrameOverlay({ choice, itemAspect }: FrameOverlayProps) {
   const overhang = frameOverhangFraction(choice.frame.spec);
   const { rotateQuarter, mirrorX, mirrorY, swapBox } = choice.orientation;
 
-  const transformParts: string[] = [];
-  if (rotateQuarter) transformParts.push(`rotate(${rotateQuarter * 90}deg)`);
-  if (mirrorX) transformParts.push('scaleX(-1)');
-  if (mirrorY) transformParts.push('scaleY(-1)');
-  const transform = transformParts.length ? transformParts.join(' ') : undefined;
-
   const shared = {
     backgroundImage: `url(${choice.frame.url})`,
-    transform,
     filter: frameFilter(choice),
     mixBlendMode: choice.blendExclude ? 'exclude' : undefined,
   } as React.CSSProperties;
+
+  const orientTransform: string[] = [];
+  if (rotateQuarter) orientTransform.push(`rotate(${rotateQuarter * 90}deg)`);
+  if (mirrorX) orientTransform.push('scaleX(-1)');
+  if (mirrorY) orientTransform.push('scaleY(-1)');
 
   if (swapBox) {
     // A quarter-turned frame needs its own box pre-sized as though the box
     // itself were rotated (width/height swapped) *before* the turn is
     // applied - otherwise the turn just squashes the frame art into the
-    // box's real (un-rotated) proportions instead of filling it. Centering
-    // via inset:0 + margin:auto (rather than the inset-shorthand trick used
-    // below) keeps it centered regardless of the explicit size.
+    // box's real (un-rotated) proportions instead of filling it.
+    //
+    // Centering that oversized box can't use the `inset:0 + margin:auto`
+    // trick (used below for the unturned case): with top/right/bottom/left
+    // *all* pinned to 0 and an explicit width/height layered on top, the box
+    // is over-constrained, and browsers resolve that by flushing it into a
+    // corner rather than splitting the overflow evenly - exactly the
+    // "sticking out on one side" glitch this fixes. Anchoring only
+    // top/left to the center and pulling the box back by exactly half its
+    // own (pre-turn) size via `translate(-50%, -50%)` has no such conflict,
+    // so it stays centered at any size, before or after the turn.
     return (
       <div
         className="art-gallery-frame"
         style={{
           ...shared,
-          inset: 0,
-          margin: 'auto',
+          top: '50%',
+          left: '50%',
           width: `${(1 / itemAspect) * (1 + 2 * overhang.x) * 100}%`,
           height: `${itemAspect * (1 + 2 * overhang.y) * 100}%`,
+          transform: ['translate(-50%, -50%)', ...orientTransform].join(' '),
         }}
       />
     );
@@ -343,6 +355,7 @@ function FrameOverlay({ choice, itemAspect }: FrameOverlayProps) {
       style={{
         ...shared,
         inset: `${-overhang.y * 100}% ${-overhang.x * 100}%`,
+        transform: orientTransform.length ? orientTransform.join(' ') : undefined,
       }}
     />
   );

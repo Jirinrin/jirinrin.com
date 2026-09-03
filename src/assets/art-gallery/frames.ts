@@ -49,50 +49,8 @@ const FRAME_VARIANTS: FrameVariant[] = Object.entries(frameImages).flatMap(([pat
   return [{ spec: { ratioKey, aspect: geometry.windowW / geometry.windowH, ...geometry }, variant, url }];
 });
 
-const RATIO_KEYS = Array.from(new Set(FRAME_VARIANTS.map(v => v.spec.ratioKey)));
-
 export function variantsForRatio(ratioKey: string): FrameVariant[] {
   return FRAME_VARIANTS.filter(v => v.spec.ratioKey === ratioKey);
-}
-
-// Picks whichever registered frame aspect ratio is closest to a given artwork's
-// aspect (compared on a log scale so e.g. 4:5 and 5:4 are equally "close" to
-// their reciprocal rather than the comparison being skewed toward wide ratios).
-export function closestFrameRatioKey(aspect: number): string {
-  let best = RATIO_KEYS[0];
-  let bestDiff = Infinity;
-  for (const key of RATIO_KEYS) {
-    const geometry = FRAME_GEOMETRY[key];
-    const diff = Math.abs(Math.log(geometry.windowW / geometry.windowH) - Math.log(aspect));
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      best = key;
-    }
-  }
-  return best;
-}
-
-// A pickable frame option: either a registered ratio used as painted (portrait
-// or square), or - for the non-square ones - the same frame turned 90deg so
-// its window reads as landscape instead. `effectiveAspect` is what should
-// actually be compared against an artwork's own aspect when picking a frame,
-// since a `rotated` candidate's window is the reciprocal of its painted ratio.
-export interface FrameCandidate {
-  ratioKey: string;
-  rotated: boolean;
-  effectiveAspect: number;
-}
-
-const FRAME_CANDIDATES: FrameCandidate[] = RATIO_KEYS.flatMap(ratioKey => {
-  const geometry = FRAME_GEOMETRY[ratioKey];
-  const aspect = geometry.windowW / geometry.windowH;
-  const candidates: FrameCandidate[] = [{ ratioKey, rotated: false, effectiveAspect: aspect }];
-  if (Math.abs(aspect - 1) > 1e-6) candidates.push({ ratioKey, rotated: true, effectiveAspect: 1 / aspect });
-  return candidates;
-});
-
-export function frameCandidates(): FrameCandidate[] {
-  return FRAME_CANDIDATES;
 }
 
 export interface PlaqueVariant {

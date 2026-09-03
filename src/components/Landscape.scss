@@ -392,11 +392,13 @@ div.landscape--2-enter.landscape--2-enter-active {
     margin: 1.5rem 0;
   }
 
-  // The gray-cloudy texture is stretched across the button as a ::before
-  // (rather than a plain background-image on the link itself) so it can be
-  // scaled/brightened independently on hover/active without touching the
-  // text - lighting up like the back-arrow does, without dragging the
-  // button's own text color into that same filter.
+  // One of the gallery's own light plaque paintings (picked deterministically
+  // per-link in LandscapeContainer.tsx, passed down as --button-plaque-bg) is
+  // stretched across the button as a ::before - rather than a plain
+  // background-image on the link itself - so it can be scaled/brightened
+  // independently on hover/active without touching the text, and so the
+  // plaque's own torn/irregular alpha edges show through instead of being
+  // hard-clipped into a plain rectangle.
   a.popup-window-button {
     position: relative;
     // Without this, the ::before's negative z-index escapes this element
@@ -420,7 +422,7 @@ div.landscape--2-enter.landscape--2-enter-active {
       position: absolute;
       inset: 0;
       z-index: -1;
-      background-image: url("../assets/button-bg.png");
+      background-image: var(--button-plaque-bg);
       background-size: 100% 100%;
       filter: brightness(0.82) saturate(0.9);
       transition: filter 0.25s ease, transform 0.4s ease;
