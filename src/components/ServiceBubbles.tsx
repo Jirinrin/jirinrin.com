@@ -90,56 +90,62 @@ function ServiceBubbles() {
   };
 
   return (
-    <div className="ServiceBubbles color-grade" style={{ opacity: sectionOpacity }}>
+    <div className="ServiceBubbles color-grade">
+      {/* Deliberately outside the fade-out wrapper below: the clouds should
+          keep drifting all the way down through the landscape transition,
+          not dissolve early just because the name/bubbles duck under the
+          navbar. */}
       <OpeningClouds />
-      {AMBIENT_BUBBLES.map((b, i) => (
-        <span
-          key={i}
-          className="ambient-bubble"
+      <div className="service-bubbles-fade" style={{ opacity: sectionOpacity }}>
+        {AMBIENT_BUBBLES.map((b, i) => (
+          <span
+            key={i}
+            className="ambient-bubble"
+            style={{
+              '--bubble-size': `${b.size}px`,
+              top: b.top,
+              left: b.left,
+              animationDuration: `${b.duration}s`,
+              animationDelay: `${b.delay}s`,
+            } as React.CSSProperties}
+          />
+        ))}
+        <div
+          className="service-bubbles"
+          ref={bubblesWrapperRef}
           style={{
-            '--bubble-size': `${b.size}px`,
-            top: b.top,
-            left: b.left,
-            animationDuration: `${b.duration}s`,
-            animationDelay: `${b.delay}s`,
-          } as React.CSSProperties}
-        />
-      ))}
-      <div
-        className="service-bubbles"
-        ref={bubblesWrapperRef}
-        style={{
-          opacity,
-          transform: `translateY(${(1 - opacity) * 24}px) scale(${0.9 + opacity * 0.1})`,
-          filter: `blur(${(1 - opacity) * 6}px)`,
-        }}
-      >
-        <a
-          className="service-bubble float-a"
-          href="https://kinoko.nosk.be"
-          target="_blank"
-          rel="noopener noreferrer"
-          onMouseMove={handleTilt}
-          onMouseLeave={resetTilt}
+            opacity,
+            transform: `translateY(${(1 - opacity) * 24}px) scale(${0.9 + opacity * 0.1})`,
+            filter: `blur(${(1 - opacity) * 6}px)`,
+          }}
         >
-          <span className="bubble-title">LOOK WITHIN</span>
-          <span className="bubble-sub">Sacred Mushroom Journeys, guided by a soul who cares</span>
-        </a>
-        <a
-          className="service-bubble float-b"
-          href="https://kodamap.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          onMouseMove={handleTilt}
-          onMouseLeave={resetTilt}
-        >
-          <span className="bubble-title">KODAMAP</span>
-          <span className="bubble-sub">Find a tree that wants to be climbed ♡</span>
-        </a>
-        {/* <a className="service-bubble float-b" href="#" target="_blank" rel="noopener noreferrer">
-          <span className="bubble-title">Sample Service</span>
-          <span className="bubble-sub">sample description</span>
-        </a> */}
+          <a
+            className="service-bubble float-a"
+            href="https://kinoko.nosk.be"
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseMove={handleTilt}
+            onMouseLeave={resetTilt}
+          >
+            <span className="bubble-title">LOOK WITHIN</span>
+            <span className="bubble-sub">Sacred Mushroom Journeys, guided by a soul who cares</span>
+          </a>
+          <a
+            className="service-bubble float-b"
+            href="https://kodamap.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseMove={handleTilt}
+            onMouseLeave={resetTilt}
+          >
+            <span className="bubble-title">KODAMAP</span>
+            <span className="bubble-sub">Find a tree that wants to be climbed ♡</span>
+          </a>
+          {/* <a className="service-bubble float-b" href="#" target="_blank" rel="noopener noreferrer">
+            <span className="bubble-title">Sample Service</span>
+            <span className="bubble-sub">sample description</span>
+          </a> */}
+        </div>
       </div>
     </div>
   );

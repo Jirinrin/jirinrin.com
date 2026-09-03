@@ -173,6 +173,15 @@
   }
 }
 
+// The lightbox frame-unit is a much larger container than a grid tile, so
+// the plaque title's cqw-based size (tuned to stay legible at tile scale)
+// reads as small relative to everything else once "inspected up close" -
+// bump both the clamp's floor and ceiling here rather than just the cqw
+// factor, since a big chunk of the range is spent below the ceiling anyway.
+.art-gallery-detail__frame-unit .art-gallery-plaque__title {
+  font-size: clamp(0.85rem, 2.4cqw, 1.6rem);
+}
+
 @keyframes tile-drift {
   0%   { translate: 0 0; rotate: var(--base-rotate, 0deg); }
   22%  { translate: calc(var(--drift-x, 12px) * -0.6) calc(var(--drift-y, 12px) * 0.55);

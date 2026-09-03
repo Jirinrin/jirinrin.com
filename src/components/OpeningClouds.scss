@@ -14,18 +14,37 @@
   will-change: transform;
 }
 
+// Two independent animations - drifting position/rotation on one period,
+// opacity on a deliberately unrelated one - rather than a single symmetric
+// back-and-forth. A lone animation always looks like it's on rails; two
+// overlapping cycles that never realign (their periods share no common
+// multiple in the authored data) reads as actual wind: the combined motion
+// keeps drifting into new-looking combinations for a very long time before
+// it ever comes close to repeating.
 .opening-clouds__cloud {
   display: block;
   width: 100%;
   opacity: var(--peak-opacity, 0.3);
-  animation: opening-cloud-sway var(--drift-duration, 35s) ease-in-out infinite;
-  animation-delay: var(--drift-delay, 0s);
+  animation:
+    opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite,
+    opening-cloud-breathe var(--breathe-duration, 55s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s), var(--breathe-delay, 0s);
 }
 
-@keyframes opening-cloud-sway {
-  0%   { transform: translateX(calc(var(--drift-direction, 1) * -3%)); opacity: calc(var(--peak-opacity, 0.3) * 0.7); }
-  50%  { transform: translateX(calc(var(--drift-direction, 1) * 3%));  opacity: var(--peak-opacity, 0.3); }
-  100% { transform: translateX(calc(var(--drift-direction, 1) * -3%)); opacity: calc(var(--peak-opacity, 0.3) * 0.7); }
+@keyframes opening-cloud-drift {
+  0%   { transform: translate(0%, 0%) rotate(0deg); }
+  20%  { transform: translate(calc(var(--drift-direction, 1) * -2.2%), 1.6%) rotate(-0.6deg); }
+  45%  { transform: translate(calc(var(--drift-direction, 1) * 1.4%), -1.2%) rotate(0.5deg); }
+  70%  { transform: translate(calc(var(--drift-direction, 1) * 3%), 0.9%) rotate(0.9deg); }
+  88%  { transform: translate(calc(var(--drift-direction, 1) * -1%), -0.7%) rotate(-0.3deg); }
+  100% { transform: translate(0%, 0%) rotate(0deg); }
+}
+
+@keyframes opening-cloud-breathe {
+  0%, 100% { opacity: calc(var(--peak-opacity, 0.3) * 0.5); }
+  30%      { opacity: var(--peak-opacity, 0.3); }
+  55%      { opacity: calc(var(--peak-opacity, 0.3) * 0.65); }
+  80%      { opacity: calc(var(--peak-opacity, 0.3) * 0.92); }
 }
 
 @media (prefers-reduced-motion: reduce) {

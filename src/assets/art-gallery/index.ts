@@ -15,10 +15,10 @@ export interface ArtGalleryItem {
 // Ranks are used to sort pieces, with rank 1 shown first ("front section" of the gallery)
 // and rank 4 shown last. Order within a rank is preserved from this list.
 const artGallery: ArtGalleryItem[] = [
-  { id: 'trippy-landscape', title: 'Waiting for a Friend from Another World', rank: 1, image: 'trippy-landscape', aspect: 0.7494 },
+  { id: 'trippy-landscape', title: 'Waiting for you in Another World', rank: 1, image: 'trippy-landscape', aspect: 0.7494 },
   { id: 'torus', title: 'THE TORUS', rank: 1, image: 'torus-poster', aspect: 0.7069, video: 'torus' },
   { id: 'mystical-hill', title: 'My Third Place', rank: 1, image: 'mystical-hill', aspect: 1 },
-  { id: 'crying', title: 'Crying', rank: 1, image: 'crying', aspect: 0.9237 },
+  { id: 'crying', title: 'Overflow', rank: 1, image: 'crying', aspect: 0.9237 },
 
   { id: 'torenrave', title: 'Torenrave', rank: 2, image: 'torenrave-poster', aspect: 0.7069, video: 'torenrave' },
   { id: 'halloween-toren-van-terreur', title: 'Toren van Terreur', rank: 2, image: 'halloween-toren-van-terreur', aspect: 0.7069 },

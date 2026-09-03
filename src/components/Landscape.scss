@@ -396,9 +396,10 @@ div.landscape--2-enter.landscape--2-enter-active {
   // per-link in LandscapeContainer.tsx, passed down as --button-plaque-bg) is
   // stretched across the button as a ::before - rather than a plain
   // background-image on the link itself - so it can be scaled/brightened
-  // independently on hover/active without touching the text, and so the
-  // plaque's own torn/irregular alpha edges show through instead of being
-  // hard-clipped into a plain rectangle.
+  // independently on hover/active without touching the text. Deliberately no
+  // border and no overflow clipping: the plaque's own torn/irregular alpha
+  // silhouette *is* the button's shape, not a texture cropped into a clean
+  // rounded rectangle.
   a.popup-window-button {
     position: relative;
     // Without this, the ::before's negative z-index escapes this element
@@ -407,15 +408,12 @@ div.landscape--2-enter.landscape--2-enter-active {
     // .popup-window-content entirely and making the texture invisible.
     isolation: isolate;
     display: inline-block;
-    overflow: hidden;
     padding: 0.6rem 1.8rem;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 2rem;
     color: rgba(255, 250, 240, 0.95);
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
     text-align: center;
     text-decoration: none;
-    transition: border-color 0.25s ease, transform 0.15s ease;
+    transition: transform 0.15s ease;
 
     &::before {
       content: '';
@@ -428,13 +426,9 @@ div.landscape--2-enter.landscape--2-enter-active {
       transition: filter 0.25s ease, transform 0.4s ease;
     }
 
-    &:hover {
-      border-color: rgba(255, 255, 255, 0.75);
-
-      &::before {
-        filter: brightness(1.25) saturate(1.15);
-        transform: scale(1.08);
-      }
+    &:hover::before {
+      filter: brightness(1.25) saturate(1.15);
+      transform: scale(1.08);
     }
 
     &:active {

@@ -1,4 +1,20 @@
 .ServiceBubbles {
+  // No explicit height of its own - it just auto-sizes to contain
+  // .service-bubbles-fade below (its only normal-flow child), which is where
+  // the real height lives. Needs to stay `position: relative` regardless,
+  // since OpeningClouds sizes itself against this box via `inset: 0`, and
+  // that has to keep working whether or not the fade wrapper is present.
+  width: 100vw;
+  position: relative;
+  z-index: 100;
+  pointer-events: none;
+}
+
+// Everything that should dissolve away as this section scrolls up under the
+// navbar (the ambient bubbles + the service-bubble cards) - deliberately
+// NOT wrapping OpeningClouds, which should keep drifting all the way down
+// through the landscape transition instead of fading out early.
+.service-bubbles-fade {
   // Total rendered height is this plus padding-top below (content-box
   // sizing), so the section's real height is height + padding-top. This
   // also drives the height of #main (and therefore the whole landscape
@@ -7,18 +23,16 @@
   // title comes into range, and more scroll distance before the section
   // needs to dissolve away under the navbar.
   height: 210vh;
-  width: 100vw;
+  width: 100%;
   position: relative;
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: start;
   padding-top: 80vh;
-  z-index: 100;
-  pointer-events: none;
   perspective: 1000px;
-  // Smooths the scroll-driven fade-out that dissolves the whole section
-  // before it would otherwise scroll up underneath the fixed navbar.
+  // Smooths the scroll-driven fade-out that dissolves this wrapper before it
+  // would otherwise scroll up underneath the fixed navbar.
   transition: opacity 0.6s ease;
 
   // Wider viewports lay the bubbles out in a single row (shorter cluster)

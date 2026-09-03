@@ -68,6 +68,7 @@ interface FrameChoice {
   saturateExtra: number;
   invert: boolean;
   blendExclude: boolean;
+  extraFilter?: string;
 }
 
 // Which registered frame ratio each piece is mounted in, and whether it
@@ -77,16 +78,29 @@ interface FrameChoice {
 // (and so the 4:5 frame actually gets used sometimes, which an automatic
 // closest-match never picked). `rotate` is quarter-turns away from upright;
 // omit it (or 0) to mount the frame the normal way up.
+//
+// `variant`, `saturation`, and `filter` are all optional per-piece overrides
+// of what chooseFrame would otherwise pick/compute at random - leave them
+// out to keep the automatic (but still deterministic-per-piece) behavior:
+// - `variant`: which painted frame ('a', 'b', ...) among the ones registered
+//   for `ratioKey`, instead of a random one.
+// - `saturation`: replaces the random extra-saturation boost applied on top
+//   of the frame's base color-grade filter.
+// - `filter`: extra CSS filter function(s) appended after the frame's own
+//   color-grade filter, e.g. 'brightness(.5)'.
 interface FrameAssignment {
   ratioKey: '1-1' | '3-4' | '4-5';
   rotate?: 1 | 2 | 3;
+  variant?: string;
+  saturation?: number;
+  filter?: string;
 }
 
 const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
-  'trippy-landscape':              { ratioKey: '3-4' },
-  'torus':                         { ratioKey: '3-4' },
-  'mystical-hill':                 { ratioKey: '1-1' },
-  'crying':                        { ratioKey: '4-5' },
+  'trippy-landscape':              { ratioKey: '3-4', variant: 'a', saturation: .5 },
+  'torus':                         { ratioKey: '4-5', variant: 'b', saturation: .5 },
+  'mystical-hill':                 { ratioKey: '1-1', variant: 'b', saturation: .9 },
+  'crying':                        { ratioKey: '3-4' },
 
   'torenrave':                     { ratioKey: '3-4' },
   'halloween-toren-van-terreur':   { ratioKey: '3-4' },
@@ -122,7 +136,11 @@ function chooseFrame(item: ArtGalleryItem): FrameChoice {
   const assignment = FRAME_ASSIGNMENTS[item.id];
   if (!assignment) throw new Error(`ArtGallery: no FRAME_ASSIGNMENTS entry for "${item.id}"`);
   const variants = variantsForRatio(assignment.ratioKey);
-  const frame = variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
+  const frame = assignment.variant
+    ? variants.find(v => v.variant === assignment.variant) ?? (() => {
+        throw new Error(`ArtGallery: no "${assignment.variant}" frame variant registered for ratio "${assignment.ratioKey}" (item "${item.id}")`);
+      })()
+    : variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
   const rotateQuarter = assignment.rotate ?? 0;
   const plaques = allPlaqueVariants();
   const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
@@ -139,9 +157,10 @@ function chooseFrame(item: ArtGalleryItem): FrameChoice {
     plaque,
     plaqueDark: !!plaque.dark && rand01(`${item.id}:plaque-dark`) < 0.5,
     brightness: 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
-    saturateExtra: 0.28 + rand01(`${item.id}:frame-sat`) * 0.2,
+    saturateExtra: assignment.saturation ?? (0.28 + rand01(`${item.id}:frame-sat`) * 0.2),
     invert,
     blendExclude,
+    extraFilter: assignment.filter,
   };
 }
 
@@ -171,7 +190,7 @@ function effectiveOverhangFraction(choice: FrameChoice): { x: number; y: number 
 }
 
 function frameFilter(choice: FrameChoice): string {
-  return `url(#${COLOR_GRADE_FILTER_ID}) ${choice.invert ? 'invert(1) ' : ''}saturate(${choice.saturateExtra}) brightness(${choice.brightness})`;
+  return `url(#${COLOR_GRADE_FILTER_ID}) ${choice.invert ? 'invert(1) ' : ''}saturate(${choice.saturateExtra}) brightness(${choice.brightness})${choice.extraFilter ? ` ${choice.extraFilter}` : ''}`;
 }
 
 // Target box width in px per rank, before real-aspect height and responsive
