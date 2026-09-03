@@ -2,6 +2,7 @@
 
 - [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing. I can draw some clouds for this. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
 - [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken? wellicht in Soul.
+- [ ] in the gallery, for some reason the 4:5 frame is never used. why not? it's such a waste haha, worst case just むりやりに use it for some of the cose-to-1:1 and some of the close-to-3:4 frames, it will still look good stretched a lil bit. ah and for a landscapey frame, you can use a more portrait-oriented frame and rotate it <3
 - [ ] standalone link on a separate line in a project popup (or any popup for that matter): cute styling with custom gray-cloudy texture that's stretched across the button as a :before or whatever, this will become the button texture. button is rounded and lights up when you hover/click similar to the back button.
 - [ ] links are basically unreadable, because they're made like yellow-ish which is practically unreadable on a grayish background. no filter sepia anymore
 
