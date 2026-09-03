@@ -1,0 +1,24 @@
+.opening-clouds {
+  position: absolute;
+  inset: 0;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.opening-clouds__cloud {
+  position: absolute;
+  left: -20%;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: opening-cloud-drift var(--drift-duration, 60s) linear infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+@keyframes opening-cloud-drift {
+  0%   { transform: translateX(calc(var(--drift-direction, 1) * -30vw)); opacity: 0; }
+  12%  { opacity: var(--peak-opacity, 0.4); }
+  50%  { opacity: var(--peak-opacity, 0.4); }
+  88%  { opacity: 0; }
+  100% { transform: translateX(calc(var(--drift-direction, 1) * 130vw)); opacity: 0; }
+}

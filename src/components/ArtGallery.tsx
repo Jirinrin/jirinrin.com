@@ -5,8 +5,9 @@ import artGallery from '../assets/art-gallery';
 import type { ArtGalleryItem } from '../assets/art-gallery';
 import {
   allPlaqueVariants,
-  closestFrameRatioKey,
+  frameCandidates,
   variantsForRatio,
+  type FrameCandidate,
   type FrameSpec,
   type FrameVariant,
   type PlaqueVariant,
@@ -44,37 +45,94 @@ const hashString = (s: string): number => {
 // A distinct pseudo-random stream per (id, salt) pair, in [0, 1).
 const rand01 = (seed: string): number => (hashString(seed) % 10007) / 10007;
 
+// A quarter-turn count (0-3, i.e. 0/90/180/270deg) plus independent
+// horizontal/vertical mirroring - the full set of ways a frame painting can
+// be reoriented without distorting it. `swapBox` is only true for a portrait
+// frame deliberately turned landscape (candidate.rotated) - it's what tells
+// FrameOverlay to pre-size the frame's box as though width/height were
+// swapped before the turn. A merely decorative turn of the square frame
+// (whose window aspect never changes) must NOT set this, or a tile whose own
+// aspect isn't *exactly* 1 gets asymmetrically stretched by the box-swap math
+// for no reason.
+interface FrameOrientation {
+  rotateQuarter: 0 | 1 | 2 | 3;
+  mirrorX: boolean;
+  mirrorY: boolean;
+  swapBox: boolean;
+}
+
 interface FrameChoice {
   frame: FrameVariant;
+  orientation: FrameOrientation;
   plaque: PlaqueVariant;
   plaqueDark: boolean;
-  flip: boolean;
   brightness: number;
   saturateExtra: number;
   invert: boolean;
   blendExclude: boolean;
 }
 
-// Deterministically assigns each piece the frame whose window aspect ratio is
-// closest to its own, a random variant/plaque among the ones that fit, and a
-// per-piece flavor of filter/orientation tweaks - so pieces sharing the same
-// frame or plaque painting still read as individually mounted rather than
-// stamped copies. Deliberately doesn't vary rotation independently of the
-// artwork: the frame and the piece it holds always rotate together as one
-// rigid unit (via the tile's own --base-rotate), otherwise the frame's window
-// swings out of alignment with the artwork underneath it.
+// Picks a frame ratio for a piece: rather than always taking the single
+// closest-matching registered ratio (which, given the actual spread of piece
+// aspects in the gallery, meant the 4:5 frame - and every landscape-shaped
+// piece using a sideways portrait frame - never got picked at all), this
+// ranks every candidate (each registered ratio painted normally, plus a
+// quarter-turned "landscape" reading of every non-square one) by closeness
+// and then randomly picks among the top few, weighted toward the closer
+// ones. A worse-fitting frame just gets stretched a little more (the frame
+// art is already non-uniformly stretched to fit its box regardless), which
+// reads as more varied mounting rather than a mistake.
+function pickFrameCandidate(item: ArtGalleryItem): FrameCandidate {
+  const ranked = frameCandidates()
+    .map(c => ({ c, dist: Math.abs(Math.log(c.effectiveAspect) - Math.log(item.aspect)) }))
+    .sort((a, b) => a.dist - b.dist);
+  const top = ranked.slice(0, Math.min(3, ranked.length));
+  const weights = [3, 2, 1].slice(0, top.length);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = rand01(`${item.id}:frame-ratio`) * total;
+  for (let i = 0; i < top.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return top[i].c;
+  }
+  return top[top.length - 1].c;
+}
+
+function pickOrientation(item: ArtGalleryItem, candidate: FrameCandidate): FrameOrientation {
+  const mirrorX = rand01(`${item.id}:mirror-x`) < 0.5;
+  const mirrorY = rand01(`${item.id}:mirror-y`) < 0.5;
+  let rotateQuarter: 0 | 1 | 2 | 3;
+  if (candidate.ratioKey === '1-1') {
+    // A square window looks equally at-home in any of the 4 orientations -
+    // purely decorative variety on top of the mirroring.
+    rotateQuarter = Math.floor(rand01(`${item.id}:rotate`) * 4) as 0 | 1 | 2 | 3;
+  } else if (candidate.rotated) {
+    // Needs an actual quarter turn to make this portrait frame's window
+    // read as landscape - 90 and 270 both work, so still pick between them.
+    rotateQuarter = rand01(`${item.id}:rotate`) < 0.5 ? 1 : 3;
+  } else {
+    rotateQuarter = 0;
+  }
+  return { rotateQuarter, mirrorX, mirrorY, swapBox: candidate.rotated };
+}
+
+// Deterministically assigns each piece a frame ratio/orientation and a
+// random variant/plaque among the ones that fit, plus a per-piece flavor of
+// filter tweaks - so pieces sharing the same frame or plaque painting still
+// read as individually mounted rather than stamped copies.
 function chooseFrame(item: ArtGalleryItem): FrameChoice {
-  const variants = variantsForRatio(closestFrameRatioKey(item.aspect));
+  const candidate = pickFrameCandidate(item);
+  const variants = variantsForRatio(candidate.ratioKey);
   const frame = variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
+  const orientation = pickOrientation(item, candidate);
   const plaques = allPlaqueVariants();
   const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
   const invert = rand01(`${item.id}:frame-invert`) < 0.18;
   const blendExclude = !invert && rand01(`${item.id}:frame-blend`) < 0.15;
   return {
     frame,
+    orientation,
     plaque,
     plaqueDark: !!plaque.dark && rand01(`${item.id}:plaque-dark`) < 0.5,
-    flip: rand01(`${item.id}:frame-flip`) < 0.5,
     brightness: 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
     saturateExtra: 0.28 + rand01(`${item.id}:frame-sat`) * 0.2,
     invert,
@@ -95,6 +153,16 @@ function frameOverhangFraction(spec: FrameSpec): { x: number; y: number } {
     x: (spec.frameW - spec.windowW) / (2 * spec.windowW),
     y: (spec.frameH - spec.windowH) / (2 * spec.windowH),
   };
+}
+
+// Same as above, but with x/y swapped for a quarter-turned frame - after a
+// 90/270 turn, what was the frame's horizontal overhang reads as vertical on
+// screen (and vice versa), so anything laying out around the frame's visible
+// footprint (rather than the frame image's own local coordinates) needs this
+// version instead.
+function effectiveOverhangFraction(choice: FrameChoice): { x: number; y: number } {
+  const overhang = frameOverhangFraction(choice.frame.spec);
+  return choice.orientation.swapBox ? { x: overhang.y, y: overhang.x } : overhang;
 }
 
 function frameFilter(choice: FrameChoice): string {
@@ -170,9 +238,8 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
     // via non-uniform (independent x/y) scaling in FrameOverlay, rather than
     // the artwork being letterboxed to match the frame.
     const height = width / item.aspect;
-    const spec = frameChoices[item.id].frame.spec;
     const pad = RANK_PAD[item.rank] * padScale;
-    const overhang = frameOverhangFraction(spec);
+    const overhang = effectiveOverhangFraction(frameChoices[item.id]);
     const padX = pad + overhang.x * width * 2;
     const padY = pad + overhang.y * height * 2;
     const boxW = width + padX;
@@ -220,6 +287,7 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
 
 interface FrameOverlayProps {
   choice: FrameChoice;
+  itemAspect: number;
 }
 
 // The frame PNG is grayscale watercolor art - run through the same color-grade
@@ -231,18 +299,51 @@ interface FrameOverlayProps {
 // its window lines up exactly with the box on all four sides, no gaps. This
 // works identically whether the box is a fixed px size (grid tile) or fluid
 // (lightbox), since percentages are always relative to the box itself.
-function FrameOverlay({ choice }: FrameOverlayProps) {
+function FrameOverlay({ choice, itemAspect }: FrameOverlayProps) {
   const overhang = frameOverhangFraction(choice.frame.spec);
+  const { rotateQuarter, mirrorX, mirrorY, swapBox } = choice.orientation;
+
+  const transformParts: string[] = [];
+  if (rotateQuarter) transformParts.push(`rotate(${rotateQuarter * 90}deg)`);
+  if (mirrorX) transformParts.push('scaleX(-1)');
+  if (mirrorY) transformParts.push('scaleY(-1)');
+  const transform = transformParts.length ? transformParts.join(' ') : undefined;
+
+  const shared = {
+    backgroundImage: `url(${choice.frame.url})`,
+    transform,
+    filter: frameFilter(choice),
+    mixBlendMode: choice.blendExclude ? 'exclude' : undefined,
+  } as React.CSSProperties;
+
+  if (swapBox) {
+    // A quarter-turned frame needs its own box pre-sized as though the box
+    // itself were rotated (width/height swapped) *before* the turn is
+    // applied - otherwise the turn just squashes the frame art into the
+    // box's real (un-rotated) proportions instead of filling it. Centering
+    // via inset:0 + margin:auto (rather than the inset-shorthand trick used
+    // below) keeps it centered regardless of the explicit size.
+    return (
+      <div
+        className="art-gallery-frame"
+        style={{
+          ...shared,
+          inset: 0,
+          margin: 'auto',
+          width: `${(1 / itemAspect) * (1 + 2 * overhang.x) * 100}%`,
+          height: `${itemAspect * (1 + 2 * overhang.y) * 100}%`,
+        }}
+      />
+    );
+  }
+
   return (
     <div
       className="art-gallery-frame"
       style={{
+        ...shared,
         inset: `${-overhang.y * 100}% ${-overhang.x * 100}%`,
-        backgroundImage: `url(${choice.frame.url})`,
-        transform: choice.flip ? 'scaleX(-1)' : undefined,
-        filter: frameFilter(choice),
-        mixBlendMode: choice.blendExclude ? 'exclude' : undefined,
-      } as React.CSSProperties}
+      }}
     />
   );
 }
@@ -258,7 +359,7 @@ interface PlaqueProps {
 // the same color-grade recipe as the frame so the two read as one mounted
 // piece; the title sits on an unfiltered layer on top so it stays legible.
 function Plaque({ choice, title }: PlaqueProps) {
-  const overhang = frameOverhangFraction(choice.frame.spec);
+  const overhang = effectiveOverhangFraction(choice);
   const dark = choice.plaqueDark && choice.plaque.dark;
   const src = dark ? choice.plaque.dark! : choice.plaque.light;
   return (
@@ -316,7 +417,7 @@ function GalleryTile({ placed, index, onOpen }: GalleryTileProps) {
           alt={item.title}
           className="art-gallery-tile__image"
         />
-        <FrameOverlay choice={choice} />
+        <FrameOverlay choice={choice} itemAspect={item.aspect} />
         <Plaque choice={choice} title={item.title} />
       </motion.div>
       {item.video && (
@@ -410,7 +511,7 @@ function GalleryDetail({ item, onClose }: GalleryDetailProps) {
             alt={item.title}
           />
         )}
-        <FrameOverlay choice={choice} />
+        <FrameOverlay choice={choice} itemAspect={item.aspect} />
         <Plaque choice={choice} title={item.title} />
       </motion.div>
       <button className="art-gallery-detail__close" onClick={onClose} aria-label="Close">×</button>

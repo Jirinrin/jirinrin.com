@@ -47,12 +47,15 @@ const deobfuscateDigits = (s: string, shift = 4): string =>
 
 // A markdown paragraph consisting of nothing but a single link (e.g. `[Go visit KODAMAP](https://...)`
 // on its own line) reads as a call-to-action, so render it as a button instead of a plain inline link.
-// react-markdown passes our own overridden `a` renderer's output through as this paragraph's child,
-// so we just check whether the single child is an <a> element and dress it up if so.
+// react-markdown renders a markdown link via *our own* overridden `a` component (see the `components`
+// prop below), so the paragraph's single child here is an element of that custom component, not a
+// literal `'a'` DOM element - checking `.type === 'a'` never matches, so this checks for an `href` prop
+// instead, which every one of our `a` overrides is passed regardless of which one rendered it.
 const renderParagraph = ({ children }: { children?: React.ReactNode }) => {
   const childArray = React.Children.toArray(children);
-  if (childArray.length === 1 && React.isValidElement(childArray[0]) && childArray[0].type === 'a') {
-    const anchor = childArray[0] as React.ReactElement<React.AnchorHTMLAttributes<HTMLAnchorElement>>;
+  const only = childArray[0];
+  if (childArray.length === 1 && React.isValidElement(only) && typeof (only.props as { href?: unknown }).href === 'string') {
+    const anchor = only as React.ReactElement<React.AnchorHTMLAttributes<HTMLAnchorElement>>;
     return (
       <p className="popup-window-button-line">
         {React.cloneElement(anchor, {
@@ -367,17 +370,17 @@ function LandscapeContainer() {
                   title={popup.id === 'groove-grove' ? `${title} | ${getExperienceLevel(alt)} experience` : undefined}
                 />
               ),
-              a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+              a: ({ href, className, children }: { href?: string; className?: string; children?: React.ReactNode }) => {
                 if (href?.startsWith('tel-obf:')) {
                   const realTel = `tel:${deobfuscateDigits(href.slice('tel-obf:'.length))}`;
                   return (
-                    <a href={realTel} onClick={() => window.open(realTel, '_blank')}>
+                    <a href={realTel} className={className} onClick={() => window.open(realTel, '_blank')}>
                       {deobfuscateDigits(String(children))}
                     </a>
                   );
                 }
                 return (
-                  <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                  <a href={href} className={className} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}
                   </a>
                 );
@@ -404,8 +407,8 @@ function LandscapeContainer() {
             <ReactMarkdown
               components={{
                 p: renderParagraph,
-                a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
-                  <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                a: ({ href, className, children }: { href?: string; className?: string; children?: React.ReactNode }) => (
+                  <a href={href} className={className} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}
                   </a>
                 )

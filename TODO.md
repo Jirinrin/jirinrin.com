@@ -1,10 +1,11 @@
 # TODO
 
-- [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing. I can draw some clouds for this. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
 - [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken? wellicht in Soul.
-- [ ] in the gallery, for some reason the 4:5 frame is never used. why not? it's such a waste haha, worst case just むりやりに use it for some of the cose-to-1:1 and some of the close-to-3:4 frames, it will still look good stretched a lil bit. ah and for a landscapey frame, you can use a more portrait-oriented frame and rotate it <3
-- [ ] standalone link on a separate line in a project popup (or any popup for that matter): cute styling with custom gray-cloudy texture that's stretched across the button as a :before or whatever, this will become the button texture. button is rounded and lights up when you hover/click similar to the back button.
-- [ ] links are basically unreadable, because they're made like yellow-ish which is practically unreadable on a grayish background. no filter sepia anymore
+
+- [x] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing and it feels more dynamic. I drew some clouds for this in /assets/clouds. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
+- [x] in the gallery, for some reason the 4:5 frame is never used. why not? it's such a waste haha, worst case just むりやりに use it for some of the cose-to-1:1 and some of the close-to-3:4 frames, it will still look good stretched a lil bit. ah and for a landscapey frame, you can use a more portrait-oriented frame and rotate it <3 general guideline is: i'd rather have more varied frames, than exactly fitting ones :) and also, for extra variation, the square one especially you can rotate/mirror in any of the possible 8 positions! and the portrait ones you can still mirror any way you want in addition to the variation stuff that's already there. btw also i added new 4-5 frames, have a look at it.
+- [x] a standalone link on a separate line in a project popup (or any popup for that matter): cute styling with custom gray-cloudy texture that's stretched across the button as a :before or whatever, this will become the button texture. button is rounded and lights up when you hover/click similar to the back button. i added a button texture: assets/button-bg.png.
+- [x] links in popups are basically unreadable, because they're made like yellow-ish which is practically unreadable on a grayish background. no filter sepia anymore
 
 - [ ] Copy objects
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
@@ -51,6 +52,9 @@
 ## TODO uiteindelijk maar niet voor livegang v2
 
 - nieuwe foto van Jiri op de achtergrond, in stijl van de vorige
+- voeg toe aan gallery:
+  - dat berg-regenboog-schilderij voor papa
+  - dat bob ross schilderij dat bij hedwig staat
 - voeg aan projecten nog toe:
   - delfschezwervers.nl / de dz app erbij
   - C:\Users\YUURICHAN\Pictures\art van jiri\_laatmaarzitten\dz-ontwikkelingsplan

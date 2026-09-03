@@ -392,21 +392,51 @@ div.landscape--2-enter.landscape--2-enter-active {
     margin: 1.5rem 0;
   }
 
+  // The gray-cloudy texture is stretched across the button as a ::before
+  // (rather than a plain background-image on the link itself) so it can be
+  // scaled/brightened independently on hover/active without touching the
+  // text - lighting up like the back-arrow does, without dragging the
+  // button's own text color into that same filter.
   a.popup-window-button {
+    position: relative;
+    // Without this, the ::before's negative z-index escapes this element
+    // (position: relative alone doesn't form a stacking context) and resolves
+    // against .popup-window's own z-index instead - landing it behind
+    // .popup-window-content entirely and making the texture invisible.
+    isolation: isolate;
     display: inline-block;
+    overflow: hidden;
     padding: 0.6rem 1.8rem;
-    border: 1px solid rgb(87, 87, 87);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 2rem;
-    mix-blend-mode: color-burn;
-    color: rgb(87, 87, 87);
+    color: rgba(255, 250, 240, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
     text-align: center;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: border-color 0.25s ease, transform 0.15s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-image: url("../assets/button-bg.png");
+      background-size: 100% 100%;
+      filter: brightness(0.82) saturate(0.9);
+      transition: filter 0.25s ease, transform 0.4s ease;
+    }
 
     &:hover {
-      background-color: rgba(87, 87, 87, 0.12);
-      border-color: rgb(233, 233, 233);
-      color: rgb(233, 233, 233);
+      border-color: rgba(255, 255, 255, 0.75);
+
+      &::before {
+        filter: brightness(1.25) saturate(1.15);
+        transform: scale(1.08);
+      }
+    }
+
+    &:active {
+      transform: scale(0.96);
     }
   }
 
@@ -450,14 +480,17 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
+  // Plain solid colors rather than mix-blend-mode: color-burn - blended
+  // against the parchment backdrop (whose hue keeps shifting with the
+  // page's color grade) that used to come out an unreadable washed-out
+  // yellow more often than not.
   a {
     text-decoration: none;
-    color: rgb(87, 87, 87);
-    mix-blend-mode: color-burn;
+    color: rgb(50, 65, 115);
     &:hover {
-      color: rgb(233, 233, 233);
+      color: rgb(175, 55, 60);
     }
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
 
     img.icon {
       transition: all 0.4s ease;

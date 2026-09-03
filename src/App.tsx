@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import ServiceBubbles from './components/ServiceBubbles';
 import LandscapeContainer from './components/LandscapeContainer';
 import ColorGradeFilter, { getColorGradeMode } from './components/ColorGradeFilter';
+import OpeningClouds from './components/OpeningClouds';
 
 import './App.scss';
 
@@ -29,7 +30,11 @@ function App() {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
         <div className="App">
           {gradeEnabled && <ColorGradeFilter />}
-          {gradeEnabled && <div className="color-grade-background color-grade" aria-hidden />}
+          {gradeEnabled &&
+            <div className="color-grade-background color-grade" aria-hidden>
+              <OpeningClouds />
+            </div>
+          }
           <Navbar showAboutOptions={false} />
           <div id="main">
             <ServiceBubbles />

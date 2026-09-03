@@ -72,6 +72,29 @@ export function closestFrameRatioKey(aspect: number): string {
   return best;
 }
 
+// A pickable frame option: either a registered ratio used as painted (portrait
+// or square), or - for the non-square ones - the same frame turned 90deg so
+// its window reads as landscape instead. `effectiveAspect` is what should
+// actually be compared against an artwork's own aspect when picking a frame,
+// since a `rotated` candidate's window is the reciprocal of its painted ratio.
+export interface FrameCandidate {
+  ratioKey: string;
+  rotated: boolean;
+  effectiveAspect: number;
+}
+
+const FRAME_CANDIDATES: FrameCandidate[] = RATIO_KEYS.flatMap(ratioKey => {
+  const geometry = FRAME_GEOMETRY[ratioKey];
+  const aspect = geometry.windowW / geometry.windowH;
+  const candidates: FrameCandidate[] = [{ ratioKey, rotated: false, effectiveAspect: aspect }];
+  if (Math.abs(aspect - 1) > 1e-6) candidates.push({ ratioKey, rotated: true, effectiveAspect: 1 / aspect });
+  return candidates;
+});
+
+export function frameCandidates(): FrameCandidate[] {
+  return FRAME_CANDIDATES;
+}
+
 export interface PlaqueVariant {
   name: string;
   light: string;
