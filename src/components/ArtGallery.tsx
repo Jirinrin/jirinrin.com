@@ -88,23 +88,27 @@ interface FrameChoice {
 //   of the frame's base color-grade filter.
 // - `filter`: extra CSS filter function(s) appended after the frame's own
 //   color-grade filter, e.g. 'brightness(.5)'.
+// - `plaqueDark`: forces the light/dark version of whichever plaque variant
+//   gets picked, instead of a random choice (only matters if that variant
+//   has a dark version at all).
 interface FrameAssignment {
   ratioKey: '1-1' | '3-4' | '4-5';
   rotate?: 1 | 2 | 3;
   variant?: string;
   saturation?: number;
   filter?: string;
+  plaqueDark?: boolean;
 }
 
 const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
-  'trippy-landscape':              { ratioKey: '3-4', variant: 'a', saturation: .5 },
-  'torus':                         { ratioKey: '4-5', variant: 'b', saturation: .5 },
-  'mystical-hill':                 { ratioKey: '1-1', variant: 'b', saturation: .9 },
-  'crying':                        { ratioKey: '3-4' },
+  'trippy-landscape':              { ratioKey: '3-4', variant: 'a', saturation: .6, plaqueDark: false },
+  'torus':                         { ratioKey: '4-5', variant: 'a', saturation: .5, plaqueDark: true },
+  'mystical-hill':                 { ratioKey: '1-1', variant: 'a', saturation: .2, filter: 'brightness(1.3)', plaqueDark: false },
+  'crying':                        { ratioKey: '3-4', variant: 'a', saturation: 0, filter: 'contrast(1.5) brightness(.9) invert(1)', plaqueDark: true },
 
-  'torenrave':                     { ratioKey: '3-4' },
+  'torenrave':                     { ratioKey: '1-1', variant: 'b', saturation: 0, filter: 'contrast(1.6) brightness(.7)', plaqueDark: true },
   'halloween-toren-van-terreur':   { ratioKey: '3-4' },
-  'beautiful-corner':              { ratioKey: '3-4' },
+  'beautiful-corner':              { ratioKey: '4-5' },
   'een-leukertje':                 { ratioKey: '3-4' },
   'hanna-cover':                   { ratioKey: '4-5' },
   'kitchen-doodle':                { ratioKey: '3-4', rotate: 1 },
@@ -144,8 +148,12 @@ function chooseFrame(item: ArtGalleryItem): FrameChoice {
   const rotateQuarter = assignment.rotate ?? 0;
   const plaques = allPlaqueVariants();
   const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
-  const invert = rand01(`${item.id}:frame-invert`) < 0.18;
-  const blendExclude = !invert && rand01(`${item.id}:frame-blend`) < 0.15;
+  // A manually-specified `filter` means the piece's look is being hand-tuned,
+  // so leave these four alone rather than layering random variation on top
+  // of a deliberately chosen effect.
+  const hasCustomFilter = !!assignment.filter;
+  const invert = hasCustomFilter ? false : rand01(`${item.id}:frame-invert`) < 0.18;
+  const blendExclude = hasCustomFilter ? false : (!invert && rand01(`${item.id}:frame-blend`) < 0.15);
   return {
     frame,
     orientation: {
@@ -155,9 +163,9 @@ function chooseFrame(item: ArtGalleryItem): FrameChoice {
       swapBox: rotateQuarter % 2 === 1 && assignment.ratioKey !== '1-1',
     },
     plaque,
-    plaqueDark: !!plaque.dark && rand01(`${item.id}:plaque-dark`) < 0.5,
-    brightness: 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
-    saturateExtra: assignment.saturation ?? (0.28 + rand01(`${item.id}:frame-sat`) * 0.2),
+    plaqueDark: !!plaque.dark && (assignment.plaqueDark ?? rand01(`${item.id}:plaque-dark`) < 0.5),
+    brightness: hasCustomFilter ? 1 : 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
+    saturateExtra: assignment.saturation ?? (hasCustomFilter ? 1 : 0.28 + rand01(`${item.id}:frame-sat`) * 0.2),
     invert,
     blendExclude,
     extraFilter: assignment.filter,

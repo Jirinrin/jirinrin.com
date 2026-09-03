@@ -21,7 +21,6 @@ const artGallery: ArtGalleryItem[] = [
   { id: 'crying', title: 'Overflow', rank: 1, image: 'crying', aspect: 0.9237 },
 
   { id: 'torenrave', title: 'Torenrave', rank: 2, image: 'torenrave-poster', aspect: 0.7069, video: 'torenrave' },
-  { id: 'halloween-toren-van-terreur', title: 'Toren van Terreur', rank: 2, image: 'halloween-toren-van-terreur', aspect: 0.7069 },
   { id: 'beautiful-corner', title: 'Make One Corner of this Earth More Beautiful', rank: 2, image: 'beautiful-corner', aspect: 0.5945 },
   { id: 'een-leukertje', title: 'Een Leukertje', rank: 2, image: 'een-leukertje', aspect: 0.6282 },
   { id: 'hanna-cover', title: 'Hanna', rank: 2, image: 'hanna_cover_inv_lores', aspect: 1.0052 },
@@ -29,6 +28,7 @@ const artGallery: ArtGalleryItem[] = [
   { id: 'yuurisaibou-doodle', title: 'Yuurisaibou', rank: 2, image: 'yuurisaibou-doodle', aspect: 0.622 },
   { id: 'mosaic', title: 'The Gear', rank: 2, image: 'mosaic-poster', aspect: 0.7194, video: 'mosaic' },
   { id: 'umu-worldview', title: 'The World of Umu', rank: 2, image: 'umu-worldview', aspect: 1.167 },
+  { id: 'halloween-toren-van-terreur', title: 'Toren van Terreur', rank: 2, image: 'halloween-toren-van-terreur', aspect: 0.7069 },
 
   { id: 'gefelicitno', title: 'GEFELICI-TNOR', rank: 3, image: 'gefelicitno', aspect: 1.3434 },
   { id: 'hanna-cover-purple', title: 'Hanna (Dark Mode)', rank: 3, image: 'hanna_cover_inv_purple', aspect: 1.0052 },
