@@ -64,6 +64,7 @@ interface FrameChoice {
   orientation: FrameOrientation;
   plaque: PlaqueVariant;
   plaqueDark: boolean;
+  plaqueTextDark: boolean;
   brightness: number;
   saturateExtra: number;
   invert: boolean;
@@ -79,56 +80,73 @@ interface FrameChoice {
 // closest-match never picked). `rotate` is quarter-turns away from upright;
 // omit it (or 0) to mount the frame the normal way up.
 //
-// `variant`, `saturation`, and `filter` are all optional per-piece overrides
-// of what chooseFrame would otherwise pick/compute at random - leave them
-// out to keep the automatic (but still deterministic-per-piece) behavior:
+// Every other field chooseFrame produces can be pinned here explicitly;
+// anything left unset falls back to a neutral fixed default (no mirroring,
+// no invert/blend, no extra brightness/saturation, first frame/plaque
+// variant) rather than being randomized. Set `randomize: true` to opt a
+// piece back into the old behavior - a deterministic-per-piece *random*
+// roll - for whichever of these fields it didn't pin down itself:
 // - `variant`: which painted frame ('a', 'b', ...) among the ones registered
-//   for `ratioKey`, instead of a random one.
-// - `saturation`: replaces the random extra-saturation boost applied on top
-//   of the frame's base color-grade filter.
-// - `filter`: extra CSS filter function(s) appended after the frame's own
-//   color-grade filter, e.g. 'brightness(.5)'.
+//   for `ratioKey`, instead of the first one / a random one.
+// - `plaque`: which plaque painting (by name) among the registered ones,
+//   instead of the first one / a random one.
 // - `plaqueDark`: forces the light/dark version of whichever plaque variant
-//   gets picked, instead of a random choice (only matters if that variant
-//   has a dark version at all).
+//   gets picked (only matters if that variant has a dark version at all).
+// - `mirrorX` / `mirrorY`: flip the frame art horizontally/vertically.
+// - `brightness` / `saturation`: replace the frame's brightness/extra-
+//   saturation multipliers applied on top of its base color-grade filter.
+// - `invert` / `blendExclude`: extra look toggles applied to the frame art.
+// - `filter`: extra CSS filter function(s) appended after the frame's own
+//   color-grade filter, e.g. 'brightness(.5)'. A piece with a custom filter
+//   never randomizes brightness/saturation/invert/blendExclude on top of it
+//   (even with `randomize: true`), since those are meant to be hand-tuned
+//   together with the filter - pin them explicitly here if needed.
 interface FrameAssignment {
   ratioKey: '1-1' | '3-4' | '4-5';
   rotate?: 1 | 2 | 3;
   variant?: string;
-  saturation?: number;
-  filter?: string;
+  plaque?: string;
   plaqueDark?: boolean;
+  plaqueTextDark?: boolean;
+  mirrorX?: boolean;
+  mirrorY?: boolean;
+  brightness?: number;
+  saturation?: number;
+  invert?: boolean;
+  blendExclude?: boolean;
+  filter?: string;
+  randomize?: boolean;
 }
 
 const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
   'trippy-landscape':              { ratioKey: '3-4', variant: 'a', saturation: .6, plaqueDark: false },
-  'torus':                         { ratioKey: '4-5', variant: 'a', saturation: .5, plaqueDark: true },
-  'mystical-hill':                 { ratioKey: '1-1', variant: 'a', saturation: .2, filter: 'brightness(1.3)', plaqueDark: false },
-  'crying':                        { ratioKey: '3-4', variant: 'a', saturation: 0, filter: 'contrast(1.5) brightness(.9) invert(1)', plaqueDark: true },
+  'torus':                         { ratioKey: '4-5', variant: 'a', saturation: .5, brightness: 1.3, plaqueDark: true },
+  'mystical-hill':                 { ratioKey: '1-1', variant: 'a', saturation: .2, brightness: 1.3, plaqueDark: false },
+  'crying':                        { ratioKey: '3-4', variant: 'a', invert: true, saturation: 0, brightness: 1.5, filter: 'contrast(3)', plaqueDark: true, plaqueTextDark: true },
 
-  'torenrave':                     { ratioKey: '1-1', variant: 'b', saturation: 0, filter: 'contrast(1.6) brightness(.7)', plaqueDark: true },
-  'halloween-toren-van-terreur':   { ratioKey: '3-4' },
-  'beautiful-corner':              { ratioKey: '4-5' },
-  'een-leukertje':                 { ratioKey: '3-4' },
-  'hanna-cover':                   { ratioKey: '4-5' },
-  'kitchen-doodle':                { ratioKey: '3-4', rotate: 1 },
-  'yuurisaibou-doodle':            { ratioKey: '3-4' },
-  'mosaic':                        { ratioKey: '3-4' },
-  'umu-worldview':                 { ratioKey: '4-5', rotate: 1 },
+  'torenrave':                     { ratioKey: '1-1', variant: 'b', saturation: 0, brightness: 1, invert: true,  filter: 'contrast(1.6)', plaqueDark: false, plaqueTextDark: false },
+  'beautiful-corner':              { ratioKey: '4-5', variant: 'b', saturation: .5, brightness: 1.4 },
+  'een-leukertje':                 { ratioKey: '3-4', rotate: 2, saturation: .4, brightness: 1.3 },
+  'hanna-cover':                   { ratioKey: '4-5', variant: 'a', saturation: .3, brightness: .7, invert: false },
+  'kitchen-doodle':                { ratioKey: '3-4', rotate: 1, brightness: 1.3, saturation: .3 },
+  'yuurisaibou-doodle':            { ratioKey: '4-5', variant: 'a', saturation: .3, brightness: 1.2 },
+  'mosaic':                        { ratioKey: '1-1', rotate: 2 },
+  'umu-worldview':                 { ratioKey: '3-4', rotate: 1, saturation: 1 },
+  'halloween-toren-van-terreur':   { ratioKey: '3-4', variant: 'b', brightness: .4, filter: 'contrast(2)', saturation: .5, plaqueTextDark: false },
 
-  'gefelicitno':                   { ratioKey: '3-4', rotate: 1 },
-  'hanna-cover-purple':            { ratioKey: '1-1' },
-  'golf':                          { ratioKey: '4-5' },
-  'placemat':                      { ratioKey: '3-4', rotate: 1 },
-  'onderwater-cafe':               { ratioKey: '3-4' },
-  'cool':                          { ratioKey: '1-1' },
-  'teeming':                       { ratioKey: '3-4', rotate: 1 },
+  'gefelicitno':                   { ratioKey: '3-4', randomize: true, saturation: 0, brightness: 1.3, rotate: 1 },
+  'hanna-cover-purple':            { ratioKey: '1-1', variant: 'a', brightness: .6, filter: 'contrast(1.6)', rotate: 3, saturation: .7, plaqueTextDark: false, plaqueDark: false },
+  'golf':                          { ratioKey: '4-5', randomize: true },
+  'placemat':                      { ratioKey: '3-4', randomize: true, rotate: 1 },
+  'onderwater-cafe':               { ratioKey: '3-4', randomize: true },
+  'cool':                          { ratioKey: '1-1', randomize: true },
+  'teeming':                       { ratioKey: '3-4', randomize: true, rotate: 1 },
 
-  'halloween-boom':                { ratioKey: '4-5' },
-  'halloween-hattori-a':           { ratioKey: '3-4' },
-  'halloween-monster':             { ratioKey: '1-1' },
-  'halloween-yukiman':             { ratioKey: '3-4' },
-  'sfeer-foundry':                 { ratioKey: '3-4', rotate: 1 },
+  'halloween-boom':                { ratioKey: '4-5', randomize: true },
+  'halloween-hattori-a':           { ratioKey: '3-4', randomize: true },
+  'halloween-monster':             { ratioKey: '1-1', randomize: true },
+  'halloween-yukiman':             { ratioKey: '3-4', randomize: true },
+  'sfeer-foundry':                 { ratioKey: '3-4', randomize: true, rotate: 1 },
 };
 
 // Deterministically assigns each piece its manually-picked frame ratio (see
@@ -139,33 +157,45 @@ const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
 function chooseFrame(item: ArtGalleryItem): FrameChoice {
   const assignment = FRAME_ASSIGNMENTS[item.id];
   if (!assignment) throw new Error(`ArtGallery: no FRAME_ASSIGNMENTS entry for "${item.id}"`);
+  const randomize = assignment.randomize ?? false;
   const variants = variantsForRatio(assignment.ratioKey);
   const frame = assignment.variant
     ? variants.find(v => v.variant === assignment.variant) ?? (() => {
         throw new Error(`ArtGallery: no "${assignment.variant}" frame variant registered for ratio "${assignment.ratioKey}" (item "${item.id}")`);
       })()
-    : variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
+    : randomize
+      ? variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)]
+      : variants[0];
   const rotateQuarter = assignment.rotate ?? 0;
   const plaques = allPlaqueVariants();
-  const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
-  // A manually-specified `filter` means the piece's look is being hand-tuned,
-  // so leave these four alone rather than layering random variation on top
-  // of a deliberately chosen effect.
+  const plaque = assignment.plaque
+    ? plaques.find(p => p.name === assignment.plaque) ?? (() => {
+        throw new Error(`ArtGallery: no "${assignment.plaque}" plaque variant registered (item "${item.id}")`);
+      })()
+    : randomize
+      ? plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)]
+      : plaques[0];
+  // A custom `filter` means the piece's look is being hand-tuned, so these
+  // four never get randomized on top of it (they can still be pinned
+  // explicitly above) even when `randomize` is on.
   const hasCustomFilter = !!assignment.filter;
-  const invert = hasCustomFilter ? false : rand01(`${item.id}:frame-invert`) < 0.18;
-  const blendExclude = hasCustomFilter ? false : (!invert && rand01(`${item.id}:frame-blend`) < 0.15);
+  const canRandomizeOverFilter = randomize && !hasCustomFilter;
+  const invert = assignment.invert ?? (canRandomizeOverFilter && rand01(`${item.id}:frame-invert`) < 0.18);
+  const blendExclude = assignment.blendExclude ?? (canRandomizeOverFilter && !invert && rand01(`${item.id}:frame-blend`) < 0.15);
+  const plaqueDark = !!plaque.dark && (assignment.plaqueDark ?? (randomize && rand01(`${item.id}:plaque-dark`) < 0.5));
   return {
     frame,
     orientation: {
       rotateQuarter,
-      mirrorX: rand01(`${item.id}:mirror-x`) < 0.5,
-      mirrorY: rand01(`${item.id}:mirror-y`) < 0.5,
+      mirrorX: assignment.mirrorX ?? (randomize && rand01(`${item.id}:mirror-x`) < 0.5),
+      mirrorY: assignment.mirrorY ?? (randomize && rand01(`${item.id}:mirror-y`) < 0.5),
       swapBox: rotateQuarter % 2 === 1 && assignment.ratioKey !== '1-1',
     },
     plaque,
-    plaqueDark: !!plaque.dark && (assignment.plaqueDark ?? rand01(`${item.id}:plaque-dark`) < 0.5),
-    brightness: hasCustomFilter ? 1 : 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
-    saturateExtra: assignment.saturation ?? (hasCustomFilter ? 1 : 0.28 + rand01(`${item.id}:frame-sat`) * 0.2),
+    plaqueDark,
+    plaqueTextDark: assignment.plaqueTextDark ?? !plaqueDark,
+    brightness: assignment.brightness ?? (canRandomizeOverFilter ? 0.85 + rand01(`${item.id}:frame-bright`) * 0.35 : 1),
+    saturateExtra: assignment.saturation ?? (canRandomizeOverFilter ? 0.28 + rand01(`${item.id}:frame-sat`) * 0.2 : 1),
     invert,
     blendExclude,
     extraFilter: assignment.filter,
@@ -411,7 +441,7 @@ function Plaque({ choice, title }: PlaqueProps) {
         className="art-gallery-plaque__bg"
         style={{ backgroundImage: `url(${src})`, filter: frameFilter(choice) } as React.CSSProperties}
       />
-      <span className="art-gallery-plaque__title">{title}</span>
+      <span className="art-gallery-plaque__title" style={{ color: choice.plaqueTextDark ? 'rgba(22, 15, 10, 0.88)' : 'rgba(255, 250, 240, 0.92)' }}>{title}</span>
     </div>
   );
 }

@@ -165,11 +165,6 @@
     font-size: clamp(0.5rem, 3.6cqw, 1.05rem);
     letter-spacing: 0.02em;
     line-height: 1.2;
-    color: rgba(22, 15, 10, 0.88);
-  }
-
-  &--dark &__title {
-    color: rgba(255, 250, 240, 0.92);
   }
 }
 
