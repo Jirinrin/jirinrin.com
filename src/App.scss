@@ -1,28 +1,4 @@
 @import url('https://fonts.googleapis.com/css?family=Cinzel:700');
-@font-face {
-  font-family: 'JMH Typewriter mono';
-  src: url('./assets/fonts/JMH Typewriter mono.ttf');
-  font-weight: normal;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'JMH Typewriter mono';
-  src: url('./assets/fonts/JMH Typewriter mono Bold.ttf');
-  font-weight: bold;
-  font-style: normal;
-}
-// @font-face {
-//   font-family: 'JMH Typewriter mono';
-//   src: url('./assets/fonts/JMH Typewriter mono Italic.ttf');
-//   font-weight: normal;
-//   font-style: italic;
-// }
-// @font-face {
-//   font-family: 'JMH Typewriter mono';
-//   src: url('./assets/fonts/JMH Typewriter mono Fine.ttf');
-//   font-weight: lighter;
-//   font-style: normal;
-// }
 
 $background-url: url("./assets/background-darkgray.jpg");
 
@@ -109,10 +85,6 @@ body, #root {
 // while one is open rather than fighting for contrast right behind it.
 body.color-grade-dimmed .color-grade {
   filter: url(#landscape-color-grade) saturate(0.5);
-}
-
-code {
-  font-family: 'JMH Typewriter mono' !important;
 }
 
 
