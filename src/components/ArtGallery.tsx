@@ -3,7 +3,16 @@ import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 
 import artGallery from '../assets/art-gallery';
 import type { ArtGalleryItem } from '../assets/art-gallery';
+import {
+  allPlaqueVariants,
+  closestFrameRatioKey,
+  variantsForRatio,
+  type FrameSpec,
+  type FrameVariant,
+  type PlaqueVariant,
+} from '../assets/art-gallery/frames';
 import playIcon from '../assets/play.png';
+import { COLOR_GRADE_FILTER_ID } from './ColorGradeFilter';
 import { usePinchZoom } from '../hooks/usePinchZoom';
 
 import './ArtGallery.scss';
@@ -34,6 +43,63 @@ const hashString = (s: string): number => {
 };
 // A distinct pseudo-random stream per (id, salt) pair, in [0, 1).
 const rand01 = (seed: string): number => (hashString(seed) % 10007) / 10007;
+
+interface FrameChoice {
+  frame: FrameVariant;
+  plaque: PlaqueVariant;
+  plaqueDark: boolean;
+  flip: boolean;
+  brightness: number;
+  saturateExtra: number;
+  invert: boolean;
+  blendExclude: boolean;
+}
+
+// Deterministically assigns each piece the frame whose window aspect ratio is
+// closest to its own, a random variant/plaque among the ones that fit, and a
+// per-piece flavor of filter/orientation tweaks - so pieces sharing the same
+// frame or plaque painting still read as individually mounted rather than
+// stamped copies. Deliberately doesn't vary rotation independently of the
+// artwork: the frame and the piece it holds always rotate together as one
+// rigid unit (via the tile's own --base-rotate), otherwise the frame's window
+// swings out of alignment with the artwork underneath it.
+function chooseFrame(item: ArtGalleryItem): FrameChoice {
+  const variants = variantsForRatio(closestFrameRatioKey(item.aspect));
+  const frame = variants[Math.floor(rand01(`${item.id}:frame-variant`) * variants.length)];
+  const plaques = allPlaqueVariants();
+  const plaque = plaques[Math.floor(rand01(`${item.id}:plaque`) * plaques.length)];
+  const invert = rand01(`${item.id}:frame-invert`) < 0.18;
+  const blendExclude = !invert && rand01(`${item.id}:frame-blend`) < 0.15;
+  return {
+    frame,
+    plaque,
+    plaqueDark: !!plaque.dark && rand01(`${item.id}:plaque-dark`) < 0.5,
+    flip: rand01(`${item.id}:frame-flip`) < 0.5,
+    brightness: 0.85 + rand01(`${item.id}:frame-bright`) * 0.35,
+    saturateExtra: 0.28 + rand01(`${item.id}:frame-sat`) * 0.2,
+    invert,
+    blendExclude,
+  };
+}
+
+const frameChoices: Record<string, FrameChoice> = Object.fromEntries(
+  sortedGallery.map(item => [item.id, chooseFrame(item)])
+);
+
+// Fraction of the window's own width/height that the frame art extends
+// beyond the window on each side - usable both as a CSS percentage (for the
+// frame overlay's `inset`, which is agnostic to px vs responsive sizing) and,
+// multiplied by an actual px size, for reserving layout footprint.
+function frameOverhangFraction(spec: FrameSpec): { x: number; y: number } {
+  return {
+    x: (spec.frameW - spec.windowW) / (2 * spec.windowW),
+    y: (spec.frameH - spec.windowH) / (2 * spec.windowH),
+  };
+}
+
+function frameFilter(choice: FrameChoice): string {
+  return `url(#${COLOR_GRADE_FILTER_ID}) ${choice.invert ? 'invert(1) ' : ''}saturate(${choice.saturateExtra}) brightness(${choice.brightness})`;
+}
 
 // Target box width in px per rank, before real-aspect height and responsive
 // scaling are applied. Higher rank = larger - the "front section" pieces
@@ -99,10 +165,18 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
   for (const item of items) {
     const [lo, hi] = RANK_WIDTH_BAND[item.rank];
     const width = (lo + rand01(`${item.id}:w`) * (hi - lo)) * scale;
+    // Boxed to the artwork's own real aspect (not the frame's window aspect) -
+    // the frame is the thing that gets stretched to fit exactly around this,
+    // via non-uniform (independent x/y) scaling in FrameOverlay, rather than
+    // the artwork being letterboxed to match the frame.
     const height = width / item.aspect;
+    const spec = frameChoices[item.id].frame.spec;
     const pad = RANK_PAD[item.rank] * padScale;
-    const boxW = width + pad;
-    const boxH = height + pad;
+    const overhang = frameOverhangFraction(spec);
+    const padX = pad + overhang.x * width * 2;
+    const padY = pad + overhang.y * height * 2;
+    const boxW = width + padX;
+    const boxH = height + padY;
     const colSpan = Math.max(1, Math.min(cols, Math.round(boxW / unit)));
 
     let minY = Infinity;
@@ -129,8 +203,8 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
 
     placed.push({
       item,
-      x: chosenC * unit + pad / 2 + jitterX,
-      y: placeY + pad / 2 + jitterY,
+      x: chosenC * unit + padX / 2 + jitterX,
+      y: placeY + padY / 2 + jitterY,
       width,
       height,
       rotation: (rand01(`${item.id}:rot`) - 0.5) * 2 * (mobile ? 2.2 : 3.2),
@@ -144,6 +218,63 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
   return { placed, height: Math.max(0, ...skyline) + 24 };
 }
 
+interface FrameOverlayProps {
+  choice: FrameChoice;
+}
+
+// The frame PNG is grayscale watercolor art - run through the same color-grade
+// filter as the rest of the landscape, it picks up the current trippy palette
+// automatically (and keeps evolving with it). `inset` is expressed as a CSS
+// percentage, with a different value on each axis - since the containing box
+// is shaped to the artwork's own aspect (which the frame's native aspect
+// only approximately matches), this non-uniformly stretches the frame art so
+// its window lines up exactly with the box on all four sides, no gaps. This
+// works identically whether the box is a fixed px size (grid tile) or fluid
+// (lightbox), since percentages are always relative to the box itself.
+function FrameOverlay({ choice }: FrameOverlayProps) {
+  const overhang = frameOverhangFraction(choice.frame.spec);
+  return (
+    <div
+      className="art-gallery-frame"
+      style={{
+        inset: `${-overhang.y * 100}% ${-overhang.x * 100}%`,
+        backgroundImage: `url(${choice.frame.url})`,
+        transform: choice.flip ? 'scaleX(-1)' : undefined,
+        filter: frameFilter(choice),
+        mixBlendMode: choice.blendExclude ? 'exclude' : undefined,
+      } as React.CSSProperties}
+    />
+  );
+}
+
+interface PlaqueProps {
+  choice: FrameChoice;
+  title: string;
+}
+
+// Mounted on the frame's bottom rail: centered a little way into the border
+// band below the window (not all the way out at the frame's outer edge,
+// which reads as floating off the frame entirely). The background layer gets
+// the same color-grade recipe as the frame so the two read as one mounted
+// piece; the title sits on an unfiltered layer on top so it stays legible.
+function Plaque({ choice, title }: PlaqueProps) {
+  const overhang = frameOverhangFraction(choice.frame.spec);
+  const dark = choice.plaqueDark && choice.plaque.dark;
+  const src = dark ? choice.plaque.dark! : choice.plaque.light;
+  return (
+    <div
+      className={`art-gallery-plaque${dark ? ' art-gallery-plaque--dark' : ''}`}
+      style={{ top: `${100 + overhang.y * 100 * 0.3}%` }}
+    >
+      <div
+        className="art-gallery-plaque__bg"
+        style={{ backgroundImage: `url(${src})`, filter: frameFilter(choice) } as React.CSSProperties}
+      />
+      <span className="art-gallery-plaque__title">{title}</span>
+    </div>
+  );
+}
+
 interface GalleryTileProps {
   placed: PlacedTile;
   index: number;
@@ -152,6 +283,7 @@ interface GalleryTileProps {
 
 function GalleryTile({ placed, index, onOpen }: GalleryTileProps) {
   const { item } = placed;
+  const choice = frameChoices[item.id];
 
   return (
     <motion.div
@@ -178,12 +310,15 @@ function GalleryTile({ placed, index, onOpen }: GalleryTileProps) {
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.96 }}
     >
-      <motion.img
-        layoutId={`art-piece-${item.id}`}
-        src={getImage(item.image)}
-        alt={item.title}
-        className="art-gallery-tile__image"
-      />
+      <motion.div layoutId={`art-piece-${item.id}`} className="art-gallery-tile__frame-unit">
+        <img
+          src={getImage(item.image)}
+          alt={item.title}
+          className="art-gallery-tile__image"
+        />
+        <FrameOverlay choice={choice} />
+        <Plaque choice={choice} title={item.title} />
+      </motion.div>
       {item.video && (
         <img src={playIcon} className="art-gallery-tile__play" alt="" aria-hidden="true" />
       )}
@@ -232,14 +367,16 @@ function GalleryDetail({ item, onClose }: GalleryDetailProps) {
     if (distance > 110 || velocity > 550) onClose();
   };
 
+  const choice = frameChoices[item.id];
+
   const sharedProps = {
     layoutId: `art-piece-${item.id}`,
-    className: 'art-gallery-detail__media',
+    className: 'art-gallery-detail__frame-unit',
     drag: !pinch.isZoomed,
     dragElastic: 0.65,
     dragMomentum: false,
     onDragEnd: handleDragEnd,
-    style: pinch.style,
+    style: { ...pinch.style, '--window-aspect': item.aspect } as React.CSSProperties,
     onClick: (e: React.MouseEvent) => e.stopPropagation(),
     ...pinch.handlers,
   } as const;
@@ -253,25 +390,29 @@ function GalleryDetail({ item, onClose }: GalleryDetailProps) {
       transition={{ duration: 0.35, ease: 'easeOut' }}
       onClick={onClose}
     >
-      {item.video ? (
-        <motion.video
-          {...sharedProps}
-          ref={videoRef}
-          src={getVideo(item.video)}
-          poster={getImage(item.image)}
-          controls={!item.loopSilently}
-          autoPlay
-          loop={item.loopSilently}
-          muted={item.loopSilently}
-          playsInline
-        />
-      ) : (
-        <motion.img
-          {...sharedProps}
-          src={getImage(item.image)}
-          alt={item.title}
-        />
-      )}
+      <motion.div {...sharedProps}>
+        {item.video ? (
+          <video
+            ref={videoRef}
+            className="art-gallery-detail__media"
+            src={getVideo(item.video)}
+            poster={getImage(item.image)}
+            controls={!item.loopSilently}
+            autoPlay
+            loop={item.loopSilently}
+            muted={item.loopSilently}
+            playsInline
+          />
+        ) : (
+          <img
+            className="art-gallery-detail__media"
+            src={getImage(item.image)}
+            alt={item.title}
+          />
+        )}
+        <FrameOverlay choice={choice} />
+        <Plaque choice={choice} title={item.title} />
+      </motion.div>
       <button className="art-gallery-detail__close" onClick={onClose} aria-label="Close">×</button>
     </motion.div>
   );

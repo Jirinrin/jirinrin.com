@@ -89,12 +89,18 @@
     animation-play-state: paused;
   }
 
+  &__frame-unit {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    container-type: inline-size;
+  }
+
   &__image {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 0.25rem;
   }
 
   &__play {
@@ -108,6 +114,62 @@
     filter: brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
     opacity: 0.88;
     pointer-events: none;
+  }
+}
+
+// Shared between the grid tile and the lightbox frame-unit. `inset` (position
+// and implied size) is set inline per-piece in JS/TSX as a percentage of the
+// containing frame-unit, so this works whether that box is a fixed px size or
+// a fluid/responsive one.
+.art-gallery-frame {
+  position: absolute;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.art-gallery-plaque {
+  // `top` is set inline per-piece (it depends on the chosen frame's own
+  // border proportions), always paired with this centering transform.
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2.4cqw 5.2cqw;
+  width: fit-content;
+  min-width: 26%;
+  max-width: 80%;
+  filter: drop-shadow(0 0.5cqw 0.35cqw rgba(0, 0, 0, 0.5)) drop-shadow(0 0.1cqw 0.1cqw rgba(0, 0, 0, 0.35));
+  text-align: center;
+  pointer-events: none;
+
+  // Carries the plaque texture and the color-grade filter, separately from
+  // the title text on top of it - filtering the text along with the
+  // background would run it through the same hue/saturation remap and wreck
+  // its legibility.
+  &__bg {
+    position: absolute;
+    inset: 0;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+
+  &__title {
+    position: relative;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: 'Cormorant', serif;
+    font-weight: 600;
+    font-size: clamp(0.5rem, 3.6cqw, 1.05rem);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    color: rgba(22, 15, 10, 0.88);
+  }
+
+  &--dark &__title {
+    color: rgba(255, 250, 240, 0.92);
   }
 }
 
@@ -141,16 +203,26 @@
   cursor: pointer;
 }
 
-.art-gallery-detail__media {
+.art-gallery-detail__frame-unit {
+  position: relative;
+  container-type: inline-size;
   max-width: 92vw;
   max-height: 88vh;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 0.3rem;
+  // Largest box that fits both viewport constraints while keeping the
+  // frame's window aspect ratio - the fluid equivalent of the tile grid's
+  // JS-computed width/height.
+  width: min(92vw, calc(88vh * var(--window-aspect, 1)));
+  aspect-ratio: var(--window-aspect, 1);
   cursor: default;
   touch-action: none;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  filter: drop-shadow(0 30px 80px rgba(0, 0, 0, 0.6));
+}
+
+.art-gallery-detail__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .art-gallery-detail__close {

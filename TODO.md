@@ -1,7 +1,9 @@
 # TODO
 
 - [ ] it'd be nice to have the cloudiness-stuff also give some interestingness to the opening screen, so you actually get something out of the color grading on landing. I can draw some clouds for this. they can be drifting past, or fading in and out with little bits of motion, let's find a way that looks lovely.
-- [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken?
+- [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken? wellicht in Soul.
+- [ ] standalone link on a separate line in a project popup (or any popup for that matter): cute styling with custom gray-cloudy texture that's stretched across the button as a :before or whatever, this will become the button texture. button is rounded and lights up when you hover/click similar to the back button.
+- [ ] links are basically unreadable, because they're made like yellow-ish which is practically unreadable on a grayish background. no filter sepia anymore
 
 - [ ] Copy objects
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
@@ -31,8 +33,6 @@
   - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
   - [x] [gallery.md](src/assets/objects/gallery.md) 
-    - [ ] lijsten. aantal varianten in de huisstijl van de website? variant per verhouding: eentje voor ongeveer 1:1, dan 4:3, 16:9, etc.
-    - [ ] ieder werk toch een titel geven, als een soort 'plate' die op het frame is geplakt onderaan.
   - [x] [contact-details.md](src/assets/objects/contact-details.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
     - [ ] hanna album

@@ -22,7 +22,7 @@ const artGallery: ArtGalleryItem[] = [
 
   { id: 'torenrave', title: 'Torenrave', rank: 2, image: 'torenrave-poster', aspect: 0.7069, video: 'torenrave' },
   { id: 'halloween-toren-van-terreur', title: 'Toren van Terreur', rank: 2, image: 'halloween-toren-van-terreur', aspect: 0.7069 },
-  { id: 'beautiful-corner', title: 'Make One Corner of this Earth More Beautiful', rank: 2, image: 'beautiful-corner', aspect: 0.7498 },
+  { id: 'beautiful-corner', title: 'Make One Corner of this Earth More Beautiful', rank: 2, image: 'beautiful-corner', aspect: 0.5945 },
   { id: 'een-leukertje', title: 'Een Leukertje', rank: 2, image: 'een-leukertje', aspect: 0.6282 },
   { id: 'hanna-cover', title: 'Hanna', rank: 2, image: 'hanna_cover_inv_lores', aspect: 1.0052 },
   { id: 'kitchen-doodle', title: 'Another World\'s Kitchen', rank: 2, image: 'kitchen-doodle', aspect: 1.6149 },
