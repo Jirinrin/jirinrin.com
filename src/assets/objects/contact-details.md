@@ -1,11 +1,12 @@
 # Find me
 
-Find out more about me? You'll have to do with my github and linkedin (or if you want you can look up my facebook for a few cringey photos from years back and posts of people trying to talk to me / tag me etc):
+Find out more about me? Yay!! Here are some ways to reach me:
 
+[![icon social-media-icon](instagram.png)](https://instagram.com/jiri_maaask)
 [![icon social-media-icon](github.png)](https://github.com/Jirinrin)
 [![icon social-media-icon](linkedin.png)](https://www.linkedin.com/in/jiriswen)
 
-Want to, like, hit me up or something? Luckily, I do also have a phone &stuff, so feel free to use it against me~
+Want to, like, hit me up or something? I do in fact also have a phone and stuff, so feel free to reach out ♡
 
-[jiri.ei@hotmail.com](mailto:http://jiri.ei@hotmail.com)  
-[+31-6-42795462](tel:+31-6-42795462)
+[jiri@nosk.be](mailto:http://jiri@nosk.be)  
+[+75-0-86139806](tel-obf:+75-0-86139806)

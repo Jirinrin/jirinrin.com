@@ -1,0 +1,66 @@
+.opening-clouds {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+// The scroll-driven parallax transform (see OpeningClouds.tsx) is set
+// directly on this layer via a ref, so it stays separate from the CSS
+// keyframe animation on the image inside - the two would otherwise fight
+// over the same `transform` property every scroll tick.
+.opening-clouds__layer {
+  position: absolute;
+  will-change: transform;
+}
+
+// Two independent animations - drifting position/rotation on one period,
+// opacity on a deliberately unrelated one - rather than a single symmetric
+// back-and-forth. A lone animation always looks like it's on rails; two
+// overlapping cycles that never realign (their periods share no common
+// multiple in the authored data) reads as actual wind: the combined motion
+// keeps drifting into new-looking combinations for a very long time before
+// it ever comes close to repeating.
+.opening-clouds__cloud {
+  display: block;
+  width: 100%;
+  opacity: var(--peak-opacity, 0.3);
+  // The color-grade filter (inherited from .ServiceBubbles) is genuinely
+  // being applied here - it's just that a near-white cloud pixel only ever
+  // samples the gradient's *highlight* stop, which is deliberately pale
+  // (see buildGradeStops in ColorGradeFilter.tsx), and that pale tint gets
+  // diluted further by the cloud's own translucency into "a lighter patch of
+  // whatever's behind it" rather than a color of its own. This saturation
+  // boost is a second filter pass stacked on top of the inherited one (filter
+  // passes compose in a chain, each one repainting the previous result), so
+  // it punches up whatever pale tint the clouds already picked up without
+  // needing to touch their opacity or the shared filter itself.
+  filter: saturate(2.2) brightness(1.05);
+  animation:
+    opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite,
+    opening-cloud-breathe var(--breathe-duration, 55s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s), var(--breathe-delay, 0s);
+}
+
+@keyframes opening-cloud-drift {
+  0%   { transform: translate(0%, 0%) rotate(0deg); }
+  20%  { transform: translate(calc(var(--drift-direction, 1) * -9%), 6%) rotate(-1.8deg); }
+  45%  { transform: translate(calc(var(--drift-direction, 1) * 6%), -5%) rotate(1.4deg); }
+  70%  { transform: translate(calc(var(--drift-direction, 1) * 13%), 4%) rotate(2.4deg); }
+  88%  { transform: translate(calc(var(--drift-direction, 1) * -4%), -3%) rotate(-1deg); }
+  100% { transform: translate(0%, 0%) rotate(0deg); }
+}
+
+@keyframes opening-cloud-breathe {
+  0%, 100% { opacity: calc(var(--peak-opacity, 0.3) * 0.5); }
+  30%      { opacity: var(--peak-opacity, 0.3); }
+  55%      { opacity: calc(var(--peak-opacity, 0.3) * 0.65); }
+  80%      { opacity: calc(var(--peak-opacity, 0.3) * 0.92); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-clouds__cloud {
+    animation: none;
+    opacity: var(--peak-opacity, 0.3);
+  }
+}

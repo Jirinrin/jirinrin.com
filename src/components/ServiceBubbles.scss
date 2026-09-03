@@ -1,0 +1,233 @@
+.ServiceBubbles {
+  // No explicit height of its own - it just auto-sizes to contain
+  // .service-bubbles-fade below (its only normal-flow child), which is where
+  // the real height lives. Needs to stay `position: relative` regardless,
+  // since OpeningClouds sizes itself against this box via `inset: 0`, and
+  // that has to keep working whether or not the fade wrapper is present.
+  width: 100vw;
+  position: relative;
+  z-index: 100;
+  pointer-events: none;
+}
+
+// Everything that should dissolve away as this section scrolls up under the
+// navbar (the ambient bubbles + the service-bubble cards) - deliberately
+// NOT wrapping OpeningClouds, which should keep drifting all the way down
+// through the landscape transition instead of fading out early.
+.service-bubbles-fade {
+  // Total rendered height is this plus padding-top below (content-box
+  // sizing), so the section's real height is height + padding-top. This
+  // also drives the height of #main (and therefore the whole landscape
+  // section below it), so making this taller pushes the landscape further
+  // down the page - giving the bubbles more room before the next section's
+  // title comes into range, and more scroll distance before the section
+  // needs to dissolve away under the navbar.
+  height: 210vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: start;
+  padding-top: 80vh;
+  perspective: 1000px;
+  // Smooths the scroll-driven fade-out that dissolves this wrapper before it
+  // would otherwise scroll up underneath the fixed navbar.
+  transition: opacity 0.6s ease;
+
+  // Wider viewports lay the bubbles out in a single row (shorter cluster)
+  // sitting closer to where the landscape title appears below, so give the
+  // section extra breathing room there on top of the general increase above.
+  @media (min-width: 900px) {
+    height: 260vh;
+  }
+}
+
+.service-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  transition: opacity 1.2s ease, filter 1.2s ease;
+}
+
+// A single soft floor-less shadow beneath each bubble, so it reads as
+// hovering rather than stuck flat to the screen.
+@mixin glass-shading {
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.22) 16%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0.02) 52%, rgba(0, 0, 0, 0.1) 100%),
+    radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.22), transparent 55%);
+}
+
+.service-bubble {
+  --tilt-x: 0;
+  --tilt-y: 0;
+
+  pointer-events: all;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem 2.2rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 210px;
+  max-width: 210px;
+  text-align: center;
+  cursor: pointer;
+
+  @include glass-shading;
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.16),
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 44px rgba(255, 255, 255, 0.05);
+
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1;
+  transform: perspective(700px) rotateX(calc(var(--tilt-y) * -8deg)) rotateY(calc(var(--tilt-x) * 8deg));
+  will-change: translate, transform;
+
+  animation:
+    bubble-float var(--drift-duration, 9s) ease-in-out infinite,
+    bubble-breathe var(--breathe-duration, 5.5s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s), var(--breathe-delay, 0s);
+
+  transition: box-shadow 0.4s ease, border-color 0.4s ease, transform 0.18s ease-out, background 0.4s ease;
+
+  // specular glint, like light catching the surface of a soap film
+  &::before {
+    content: '';
+    position: absolute;
+    top: 11%;
+    left: 18%;
+    width: 32%;
+    height: 20%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 70%);
+    filter: blur(1px);
+    pointer-events: none;
+    animation: glint-drift 6.5s ease-in-out infinite;
+  }
+
+  // thin inner rim light to sell the glass edge
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+  }
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.65),
+      inset 0 -8px 14px rgba(0, 0, 0, 0.14),
+      0 16px 38px rgba(0, 0, 0, 0.32),
+      0 0 64px rgba(255, 255, 255, 0.14);
+  }
+
+  .bubble-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .bubble-sub {
+    font-size: 0.75rem;
+    opacity: 0.65;
+    margin-top: 0.5rem;
+    font-family: 'Cincel', serif;
+    letter-spacing: 0.1em;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+// Per-bubble drift/breathe parameters — kept distinct so multiple bubbles
+// sharing the same keyframes never look synchronized.
+.float-a {
+  --drift-x: 13px;
+  --drift-y: 17px;
+  --drift-duration: 9.5s;
+  --drift-delay: 0s;
+  --breathe-duration: 5.5s;
+  --breathe-delay: -1.2s;
+}
+
+.float-b {
+  --drift-x: -16px;
+  --drift-y: 12px;
+  --drift-duration: 11.5s;
+  --drift-delay: -3.4s;
+  --breathe-duration: 6.8s;
+  --breathe-delay: -3s;
+}
+
+@keyframes bubble-float {
+  0%   { translate: 0 0; rotate: -0.6deg; }
+  20%  { translate: calc(var(--drift-x, 12px) * -0.6) calc(var(--drift-y, 16px) * 0.55); rotate: -1deg; }
+  40%  { translate: calc(var(--drift-x, 12px) * 0.4) calc(var(--drift-y, 16px) * -0.8); rotate: 0.4deg; }
+  60%  { translate: calc(var(--drift-x, 12px) * 1) calc(var(--drift-y, 16px) * 0.2); rotate: 1deg; }
+  80%  { translate: calc(var(--drift-x, 12px) * -0.35) calc(var(--drift-y, 16px) * -0.5); rotate: -0.3deg; }
+  100% { translate: 0 0; rotate: -0.6deg; }
+}
+
+@keyframes bubble-breathe {
+  0%, 100% { scale: 1; }
+  50%      { scale: 1.035; }
+}
+
+@keyframes glint-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  50%      { transform: translate(3px, 2px) scale(1.2); opacity: 0.55; }
+}
+
+// Ambient, non-interactive bubbles that quietly rise and fade around the
+// welcome section, reinforcing the "floating around" feeling.
+.ambient-bubble {
+  position: absolute;
+  width: var(--bubble-size, 20px);
+  height: var(--bubble-size, 20px);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.18) 45%, rgba(255, 255, 255, 0.02) 72%);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.15), inset 0 0 6px rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  translate: 0 0;
+  scale: 0.8;
+  animation: bubble-rise var(--drift-duration, 12s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+// Travels a good chunk of a viewport height rather than a token amount, so
+// the rise actually reads as bubbles floating up past the screen rather
+// than a small bob in place.
+@keyframes bubble-rise {
+  0%   { opacity: 0;    translate: 0 0;            scale: 0.8; }
+  12%  { opacity: 0.8; }
+  45%  { opacity: 0.3;  translate: 5vw -22vh;       scale: 1; }
+  70%  { opacity: 0.55; translate: -4vw -40vh;      scale: 0.92; }
+  90%  { opacity: 0.15; translate: 2vw -54vh;       scale: 1.05; }
+  100% { opacity: 0;    translate: 0 -62vh;         scale: 0.8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-bubble,
+  .service-bubble::before,
+  .ambient-bubble {
+    animation: none;
+  }
+}

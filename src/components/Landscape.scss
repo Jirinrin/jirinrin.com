@@ -223,23 +223,23 @@ img.book--large__background {
   pointer-events: none;
 }
 
-.tooltip-enter, .back-arrow-enter {
+.tooltip-enter {
   opacity: 0 !important;
   filter: blur(40px);
 }
 
-.tooltip-enter-active, .back-arrow-enter-active {
+.tooltip-enter-active {
   opacity: 1 !important;
   filter: blur(0);
   transition: all 500ms ease;
 }
 
-.tooltip-exit, .back-arrow-exit, .back-arrow-exit:hover {
+.tooltip-exit {
   opacity: 1 !important;
   filter: blur(0);
 }
 
-.tooltip-exit-active, .back-arrow-exit-active, .back-arrow-exit-active:hover {
+.tooltip-exit-active {
   opacity: 0 !important;
   filter: blur(40px);
   transition: all 500ms ease;
@@ -292,14 +292,18 @@ div.landscape--2-enter.landscape--2-enter-active {
 }
 
 .popup-window {
-  background-image: url("../assets/box-light-small.png");
-  background-size: 100% 100%;
+  // `.popup-window-content` (not this element) is the actual scroll
+  // container, so that the ::before backdrop below - positioned absolute
+  // relative to this element - stays put as a backdrop instead of scrolling
+  // away with the text: an absolutely positioned element takes its
+  // containing block's *own* scroll container as its containing block too,
+  // so if this element scrolled, ::before would have scrolled with it.
+  position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: 1rem;
-  opacity: 0.8;
   margin: auto auto;
   z-index: 125;
-  padding: 5vw;
-  overflow-y: scroll;
   cursor: default;
   font-family: 'Cormorant', serif;
   font-weight: 300;
@@ -307,18 +311,45 @@ div.landscape--2-enter.landscape--2-enter-active {
   font-size: 1rem;
 
   max-width: 80vw;
-  max-height: calc(100vh - 20vw);
-  @media (max-width: 1400px) {
-    max-height: calc(100vh - 30vw);
+  max-height: calc(100vh - 23vw);
+  @media (min-width: 1000px) {
+    max-width: 85vw;
+    max-height: calc(100vh - 20vw);
+  }
+  @media (min-width: 1400px) {
+    max-width: min(85vw, 1400px);
+    max-height: min(calc(100vh - 15vw), 1000px);
   }
 
   &.popup-window-large {
     width: 80vw;
-    height: calc(100vh - 20vw);
+    height: calc(100vh - 23vw);
 
-    @media (max-width: 1400px) {
-      height: calc(100vh - 30vw);
+    @media (min-width: 1000px) {
+      width: 85vw;
+      height: calc(100vh - 20vw);
     }
+    @media (min-width: 1400px) {
+      width: min(85vw, 1400px);
+      height: min(calc(100vh - 15vw), 1000px);
+    }
+  }
+
+  // The parchment texture + a hint of the page's animated color grade live on
+  // a ::before behind the text rather than directly on the scrollable content
+  // - the color-grade filter remaps every color it's applied to (including
+  // text color), so putting it straight on the content made the text
+  // noticeably harder to read.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: url("../assets/box-light-small.png");
+    background-size: 100% 100%;
+    opacity: 0.93;
+    filter: url(#landscape-color-grade) saturate(0.4);
   }
 
   h1 {
@@ -328,6 +359,13 @@ div.landscape--2-enter.landscape--2-enter-active {
     line-height: 4rem;
     margin-bottom: 2rem;
     margin-top: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
+    @media (max-width: 999px) {
+      font-size: 2.6rem;
+      line-height: 2.8rem;
+    }
   }
 
   h2 {
@@ -346,6 +384,56 @@ div.landscape--2-enter.landscape--2-enter-active {
     font-size: 1.3rem;
     // strong {}
     // em {}
+  }
+
+  p.popup-window-button-line {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+
+  // One of the gallery's own light plaque paintings (picked deterministically
+  // per-link in LandscapeContainer.tsx, passed down as --button-plaque-bg) is
+  // stretched across the button as a ::before - rather than a plain
+  // background-image on the link itself - so it can be scaled/brightened
+  // independently on hover/active without touching the text. Deliberately no
+  // border and no overflow clipping: the plaque's own torn/irregular alpha
+  // silhouette *is* the button's shape, not a texture cropped into a clean
+  // rounded rectangle.
+  a.popup-window-button {
+    position: relative;
+    // Without this, the ::before's negative z-index escapes this element
+    // (position: relative alone doesn't form a stacking context) and resolves
+    // against .popup-window's own z-index instead - landing it behind
+    // .popup-window-content entirely and making the texture invisible.
+    isolation: isolate;
+    display: inline-block;
+    padding: 0.6rem 1.8rem;
+    color: rgba(255, 250, 240, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+    text-align: center;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-image: var(--button-plaque-bg);
+      background-size: 100% 100%;
+      filter: brightness(0.82) saturate(0.9);
+      transition: filter 0.25s ease, transform 0.4s ease;
+    }
+
+    &:hover::before {
+      filter: brightness(1.25) saturate(1.15);
+      transform: scale(1.08);
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
   }
 
   a.github-icon {
@@ -388,14 +476,17 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
+  // Plain solid colors rather than mix-blend-mode: color-burn - blended
+  // against the parchment backdrop (whose hue keeps shifting with the
+  // page's color grade) that used to come out an unreadable washed-out
+  // yellow more often than not.
   a {
     text-decoration: none;
-    color: rgb(87, 87, 87);
-    filter: sepia(5);
+    color: rgb(50, 65, 115);
     &:hover {
-      color: rgb(233, 233, 233);
+      color: rgb(175, 55, 60);
     }
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
 
     img.icon {
       transition: all 0.4s ease;
@@ -417,6 +508,15 @@ div.landscape--2-enter.landscape--2-enter-active {
 
   // pre {}
   // blockquote {}
+}
+
+.popup-window-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  padding: 5vw;
+  box-sizing: border-box;
+  color: rgb(20, 20, 20);
 }
 
 .popup-window-background-enter {
@@ -490,6 +590,11 @@ svg {
   }
 }
 
+// Always mounted (see LandscapeContainer) and faded via the --hidden modifier
+// rather than react-transition-group's mount/unmount enter-exit dance - that
+// combo (mountOnEnter/unmountOnExit) raced the very first fade-in of a session
+// against the freshly-mounted node's own ref attachment and made it pop straight
+// to full opacity instead of fading, only ever on that first visit.
 .back-arrow {
   position: fixed !important;
   width: 8vw;
@@ -497,74 +602,186 @@ svg {
   left: 4vw;
   top: calc(50vh - 4vw);
   z-index: 30;
+  mix-blend-mode: color-dodge;
 
+  opacity: 0.5;
+  filter: blur(0);
+  transition: opacity 0.5s ease, filter 0.5s ease;
+
+  &--hidden {
+    opacity: 0 !important;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  &:hover:not(.back-arrow--hidden) {
+    filter: sepia(3);
+    cursor: pointer;
+    animation: left-right 0.5s ease-in-out infinite alternate;
+    opacity: 1;
+  }
+}
+
+@keyframes left-right {
+  to { transform: scale(0.9) translateX(-1rem); }
+}
+
+.project-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  user-select: none;
+}
+
+.project-gallery__viewport {
+  position: relative;
+  width: 100%;
+  height: 42vh;
+  min-height: 220px;
+  max-height: 460px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 2.5rem rgba(0, 0, 0, 0.15);
+}
+
+.project-gallery__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 1rem;
+  cursor: zoom-in;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.project-gallery__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0.5;
   transition: 0.4s all ease;
-  opacity: 0.7;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 
   &:hover {
-    &:not(.back-arrow-exit) {
-      filter: sepia(3);
-      cursor: pointer;
-      animation: left-right 0.5s ease-in-out infinite alternate;
-      opacity: 1;
-
-      @keyframes left-right {
-        to {transform: scale(0.9) translateX(-1rem)}
-      }
-    }
+    filter: sepia(3);
+    opacity: 1;
   }
 }
 
-.back-arrow-enter-active {
-  transition: all 500ms ease 700ms !important;
-}
+.project-gallery__nav--prev {
+  left: 0.75rem;
 
-.back-arrow-exit-active {
-  transition: all 500ms ease !important;
-}
-
-.image-gallery-slides {
-  height: 50vh;
-
-  .image-gallery-slide {
-    transition: all 1s ease !important;
-    background: none;
-    height: 100%;
-    display: flex;
-
-    .image-gallery-image {
-      // margin: auto auto;
-      // display: flex;
-
-      img {
-        max-height: 100%;
-        max-width: 100%;
-        width: unset !important;
-        border-radius: 1rem;
-        display: flex;
-        margin: auto auto;
-        // box-shadow: inset 30px 30px 10px #000000;
-      }
-    }
-
-    &:not(.center) {
-      opacity: 0;
-      filter: blur(20px);
-    }
+  &:hover {
+    animation: gallery-nav-left-right-prev 0.5s ease-in-out infinite alternate;
   }
 }
 
-.image-gallery-left-nav, .image-gallery-right-nav {
-  text-shadow: none;
-  mix-blend-mode: multiply;
+.project-gallery__nav--next {
+  right: 0.75rem;
 
-  &::before {
-    text-shadow: none !important;
-    color: rgb(199, 199, 199) !important;
+  img {
+    transform: scaleX(-1);
   }
 
-  &:hover::before {
-    color: rgb(80, 80, 80) !important;
+  &:hover {
+    animation: gallery-nav-left-right-next 0.5s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes gallery-nav-left-right-prev {
+  to { transform: translateY(-50%) scale(0.9) translateX(-0.6rem); }
+}
+
+@keyframes gallery-nav-left-right-next {
+  to { transform: translateY(-50%) scale(0.9) translateX(0.6rem); }
+}
+
+.project-gallery__dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.project-gallery__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgba(44, 44, 44, 0.25);
+  cursor: pointer;
+  transition: 0.3s all ease;
+
+  &:hover {
+    background: rgba(44, 44, 44, 0.5);
+  }
+
+  &--active {
+    background: rgba(44, 44, 44, 0.7);
+    transform: scale(1.3);
+  }
+}
+
+.project-gallery-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(4, 3, 3, 0.88);
+  cursor: pointer;
+}
+
+// `img.` (not just `.project-gallery-fullscreen__image`) to out-specificity
+// `.popup-window img`, whose `width: 100%` would otherwise stretch this to
+// fill the backdrop instead of sizing to the image's own aspect ratio.
+img.project-gallery-fullscreen__image {
+  max-width: 92vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.3rem;
+  cursor: default;
+  touch-action: none;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.project-gallery-fullscreen__close {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 210;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: 'Cormorant', serif;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.75);
   }
 }
 
@@ -634,7 +851,7 @@ svg {
   }
 }
 
-.tech-cloud-container {
+.music-cloud-container {
   position: absolute;
   width:  100px * $canvas-scale;
   height: 100px * $canvas-scale;
@@ -661,13 +878,15 @@ svg {
   }
 }
 
-.tech-cloud__cloud {
+.music-cloud__cloud {
   position: absolute;
   width: 100%;
   z-index: 14;
 }
 
-.tech-cloud__icon {
+.music-cloud__icon {
+  transform: scale(.7);
+  transform-origin: center;
   position: absolute;
   width: 100%;
   z-index: 15;
