@@ -833,8 +833,8 @@ img.project-gallery-fullscreen__image {
   animation: well-of-memories-glow 7s ease-in-out infinite;
 
   @keyframes well-of-memories-glow {
-    0%, 100% { opacity: 0.4;  transform: scale(0.9); }
-    50%      { opacity: 0.85; transform: scale(1.1); }
+    0%, 100% { opacity: 0.1;  transform: scale(0.6); }
+    50%      { opacity: 0.4; transform: scale(1.1); }
   }
 
   @media (prefers-reduced-motion: reduce) {
