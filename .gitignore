@@ -15,6 +15,12 @@
 # large photoshop files
 /ps
 
+# raw Well of Memories originals (kept locally only - unoptimized, can be
+# several MB each) and the small webp thumbnails `npm run thumbs`
+# (scripts/gen-memories-thumbs.mjs) generates from them for the actual site
+/src/assets/memories
+/src/assets/memories-thumbs
+
 # misc
 .DS_Store
 .env.local

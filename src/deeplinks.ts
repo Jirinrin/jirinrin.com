@@ -4,12 +4,13 @@
 // to every clickable object plus /projects and /projects/[project-id].
 import type { CurrentPage } from './types';
 
-type ObjectPopupType = 'text' | 'about' | 'gallery';
+type ObjectPopupType = 'text' | 'about' | 'gallery' | 'memories';
 
 // About-object id -> URL slug. Kept explicit (rather than derived from `name`)
 // since several names are non-ascii, long, or otherwise unfit for a URL.
 export const OBJECT_SLUGS: Record<string, string> = {
   'gallery': 'gallery',
+  'well-of-memories': 'well-of-memories',
   'future-building': 'future-home',
   'hobby-heap': 'hobby-heap',
   'jiri-soul': 'soul',
@@ -23,6 +24,7 @@ export const OBJECT_SLUGS: Record<string, string> = {
 // handleObjectClick / Navbar's goToPopup calls).
 export const OBJECT_POPUP_TYPES: Record<string, ObjectPopupType> = {
   'gallery': 'gallery',
+  'well-of-memories': 'memories',
   'contact-details': 'text',
   'jiri-soul': 'text',
   'future-building': 'about',

@@ -801,6 +801,48 @@ img.project-gallery-fullscreen__image {
   transition: all 0.1s ease;
 }
 
+#well-of-memories {
+  // Hugs the sprite's own natural size (rather than a fixed width/height
+  // like jiri-soul's two-image setup needs) so the glow div below - sized
+  // and positioned entirely in percentages - can bleed outward from it
+  // however the sprite ends up sized, without a second number to keep in
+  // sync in objects/index.ts.
+  width: max-content;
+  height: max-content;
+}
+
+#well-of-memories__sprite {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+// A soft animated glow "overtop" the well sprite - a plain radial-gradient
+// blob rather than another PNG asset, so it costs nothing to load and can be
+// freely re-tuned/recolored later. `screen` (same recipe as #shining-effect
+// above) lets it genuinely brighten whatever's already painted behind it
+// instead of just sitting on top as a flat highlight.
+#well-of-memories__shine {
+  position: absolute;
+  z-index: 2;
+  inset: -60% -35%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 244, 205, 0.95), rgba(255, 205, 140, 0.4) 55%, transparent 78%);
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: well-of-memories-glow 7s ease-in-out infinite;
+
+  @keyframes well-of-memories-glow {
+    0%, 100% { opacity: 0.4;  transform: scale(0.9); }
+    50%      { opacity: 0.85; transform: scale(1.1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 .creature {
   position: absolute;
   z-index: 12;

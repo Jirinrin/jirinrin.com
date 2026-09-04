@@ -1,6 +1,5 @@
 # TODO
 
-- [ ] ergens een foto-gallerij verwerken van Jiri, missch toch maar in The Gallery? of toch gewoon instagram linken? wellicht in Soul.
 - [ ] while scrolling everything moves nicely, but the 時鈴々 is lagging behind a little bit.
 
 - [ ] Copy objects
@@ -60,3 +59,4 @@
 - Jiri's Diary maken op substack -> Jiri's Diary website maken -> een 'diary' dingetje ergens hier laten liggen in het landschap en toevoegen aan project stack
 - De custom svg filter toch switchen naar webgl shader voor performance?
 - in artwork grot verwerken die cave.jirinrin.com in nieuw tabje opent, of in iframe maybe
+- muzikale laag: ambient achtergrondmuziek, bij bepaalde items dat er andere muziek gaat spelen. bijv ook P.G. Six - Well of Memory

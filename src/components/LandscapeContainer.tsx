@@ -14,6 +14,7 @@ import { allPlaqueVariants } from '../assets/art-gallery/frames';
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
 import ArtGallery from './ArtGallery';
+import Memories from './Memories';
 import ProjectGallery from './ProjectGallery';
 import BackgroundClouds from './BackgroundClouds';
 
@@ -215,7 +216,7 @@ function LandscapeContainer() {
         (!oldPopup
           || popup.id !== oldPopup.id
           || (currentPage.showPopup !== prev.showPopup && currentPage.showPopup)) &&
-        (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery')) {
+        (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery' || popup.type === 'memories')) {
       zoomInCanvas();
     }
 
@@ -279,7 +280,7 @@ function LandscapeContainer() {
     if (link.popupId) {
       const type = OBJECT_POPUP_TYPES[link.popupId];
       const text = abouts[link.popupId]?.text;
-      if (type !== 'gallery' && !text) return;
+      if (type !== 'gallery' && type !== 'memories' && !text) return;
       deepLinkHandledRef.current = true;
       // Same sequence handleObjectClick/goToPopup use: scroll down first,
       // then open the popup once we're there, so the zoom-in/modal only
@@ -446,7 +447,8 @@ function LandscapeContainer() {
           </div>
         );
       case 'gallery':
-        // Rendered separately by <ArtGallery>, outside this generic popup box.
+      case 'memories':
+        // Rendered separately by <ArtGallery> / <Memories>, outside this generic popup box.
         return null;
       default:
         throw new Error('Nonexisting popup type');
@@ -527,7 +529,7 @@ function LandscapeContainer() {
 
         <CSSTransition
           nodeRef={popupRef}
-          in={currentPage.showPopup && currentPage.popup?.type !== 'gallery'}
+          in={currentPage.showPopup && currentPage.popup?.type !== 'gallery' && currentPage.popup?.type !== 'memories'}
           classNames="popup-window-background"
           unmountOnExit
           timeout={{ enter: 700, exit: 500 }}
@@ -543,6 +545,11 @@ function LandscapeContainer() {
 
         <ArtGallery
           open={currentPage.showPopup && currentPage.popup?.type === 'gallery'}
+          onClose={zoomOutCanvas}
+        />
+
+        <Memories
+          open={currentPage.showPopup && currentPage.popup?.type === 'memories'}
           onClose={zoomOutCanvas}
         />
       </div>

@@ -14,6 +14,14 @@ const objects: ObjectsMap = {
     hasText: false,
     extension: 'png'
   },
+  'well-of-memories': {
+    id: 'well-of-memories',
+    name: 'Well of Memories',
+    left: 3150,
+    top: 5050,
+    hasText: false,
+    extension: 'png'
+  },
   'future-building': {
     id: 'future-building',
     name: 'あたしの FUTURE HOME',

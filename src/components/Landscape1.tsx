@@ -233,7 +233,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     return { left, top };
   };
 
-  const zoomPopup = (id: string, type: 'text' | 'about' | 'gallery') => {
+  const zoomPopup = (id: string, type: 'text' | 'about' | 'gallery' | 'memories') => {
     dispatch(changePage({
       popup: { type, id, text: abouts[id]?.text }
     }));
@@ -277,6 +277,9 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     switch (id) {
       case 'gallery':
         scrollDown(true, () => zoomPopup(id, 'gallery'));
+        return;
+      case 'well-of-memories':
+        scrollDown(true, () => zoomPopup(id, 'memories'));
         return;
       case 'contact-details':
       case 'jiri-soul':
@@ -421,6 +424,13 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
                   <img id="jiri-soul__pupils" src={getObjectImage('jiri-soul-pupils', 'png')} alt="jiri soul pupils"
                     style={getPupilTranslation()}
                   />
+                </div>
+              );
+            } else if (obj.id === 'well-of-memories') {
+              return (
+                <div key={obj.id} {...commonProps}>
+                  <img id="well-of-memories__sprite" src={getObjectImage(obj.id, obj.extension)} alt="well of memories" />
+                  <div id="well-of-memories__shine" aria-hidden="true" />
                 </div>
               );
             } else {
