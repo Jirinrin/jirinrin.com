@@ -15,6 +15,7 @@ import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
 import ArtGallery from './ArtGallery';
 import ProjectGallery from './ProjectGallery';
+import BackgroundClouds from './BackgroundClouds';
 
 import './Landscape.scss';
 
@@ -520,6 +521,8 @@ function LandscapeContainer() {
               scrollDown={scrollDown}
             />
           </CSSTransition>
+
+          <BackgroundClouds />
         </div>
 
         <CSSTransition

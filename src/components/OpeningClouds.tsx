@@ -4,18 +4,16 @@ import './OpeningClouds.scss';
 
 // Pre-import the drawn cloud art (Vite replaces require())
 const cloudImages = import.meta.glob<string>('../assets/clouds/*.png', { eager: true, import: 'default' });
-const CLOUD_URLS = Object.values(cloudImages);
+export const CLOUD_URLS = Object.values(cloudImages);
 
-// Hand-placed across the same tall span as ServiceBubbles' own ambient
-// bubbles (`top` is a vh offset from the very top of the page, same
-// convention as AMBIENT_BUBBLES there), so scrolling down through this
-// section reads as descending through layers of cloud toward the landscape
-// below. Mostly small/background-sized, with a handful of bigger ones for
-// depth. `speed` is the parallax factor applied in the scroll handler below:
-// 1 means "scrolls at the same rate as the page" (no extra offset), below 1
-// lags behind (reads as further away/higher up), above 1 rushes past faster
+// `top`/`left` are vh/% offsets from the very top of the page (same
+// convention as ServiceBubbles' own AMBIENT_BUBBLES), so a cloud's position
+// is just "how far down the document", regardless of which layer renders it.
+// `speed` is the parallax factor applied in the scroll handler below: 1 means
+// "scrolls at the same rate as the page" (no extra offset), below 1 lags
+// behind (reads as further away/higher up), above 1 rushes past faster
 // (reads as closer/passing quickly).
-interface CloudSpec {
+export interface CloudSpec {
   img: number; // index into CLOUD_URLS
   top: string;
   left: string;
@@ -27,6 +25,10 @@ interface CloudSpec {
   direction: 1 | -1;
 }
 
+// The foreground set: rendered inside ServiceBubbles, above the name/bubbles'
+// own sky, spanning the stretch before the landscape below actually becomes
+// visible. See BackgroundClouds.tsx for the rest of the original span, moved
+// into the landscape's own color-grade layer instead.
 const CLOUDS: CloudSpec[] = [
   { img: 0, top: '0vh',   left: '6%',  width: '30vw', speed: 0.55, duration: 48, delay: -4,  peakOpacity: 0.4,  direction: 1 },
   { img: 3, top: '4vh',   left: '68%', width: '14vw', speed: 1.3,  duration: 30, delay: -18, peakOpacity: 0.32, direction: -1 },
@@ -44,27 +46,20 @@ const CLOUDS: CloudSpec[] = [
   { img: 3, top: '102vh', left: '30%', width: '24vw', speed: 1.2,  duration: 44, delay: -33, peakOpacity: 0.34, direction: 1 },
   { img: 1, top: '112vh', left: '58%', width: '9vw',  speed: 0.75, duration: 27, delay: -5,  peakOpacity: 0.26, direction: -1 },
   { img: 5, top: '122vh', left: '8%',  width: '14vw', speed: 1.35, duration: 33, delay: -20, peakOpacity: 0.3,  direction: 1 },
-  { img: 2, top: '133vh', left: '72%', width: '19vw', speed: 0.6,  duration: 46, delay: -39, peakOpacity: 0.3,  direction: -1 },
-  { img: 4, top: '144vh', left: '40%', width: '11vw', speed: 0.95, duration: 29, delay: -13, peakOpacity: 0.26, direction: 1 },
-  { img: 0, top: '155vh', left: '18%', width: '13vw', speed: 1.1,  duration: 35, delay: -24, peakOpacity: 0.28, direction: -1 },
-  { img: 3, top: '167vh', left: '62%', width: '10vw', speed: 0.7,  duration: 31, delay: -8,  peakOpacity: 0.24, direction: 1 },
-  { img: 1, top: '176vh', left: '32%', width: '22vw', speed: 0.85, duration: 41, delay: -19, peakOpacity: 0.3,  direction: -1 },
-  { img: 5, top: '183vh', left: '5%',  width: '12vw', speed: 1.25, duration: 28, delay: -6,  peakOpacity: 0.26, direction: 1 },
-  { img: 2, top: '190vh', left: '80%', width: '15vw', speed: 0.65, duration: 37, delay: -31, peakOpacity: 0.28, direction: -1 },
-  { img: 4, top: '197vh', left: '52%', width: '9vw',  speed: 1.1,  duration: 25, delay: -12, peakOpacity: 0.24, direction: 1 },
-  { img: 0, top: '204vh', left: '20%', width: '11vw', speed: 0.9,  duration: 32, delay: -22, peakOpacity: 0.24, direction: -1 },
 ];
 
-// Drawn white/gray cloud shapes drifting through the opening section's
-// scroll, from the big centered name down toward the landscape below - since
-// they sit inside the same color-grade subtree as the rest of ServiceBubbles,
-// their near-white bodies pick up the current gradient's highlight color
-// directly, giving the animated grading actual shapes to paint. They're
-// real, normally-flowing content (not a fixed overlay) so scrolling past
-// them feels like descending through cloud layers rather than watching a
-// static backdrop; a scroll-linked parallax offset (each cloud's own
-// `speed`) makes some drift past faster than others for depth.
-function OpeningClouds() {
+interface CloudsLayerProps {
+  clouds: CloudSpec[];
+  layerClassName?: string;
+  cloudClassName?: string;
+}
+
+// Shared by OpeningClouds (foreground) and BackgroundClouds (landscape-
+// blended): drifting cloud art, positioned via vh/% offsets from the top of
+// the page, with a scroll-linked parallax offset (each cloud's own `speed`)
+// applied directly via ref so it stays independent of the CSS keyframe
+// animation on the image inside.
+export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud' }: CloudsLayerProps) {
   const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -75,7 +70,7 @@ function OpeningClouds() {
 
     const onScroll = () => {
       const y = window.scrollY;
-      CLOUDS.forEach((c, i) => {
+      clouds.forEach((c, i) => {
         const el = layerRefs.current[i];
         if (el) el.style.transform = `translateY(${y * (1 - c.speed)}px)`;
       });
@@ -83,11 +78,11 @@ function OpeningClouds() {
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [clouds]);
 
   return (
-    <div className="opening-clouds" aria-hidden="true">
-      {CLOUDS.map((c, i) => (
+    <div className={layerClassName} aria-hidden="true">
+      {clouds.map((c, i) => (
         <div
           key={i}
           ref={el => { layerRefs.current[i] = el; }}
@@ -96,7 +91,7 @@ function OpeningClouds() {
         >
           <img
             src={CLOUD_URLS[c.img]}
-            className="opening-clouds__cloud"
+            className={cloudClassName}
             alt=""
             style={{
               '--drift-duration': `${c.duration}s`,
@@ -115,6 +110,21 @@ function OpeningClouds() {
       ))}
     </div>
   );
+}
+
+// Drawn white/gray cloud shapes drifting through the opening section's
+// scroll, from the big centered name down toward where the landscape below
+// starts showing through. They sit inside ServiceBubbles' own color-grade
+// subtree, so their near-white bodies pick up the current gradient's
+// highlight color directly - but that subtree is its own isolated
+// compositing group (a `filter` on an element isolates its blending from
+// everything outside it), so these can only ever visually interact with
+// other things in *this* group (the ambient bubbles, the glassy service-
+// bubble cards) - never with the landscape's own art, which lives in a
+// separate, independently-filtered group. See BackgroundClouds for the
+// clouds meant to actually blend with that scenery instead.
+function OpeningClouds() {
+  return <CloudsLayer clouds={CLOUDS} />;
 }
 
 export default OpeningClouds;

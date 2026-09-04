@@ -64,3 +64,12 @@
     opacity: var(--peak-opacity, 0.3);
   }
 }
+
+// Mounted inside the landscape's own color-grade layer (see
+// BackgroundClouds.tsx) rather than ServiceBubbles' - screen blending them
+// against the landscape art they share a filtered group with is what makes
+// them genuinely interact with that scenery's colors, instead of just
+// sitting on top of it as a flat translucent shape.
+.opening-clouds__cloud--background {
+  mix-blend-mode: screen;
+}
