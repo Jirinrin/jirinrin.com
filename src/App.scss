@@ -55,10 +55,23 @@ body, #root {
   transition: filter 0.6s ease;
 }
 
+// Also carries its own real copy of the page's dark-gray backdrop (not just
+// relying on `.color-grade-background` below) - that div is a *separate*,
+// independently-filtered isolated group (see its own comment), so anywhere
+// the landscape art is transparent and that gray shows through, a
+// backdrop-filter glass pane living inside *this* group (see BackgroundClouds)
+// would otherwise be sampling nothing real, no matter how loud its saturate()
+// is. Same image/tiling as that other layer so the two stay visually
+// indistinguishable - this is purely about giving this group something of its
+// own to grab.
 .color-grade-layer {
   position: relative;
   width: 100%;
   height: 100%;
+  background-image: $background-url;
+  background-color: #282c34;
+  background-repeat: repeat;
+  background-size: cover;
 }
 
 // A dedicated, always-present layer behind everything so the page's base
