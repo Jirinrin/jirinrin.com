@@ -65,11 +65,36 @@
   }
 }
 
-// Mounted inside the landscape's own color-grade layer (see
-// BackgroundClouds.tsx) rather than ServiceBubbles' - screen blending them
-// against the landscape art they share a filtered group with is what makes
-// them genuinely interact with that scenery's colors, instead of just
-// sitting on top of it as a flat translucent shape.
-.opening-clouds__cloud--background {
-  mix-blend-mode: screen;
+// A "glass" pane matching the service-bubble cards' own trick: masked down
+// to the cloud's own silhouette (via the cloud PNG's alpha, reused as a CSS
+// mask) rather than a plain rectangle, then backdrop-filter: saturate()'d so
+// it visibly pulls color out of whatever's painted behind it - here, the
+// landscape art itself, since (unlike a plain mix-blend-mode on the cloud,
+// which mostly just washes a near-white source toward white) this actually
+// reads and intensifies the backdrop's real colors. Deliberately left at
+// full opacity (unlike the cloud image next to it, which fades with
+// --peak-opacity) - diluting it the same way would mute the backdrop-filter
+// effect right back to barely-there, the exact problem this replaces. Shares
+// the drift animation's custom properties with the sibling <img> (both
+// inherit from .opening-clouds__layer) so the mask stays glued to the
+// image's silhouette as it sways instead of drifting out of alignment.
+.opening-clouds__glass {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: saturate(3.5) brightness(1.15) contrast(1.1);
+  -webkit-backdrop-filter: saturate(3.5) brightness(1.15) contrast(1.1);
+  mask-image: var(--cloud-mask);
+  -webkit-mask-image: var(--cloud-mask);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  animation: opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-clouds__glass {
+    animation: none;
+  }
 }

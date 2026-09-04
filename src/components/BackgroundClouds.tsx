@@ -7,9 +7,9 @@ import { CloudsLayer, type CloudSpec } from './OpeningClouds';
 // becomes visible underneath. Rendered inside LandscapeContainer's own
 // color-grade layer (see the mount point there) rather than ServiceBubbles',
 // so these clouds share an isolated compositing group with the landscape art
-// itself - `mix-blend-mode` on them (see .opening-clouds__cloud--background)
-// can then genuinely blend with that scenery's own colors, which it never
-// could from inside a different filtered group.
+// itself - the `glass` prop below (a masked backdrop-filter pane, see
+// CloudsLayer) can then genuinely saturate/pick up that scenery's own colors,
+// which it never could from inside a different filtered group.
 const CLOUDS: CloudSpec[] = [
   { img: 2, top: '133vh', left: '72%', width: '19vw', speed: 0.6,  duration: 46, delay: -39, peakOpacity: 0.3,  direction: -1 },
   { img: 4, top: '144vh', left: '40%', width: '11vw', speed: 0.95, duration: 29, delay: -13, peakOpacity: 0.26, direction: 1 },
@@ -24,11 +24,7 @@ const CLOUDS: CloudSpec[] = [
 
 function BackgroundClouds() {
   return (
-    <CloudsLayer
-      clouds={CLOUDS}
-      layerClassName="opening-clouds opening-clouds--background"
-      cloudClassName="opening-clouds__cloud opening-clouds__cloud--background"
-    />
+    <CloudsLayer clouds={CLOUDS} glass />
   );
 }
 

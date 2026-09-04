@@ -52,6 +52,17 @@ interface CloudsLayerProps {
   clouds: CloudSpec[];
   layerClassName?: string;
   cloudClassName?: string;
+  // Adds a "glass" pane, masked to the cloud's own silhouette, that sits on
+  // top of the cloud image and applies backdrop-filter: saturate() to
+  // whatever's rendered behind it. This is the actual mechanism behind the
+  // service-bubble cards' "trippy" look (their glassy backdrop-filter
+  // sampling+saturating the color-graded content behind them) - a plain
+  // mix-blend-mode on the cloud doesn't reproduce it, since blending a
+  // near-white source mostly just washes toward white rather than picking up
+  // the backdrop's actual hue. Only meaningful where there's something
+  // colorful already painted behind the cloud within the *same* isolated
+  // filter group - see BackgroundClouds.
+  glass?: boolean;
 }
 
 // Shared by OpeningClouds (foreground) and BackgroundClouds (landscape-
@@ -59,7 +70,7 @@ interface CloudsLayerProps {
 // the page, with a scroll-linked parallax offset (each cloud's own `speed`)
 // applied directly via ref so it stays independent of the CSS keyframe
 // animation on the image inside.
-export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud' }: CloudsLayerProps) {
+export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud', glass = false }: CloudsLayerProps) {
   const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -82,18 +93,22 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
 
   return (
     <div className={layerClassName} aria-hidden="true">
-      {clouds.map((c, i) => (
-        <div
-          key={i}
-          ref={el => { layerRefs.current[i] = el; }}
-          className="opening-clouds__layer"
-          style={{ top: c.top, left: c.left, width: c.width }}
-        >
-          <img
-            src={CLOUD_URLS[c.img]}
-            className={cloudClassName}
-            alt=""
+      {clouds.map((c, i) => {
+        const maskUrl = `url(${CLOUD_URLS[c.img]})`;
+        return (
+          <div
+            key={i}
+            ref={el => { layerRefs.current[i] = el; }}
+            className="opening-clouds__layer"
             style={{
+              top: c.top,
+              left: c.left,
+              width: c.width,
+              // Set here (rather than on the <img> directly) so the glass
+              // pane below - a sibling, not a descendant, of the image -
+              // inherits the same drift timing via plain CSS custom property
+              // inheritance and stays glued to the image's silhouette as it
+              // sways, instead of drifting out of alignment with it.
               '--drift-duration': `${c.duration}s`,
               '--drift-delay': `${c.delay}s`,
               // A second animation (opacity-only) running on its own,
@@ -104,10 +119,18 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
               '--breathe-delay': `${c.delay * 0.6 - 5}s`,
               '--peak-opacity': c.peakOpacity,
               '--drift-direction': c.direction,
+              '--cloud-mask': maskUrl,
             } as React.CSSProperties}
-          />
-        </div>
-      ))}
+          >
+            <img
+              src={CLOUD_URLS[c.img]}
+              className={cloudClassName}
+              alt=""
+            />
+            {glass && <div className="opening-clouds__glass" />}
+          </div>
+        );
+      })}
     </div>
   );
 }
