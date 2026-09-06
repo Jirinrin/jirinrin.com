@@ -131,3 +131,35 @@
     animation: none;
   }
 }
+
+// The foreground clouds (OpeningClouds, not BackgroundClouds) sit above the
+// navbar - a z-index tie with it (both 100) that resolves by DOM order, see
+// ServiceBubbles.scss - which reads nicely and is worth keeping, but the
+// backing+glass pair above are both full opacity, so together they paint a
+// fully opaque result over whatever's underneath, nav text included. This
+// modifier (added only to OpeningClouds' own wrapper, see its className)
+// moves the peak-opacity breathing from just the cloud image up to the
+// *whole* per-cloud group (backing + image + glass together): the glass
+// pane's backdrop-filter still runs at full strength beforehand, so the
+// color pop inside the cloud's own silhouette stays vivid, but the group's
+// own contribution to the page then blends against the navbar the same
+// ordinary way a translucent PNG always did, rather than painting solid.
+.opening-clouds--legible {
+  .opening-clouds__layer {
+    opacity: var(--peak-opacity, 0.3);
+    animation: opening-cloud-breathe var(--breathe-duration, 55s) ease-in-out infinite;
+    animation-delay: var(--breathe-delay, 0s);
+  }
+
+  .opening-clouds__cloud {
+    opacity: 1;
+    animation: opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite;
+    animation-delay: var(--drift-delay, 0s);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-clouds--legible .opening-clouds__layer {
+    animation: none;
+  }
+}

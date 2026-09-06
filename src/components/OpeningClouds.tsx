@@ -155,8 +155,14 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
 // service-bubble cards), never the landscape's own art, which lives in a
 // separate, independently-filtered group. See BackgroundClouds for the
 // clouds meant to blend with that scenery instead.
+//
+// `--legible` (see the .scss) keeps these clouds visible over the navbar
+// (a z-index tie broken by DOM order, see ServiceBubbles.scss) without
+// painting fully opaque over its white text - only applied here, not on
+// BackgroundClouds, whose glass panes are deliberately kept at full
+// strength for the landscape's own color-pop effect.
 function OpeningClouds() {
-  return <CloudsLayer clouds={CLOUDS} glass />;
+  return <CloudsLayer clouds={CLOUDS} glass layerClassName="opening-clouds opening-clouds--legible" />;
 }
 
 export default OpeningClouds;
