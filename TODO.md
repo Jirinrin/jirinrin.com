@@ -47,6 +47,7 @@
 ## TODO uiteindelijk maar niet voor livegang v2
 
 - nieuwe foto van Jiri op de achtergrond, in stijl van de vorige
+- let's make the site more accessible. the navbar and all the objects in the landscape are currently not tab-able.
 - voeg toe aan gallery:
   - dat berg-regenboog-schilderij voor papa
   - dat bob ross schilderij dat bij hedwig staat
