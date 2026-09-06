@@ -122,6 +122,16 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
               '--cloud-mask': maskUrl,
             } as React.CSSProperties}
           >
+            {/* Behind the cloud image itself, masked to the exact same
+                silhouette - gives the glass pane below real (if flat/small)
+                content of its own to grab within this isolated filter group,
+                without making anything bigger than the cloud's own shape
+                opaque (compare .color-grade-layer/.ServiceBubbles' own
+                section-wide backdrops - those are safe where nothing else
+                needs to show through, but here Navbar and the landscape both
+                sit right behind this section, so only the cloud's own
+                footprint can afford to stop being transparent). */}
+            {glass && <div className="opening-clouds__backing" />}
             <img
               src={CLOUD_URLS[c.img]}
               className={cloudClassName}

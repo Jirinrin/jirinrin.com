@@ -65,6 +65,39 @@
   }
 }
 
+// Sits *behind* the cloud image (and its glass pane), masked to the exact
+// same silhouette as both. On its own this would just be a small, flatly-
+// colored patch of tiled texture in the shape of a cloud - the point isn't
+// how it looks by itself, it's that it gives the glass pane below something
+// real (inside this isolated filter group) to sample, without making
+// anything bigger than the cloud's own footprint opaque. Compare
+// .color-grade-layer/.ServiceBubbles, which can afford a full-section
+// backdrop because nothing else needs to show through there - Navbar and the
+// landscape both sit directly behind *this* section for its entire height,
+// so a section-wide version of this swatch would (and, briefly, did) hide
+// both of them completely instead of just letting clouds drift past them.
+.opening-clouds__backing {
+  position: absolute;
+  inset: 0;
+  background-image: url("../assets/background-darkgray.jpg");
+  background-repeat: repeat;
+  background-size: cover;
+  mask-image: var(--cloud-mask);
+  -webkit-mask-image: var(--cloud-mask);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  animation: opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-clouds__backing {
+    animation: none;
+  }
+}
+
 // A "glass" pane matching the service-bubble cards' own trick: masked down
 // to the cloud's own silhouette (via the cloud PNG's alpha, reused as a CSS
 // mask) rather than a plain rectangle, then backdrop-filter: saturate()'d so
