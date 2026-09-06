@@ -8,6 +8,21 @@
   position: relative;
   z-index: 100;
   pointer-events: none;
+
+  // Without this, the section is fully transparent, so OpeningClouds' glass
+  // panes (masked backdrop-filter, see CloudsLayer) have nothing real to
+  // grab within *this* isolated filter group - `.color-grade` above applies
+  // the same grading filter as the landscape, but a `filter` isolates
+  // backdrop-filter sampling to its own subtree (see .color-grade-layer in
+  // App.scss for the same fix applied there), so the vivid graded color
+  // that's plainly visible behind this section is actually a *different*,
+  // separately-filtered layer (.color-grade-background) that these clouds
+  // can never see into. Same source image as that layer purely so the two
+  // stay visually indistinguishable.
+  background-image: url("../assets/background-darkgray.jpg");
+  background-color: #282c34;
+  background-repeat: repeat;
+  background-size: cover;
 }
 
 // Everything that should dissolve away as this section scrolls up under the

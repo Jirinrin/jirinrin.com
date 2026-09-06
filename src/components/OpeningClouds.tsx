@@ -138,16 +138,15 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
 // Drawn white/gray cloud shapes drifting through the opening section's
 // scroll, from the big centered name down toward where the landscape below
 // starts showing through. They sit inside ServiceBubbles' own color-grade
-// subtree, so their near-white bodies pick up the current gradient's
-// highlight color directly - but that subtree is its own isolated
-// compositing group (a `filter` on an element isolates its blending from
-// everything outside it), so these can only ever visually interact with
-// other things in *this* group (the ambient bubbles, the glassy service-
-// bubble cards) - never with the landscape's own art, which lives in a
+// subtree, which is its own isolated compositing group (a `filter` on an
+// element isolates blending from everything outside it) - so `glass` here
+// only ever picks up color from what's actually painted inside *this* group
+// (ServiceBubbles' own graded backdrop, see its .scss, plus the ambient/
+// service-bubble cards), never the landscape's own art, which lives in a
 // separate, independently-filtered group. See BackgroundClouds for the
-// clouds meant to actually blend with that scenery instead.
+// clouds meant to blend with that scenery instead.
 function OpeningClouds() {
-  return <CloudsLayer clouds={CLOUDS} />;
+  return <CloudsLayer clouds={CLOUDS} glass />;
 }
 
 export default OpeningClouds;
