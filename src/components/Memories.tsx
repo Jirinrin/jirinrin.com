@@ -8,7 +8,7 @@ import './Memories.scss';
 // originals in src/assets/memories, which can be several MB straight off a
 // phone. `eager: true` just resolves each to its build-time URL string
 // (free - no image bytes are fetched); the actual bytes only load once a
-// tile's <img> is mounted into the DOM, which the recycling conveyor below
+// tile's <img> is mounted into the DOM, which the recycling field below
 // keeps bounded to a few dozen at a time no matter how many hundred photos
 // exist on disk.
 const memoryThumbs = import.meta.glob<string>(
@@ -17,32 +17,35 @@ const memoryThumbs = import.meta.glob<string>(
 );
 const MEMORY_URLS = Object.values(memoryThumbs);
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// A pool of every photo, drawn in shuffled order and reshuffled once
-// exhausted - so a long scroll session eventually cycles back through
-// everything (never "runs out"), but never repeats in the same order twice.
+// A pool of every photo, drawn at random but never from the last
+// `historySize` photos already shown - without that, plain random draws
+// (or even a shuffled deck, at its wraparound) can easily bring the same
+// photo back after only a handful of tiles, which reads as an obvious
+// repeat since several dozen tiles are alive on screen at once. The window
+// is kept comfortably bigger than that many-tiles-alive count so no two
+// tiles on screen, or shown within roughly a screen's worth of scrolling,
+// can land on the same photo - it only ever falls back to a real repeat if
+// the whole library is smaller than the window.
 function createPool() {
-  let order = shuffle(MEMORY_URLS);
-  let i = 0;
+  const total = MEMORY_URLS.length;
+  const historySize = Math.max(1, Math.min(total - 1, Math.round(total * 0.65)));
+  const recent: string[] = [];
+
   return (): string => {
-    if (MEMORY_URLS.length === 0) return '';
-    if (i >= order.length) { order = shuffle(MEMORY_URLS); i = 0; }
-    return order[i++];
+    if (total === 0) return '';
+    const candidates = MEMORY_URLS.filter(url => !recent.includes(url));
+    const pick = candidates.length > 0 ? candidates : MEMORY_URLS;
+    const img = pick[Math.floor(Math.random() * pick.length)];
+    recent.push(img);
+    if (recent.length > historySize) recent.shift();
+    return img;
   };
 }
 
 // Depth tiers, back to front: smaller/slower/dimmer/blurrier reads as
 // further away, bigger/faster/sharper as closer - the actual parallax cue.
-// Lanes cycle through these so the field reads as several depths at once
-// rather than one flat layer.
+// Every tile is independently assigned one of these and floats freely -
+// there's no lane/column locking speed or x-position to depth.
 interface Depth { speed: number; minW: number; maxW: number; opacity: number; blur: number; }
 const DEPTHS: Depth[] = [
   { speed: 0.30, minW: 60,  maxW: 100, opacity: 0.5,  blur: 1.4 },
@@ -54,28 +57,39 @@ const DEPTHS: Depth[] = [
 // Portrait / square / landscape / wide - picked per tile so "some pics are
 // big, some small" also reads as varied shapes, not just scaled rectangles.
 const ASPECTS = [0.72, 1, 1.3, 1.6];
+const AVG_ASPECT = ASPECTS.reduce((a, b) => a + b, 0) / ASPECTS.length;
 
-const GAP = 22; // vertical gap between stacked tiles within a lane, px
 const BUFFER = 220; // px beyond the viewport edge a tile is kept alive for, to avoid pop-in
 const AUTO_DRIFT_PX_S = 22; // gentle ambient rise even with no input
 const WHEEL_KICK = 2.4;
 const VELOCITY_DECAY = 0.06; // fraction of velocity retained per second (exponential)
+
+// How densely each depth tier's tiles cover the field before overlap -
+// tuned low and left flat-out random per tile (position, sway, rotation,
+// speed) rather than an even grid, so the whole thing reads as things
+// adrift in open space instead of any repeating pattern.
+const DEPTH_COVERAGE = 0.12;
+const MIN_PER_DEPTH = 4;
+const MAX_PER_DEPTH = 34;
 
 let tileKeyCounter = 0;
 
 interface Tile {
   key: number;
   src: string;
+  depth: Depth;
   width: number;
   height: number;
-  y: number; // top edge in the lane's own unbounded coordinate space
-  rotation: number;
-}
-
-interface Lane {
-  leftPercent: number;
-  depth: Depth;
-  tiles: Tile[];
+  x: number; // horizontal center, in the field's own unbounded coordinate space
+  y: number; // vertical center-ish, in the field's own unbounded scroll coordinate space
+  rotationBase: number;
+  rotationAmp: number;
+  rotationFreq: number;
+  rotationPhase: number;
+  swayAmp: number;
+  swayFreq: number;
+  swayPhase: number;
+  speedJitter: number; // per-tile multiplier on its depth's scroll speed, so same-depth tiles don't move in lockstep
 }
 
 function randomTileShape(depth: Depth) {
@@ -84,45 +98,78 @@ function randomTileShape(depth: Depth) {
   return { width, height: width / aspect };
 }
 
-function makeTile(depth: Depth, nextImage: () => string): Tile {
+function randomX(containerW: number, width: number): number {
+  const overhang = width * 0.5;
+  return -overhang + Math.random() * (containerW + overhang * 2);
+}
+
+// Freshly rolled for every tile at creation and again on every recycle -
+// this (plus the random x/image) is what keeps things feeling like
+// independent drifting objects rather than a repeating cycle.
+function rollMotion(depth: Depth) {
+  return {
+    rotationBase: (Math.random() - 0.5) * 14,
+    rotationAmp: 2 + Math.random() * 5,
+    rotationFreq: 0.05 + Math.random() * 0.12,
+    rotationPhase: Math.random() * Math.PI * 2,
+    // nearer/faster tiers sway further across the screen, like foreground
+    // clouds appearing to drift more than the distant ones during descent
+    swayAmp: (6 + Math.random() * 24) * (0.4 + depth.speed),
+    swayFreq: 0.12 + Math.random() * 0.28,
+    swayPhase: Math.random() * Math.PI * 2,
+    speedJitter: 0.82 + Math.random() * 0.36,
+  };
+}
+
+function tileCountForDepth(depth: Depth, containerW: number, viewportH: number): number {
+  const avgW = (depth.minW + depth.maxW) / 2;
+  const avgArea = avgW * (avgW / AVG_ASPECT);
+  const coverage = containerW * (viewportH + BUFFER * 2) * DEPTH_COVERAGE;
+  return Math.max(MIN_PER_DEPTH, Math.min(MAX_PER_DEPTH, Math.round(coverage / avgArea)));
+}
+
+function makeFloatingTile(depth: Depth, containerW: number, y: number, nextImage: () => string): Tile {
   const { width, height } = randomTileShape(depth);
   return {
     key: tileKeyCounter++,
     src: nextImage(),
+    depth,
     width,
     height,
-    y: 0,
-    rotation: (Math.random() - 0.5) * 10,
+    x: randomX(containerW, width),
+    y,
+    ...rollMotion(depth),
   };
 }
 
-function fillLane(depth: Depth, viewportH: number, nextImage: () => string): Tile[] {
+function buildField(containerW: number, viewportH: number, nextImage: () => string): Tile[] {
   const tiles: Tile[] = [];
-  let y = -BUFFER - Math.random() * GAP * 3;
-  while (y < viewportH + BUFFER) {
-    const t = makeTile(depth, nextImage);
-    t.y = y;
-    tiles.push(t);
-    y += t.height + GAP;
+  for (const depth of DEPTHS) {
+    const count = tileCountForDepth(depth, containerW, viewportH);
+    for (let i = 0; i < count; i++) {
+      const y = -BUFFER + Math.random() * (viewportH + BUFFER * 2);
+      tiles.push(makeFloatingTile(depth, containerW, y, nextImage));
+    }
   }
   return tiles;
 }
 
-function laneCountFor(width: number): number {
-  return Math.max(3, Math.min(7, Math.round(width / 190)));
-}
-
-function buildLanes(containerWidth: number, viewportH: number, nextImage: () => string): Lane[] {
-  const count = laneCountFor(containerWidth);
-  return Array.from({ length: count }, (_, i) => {
-    const depth = DEPTHS[i % DEPTHS.length];
-    const jitter = (Math.random() - 0.5) * (60 / count);
-    return {
-      leftPercent: ((i + 0.5) / count) * 100 + jitter,
-      depth,
-      tiles: fillLane(depth, viewportH, nextImage),
-    };
-  });
+// Mutates a tile in place once it's drifted fully past an edge, re-seeding
+// every random parameter and placing it just beyond the opposite edge -
+// each tile recycles independently (no shared ordering to maintain), which
+// is what lets them all wander at their own pace instead of in columns.
+function respawnTile(tile: Tile, containerW: number, viewportH: number, scrollPos: number, edge: 'top' | 'bottom', nextImage: () => string) {
+  const { width, height } = randomTileShape(tile.depth);
+  tile.src = nextImage();
+  tile.width = width;
+  tile.height = height;
+  Object.assign(tile, rollMotion(tile.depth));
+  tile.x = randomX(containerW, width);
+  const offset = scrollPos * tile.depth.speed * tile.speedJitter;
+  const jitter = Math.random() * BUFFER;
+  tile.y = edge === 'bottom'
+    ? offset + viewportH + BUFFER + jitter
+    : offset - BUFFER - height - jitter;
 }
 
 interface MemoriesProps {
@@ -136,16 +183,17 @@ function Memories({ open, onClose }: MemoriesProps) {
   const tileElsRef = useRef<Map<number, HTMLDivElement>>(new Map());
   // useState's lazy-init form (unlike useRef's) only ever calls createPool()
   // once, no matter how many times the component re-renders - matters here
-  // since a structural tile recycle triggers a re-render fairly often during
-  // active scrolling, and createPool() does a real O(n) shuffle.
+  // since the pool closure carries the recency history that keeps photos
+  // from repeating too soon, which a fresh instance per render would reset.
   const [pool] = useState(() => createPool());
 
-  const lanesRef = useRef<Lane[]>([]);
+  const tilesRef = useRef<Tile[]>([]);
   const [version, setVersion] = useState(0);
   const [ready, setReady] = useState(false);
 
   const scrollPosRef = useRef(0);
   const velocityRef = useRef(0);
+  const viewportWRef = useRef(0);
   const viewportHRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef(0);
@@ -161,11 +209,12 @@ function Memories({ open, onClose }: MemoriesProps) {
       const w = el.clientWidth;
       const h = el.clientHeight;
       if (w <= 0 || h <= 0) return;
+      viewportWRef.current = w;
       viewportHRef.current = h;
       scrollPosRef.current = 0;
       velocityRef.current = 0;
       tileElsRef.current.clear();
-      lanesRef.current = buildLanes(w, h, pool);
+      tilesRef.current = buildField(w, h, pool);
       setVersion(v => v + 1);
       setReady(true);
     };
@@ -176,11 +225,11 @@ function Memories({ open, onClose }: MemoriesProps) {
     return () => ro.disconnect();
   }, [open]);
 
-  // The rAF loop is the only thing that moves tiles frame to frame - lane
-  // membership (adding/removing DOM nodes) only changes on recycling, which
-  // is cheap and infrequent per lane, so structural React re-renders stay
-  // rare while the actual motion is a plain style mutation on existing
-  // elements (same approach as OpeningClouds' scroll-linked parallax).
+  // The rAF loop is the only thing that moves tiles frame to frame - tile
+  // membership (recycling one that's drifted off-screen) only changes
+  // occasionally per tile, so structural React re-renders stay rare while
+  // the actual motion is a plain style mutation on existing elements (same
+  // approach as OpeningClouds' scroll-linked parallax).
   useEffect(() => {
     if (!open || !ready) return;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -190,6 +239,7 @@ function Memories({ open, onClose }: MemoriesProps) {
       const dt = Math.min(64, now - lastTimeRef.current);
       lastTimeRef.current = now;
       const dtSec = dt / 1000;
+      const tSec = now / 1000;
 
       if (!reducedMotion) scrollPosRef.current += AUTO_DRIFT_PX_S * dtSec;
       scrollPosRef.current += velocityRef.current * dtSec;
@@ -197,40 +247,35 @@ function Memories({ open, onClose }: MemoriesProps) {
       if (Math.abs(velocityRef.current) < 0.5) velocityRef.current = 0;
 
       const viewportH = viewportHRef.current;
+      const containerW = viewportWRef.current;
+      const scrollPos = scrollPosRef.current;
       let structural = false;
 
-      for (const lane of lanesRef.current) {
-        const offset = scrollPosRef.current * lane.depth.speed;
+      for (const tile of tilesRef.current) {
+        let offset = scrollPos * tile.depth.speed * tile.speedJitter;
+        let screenY = tile.y - offset;
 
-        while (lane.tiles.length) {
-          const first = lane.tiles[0];
-          if (first.y - offset + first.height >= -BUFFER) break;
-          lane.tiles.shift();
-          const last = lane.tiles[lane.tiles.length - 1];
-          const t = makeTile(lane.depth, pool);
-          t.y = (last ? last.y + last.height : offset - BUFFER) + GAP;
-          lane.tiles.push(t);
+        if (screenY < -BUFFER - tile.height) {
+          respawnTile(tile, containerW, viewportH, scrollPos, 'bottom', pool);
           structural = true;
+          offset = scrollPos * tile.depth.speed * tile.speedJitter;
+          screenY = tile.y - offset;
+        } else if (screenY > viewportH + BUFFER) {
+          respawnTile(tile, containerW, viewportH, scrollPos, 'top', pool);
+          structural = true;
+          offset = scrollPos * tile.depth.speed * tile.speedJitter;
+          screenY = tile.y - offset;
         }
 
-        while (lane.tiles.length) {
-          const last = lane.tiles[lane.tiles.length - 1];
-          if (last.y - offset <= viewportH + BUFFER) break;
-          lane.tiles.pop();
-          const first = lane.tiles[0];
-          const t = makeTile(lane.depth, pool);
-          t.y = (first ? first.y : offset + viewportH + BUFFER) - GAP - t.height;
-          lane.tiles.unshift(t);
-          structural = true;
-        }
+        const sway = Math.sin(tSec * tile.swayFreq + tile.swayPhase) * tile.swayAmp;
+        const rotation = tile.rotationBase + Math.sin(tSec * tile.rotationFreq + tile.rotationPhase) * tile.rotationAmp;
+        const screenX = tile.x + sway - tile.width / 2;
 
-        for (const tile of lane.tiles) {
-          const tileEl = tileElsRef.current.get(tile.key);
-          if (!tileEl) continue;
-          const screenY = tile.y - offset;
-          tileEl.style.transform = `translate3d(-50%, ${screenY}px, 0) rotate(${tile.rotation}deg)`;
+        const tileEl = tileElsRef.current.get(tile.key);
+        if (tileEl) {
+          tileEl.style.transform = `translate3d(${screenX}px, ${screenY}px, 0) rotate(${rotation}deg)`;
 
-          let opacity = lane.depth.opacity;
+          let opacity = tile.depth.opacity;
           if (screenY < 0) opacity *= Math.max(0, Math.min(1, (screenY + BUFFER) / BUFFER));
           const bottomOverhang = (screenY + tile.height) - viewportH;
           if (bottomOverhang > 0) opacity *= Math.max(0, Math.min(1, (BUFFER - bottomOverhang) / BUFFER));
@@ -294,7 +339,7 @@ function Memories({ open, onClose }: MemoriesProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
 
-  void version; // read to satisfy lint - lanesRef.current is the real data, this state just triggers reconciliation
+  void version; // read to satisfy lint - tilesRef.current is the real data, this state just triggers reconciliation
 
   return (
     <AnimatePresence>
@@ -325,23 +370,19 @@ function Memories({ open, onClose }: MemoriesProps) {
             {MEMORY_URLS.length === 0 && (
               <p className="memories-empty">no memories here yet...</p>
             )}
-            {lanesRef.current.map((lane, li) => (
-              <div key={li} className="memories-lane" style={{ left: `${lane.leftPercent}%` }}>
-                {lane.tiles.map(tile => (
-                  <div
-                    key={tile.key}
-                    ref={el => { if (el) tileElsRef.current.set(tile.key, el); else tileElsRef.current.delete(tile.key); }}
-                    className="memories-tile"
-                    style={{
-                      width: tile.width,
-                      height: tile.height,
-                      filter: lane.depth.blur ? `blur(${lane.depth.blur}px)` : undefined,
-                      transform: `translate3d(-50%, ${tile.y - scrollPosRef.current * lane.depth.speed}px, 0) rotate(${tile.rotation}deg)`,
-                    }}
-                  >
-                    <img src={tile.src} alt="" draggable={false} loading="lazy" decoding="async" />
-                  </div>
-                ))}
+            {tilesRef.current.map(tile => (
+              <div
+                key={tile.key}
+                ref={el => { if (el) tileElsRef.current.set(tile.key, el); else tileElsRef.current.delete(tile.key); }}
+                className="memories-tile"
+                style={{
+                  width: tile.width,
+                  height: tile.height,
+                  filter: tile.depth.blur ? `blur(${tile.depth.blur}px)` : undefined,
+                  transform: `translate3d(${tile.x - tile.width / 2}px, ${tile.y - scrollPosRef.current * tile.depth.speed * tile.speedJitter}px, 0) rotate(${tile.rotationBase}deg)`,
+                }}
+              >
+                <img src={tile.src} alt="" draggable={false} loading="lazy" decoding="async" />
               </div>
             ))}
           </div>
