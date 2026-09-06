@@ -1,36 +1,15 @@
 # TODO
 
-- [ ] while scrolling everything moves nicely, but the 時鈴々 is lagging behind a little bit.
-
 - [ ] Copy objects
+  - [x] [contact-details.md](src/assets/objects/contact-details.md)  
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
   - [ ] [spiral-tower.md](src/assets/objects/spiral-tower.md) 
   - [ ] [jiri-soul.md](src/assets/objects/jiri-soul.md) 
   - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
-  - [x] [gallery.md](src/assets/objects/gallery.md) 
-
-- [ ] Copy projects
-  - [x] [karaokeq.md](src/assets/projects/karaokeq.md) 
-  - [x] [kodamap.md](src/assets/projects/kodamap.md) 
-  - [ ] [umu.md](src/assets/projects/umu.md) 
-  - [x] [irukadrive.md](src/assets/projects/irukadrive.md) 
-  - [ ] [projectdansurando.md](src/assets/projects/projectdansurando.md) 
-  - [ ] [projekt-kinoko.md](src/assets/projects/projekt-kinoko.md) 
-  - [ ] [aya.md](src/assets/projects/aya.md) 
-  - [ ] [contact-details.md](src/assets/objects/contact-details.md) 
-  - [ ] [jirinrin.com.md](src/assets/projects/jirinrin.com.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
-  - [x] [architecture-highlights.md](src/assets/projects/architecture-highlights.md) 
 
 - [ ] Foto's/video's toevoegen:
-  - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
-  - [ ] [spiral-tower.md](src/assets/objects/spiral-tower.md) 
-  - [ ] [jiri-soul.md](src/assets/objects/jiri-soul.md) 
-  - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
-  - [ ] [future-building.md](src/assets/objects/future-building.md) 
-  - [x] [gallery.md](src/assets/objects/gallery.md) 
-  - [x] [contact-details.md](src/assets/objects/contact-details.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
     - [ ] hanna album
     - [ ] instagram / conekt.it / youtube voor dj mixes enzo
@@ -42,7 +21,6 @@
   - [ ] [projekt-kinoko.md](src/assets/projects/projekt-kinoko.md) 
   - [ ] [aya.md](src/assets/projects/aya.md) 
   - [ ] [jirinrin.com.md](src/assets/projects/jirinrin.com.md) 
-  - [x] [architecture-highlights.md](src/assets/projects/architecture-highlights.md) 
 
 ## TODO uiteindelijk maar niet voor livegang v2
 
