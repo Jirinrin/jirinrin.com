@@ -12,10 +12,22 @@ import './Memories.scss';
 // keeps bounded to a few dozen at a time no matter how many hundred photos
 // exist on disk.
 const memoryThumbs = import.meta.glob<string>(
-  '../assets/memories-thumbs/*',
+  '../assets/memories-thumbs/*.webp',
   { eager: true, import: 'default' }
 );
 const MEMORY_URLS = Object.values(memoryThumbs);
+
+// Real width/height aspect ratio per thumb filename, written alongside the
+// thumbs by the same generation script - lets each tile be shaped to match
+// its actual photo (see ASPECT_BY_URL below) instead of a shape guessed at
+// random, which used to crop portrait photos as if they were landscape.
+const memoryAspects: Record<string, number> = import.meta.glob<{ default: Record<string, number> }>(
+  '../assets/memories-thumbs-meta.json',
+  { eager: true }
+)['../assets/memories-thumbs-meta.json']?.default ?? {};
+const ASPECT_BY_URL = new Map<string, number>(
+  Object.entries(memoryThumbs).map(([path, url]) => [url, memoryAspects[path.split('/').pop()!] ?? 1])
+);
 
 // A pool of every photo, drawn at random but never from the last
 // `historySize` photos already shown - without that, plain random draws
@@ -48,16 +60,27 @@ function createPool() {
 // there's no lane/column locking speed or x-position to depth.
 interface Depth { speed: number; minW: number; maxW: number; opacity: number; blur: number; }
 const DEPTHS: Depth[] = [
-  { speed: 0.30, minW: 60,  maxW: 100, opacity: 0.5,  blur: 1.4 },
-  { speed: 0.55, minW: 95,  maxW: 150, opacity: 0.72, blur: 0.5 },
-  { speed: 0.85, minW: 140, maxW: 210, opacity: 0.9,  blur: 0 },
-  { speed: 1.25, minW: 190, maxW: 280, opacity: 1,    blur: 0 },
+  { speed: 0.30, minW: 60,  maxW: 105, opacity: 0.5,  blur: 1.4 },
+  { speed: 0.55, minW: 95,  maxW: 160, opacity: 0.72, blur: 0.5 },
+  { speed: 0.85, minW: 145, maxW: 230, opacity: 0.9,  blur: 0 },
+  { speed: 1.25, minW: 200, maxW: 310, opacity: 1,    blur: 0 },
 ];
 
-// Portrait / square / landscape / wide - picked per tile so "some pics are
-// big, some small" also reads as varied shapes, not just scaled rectangles.
-const ASPECTS = [0.72, 1, 1.3, 1.6];
-const AVG_ASPECT = ASPECTS.reduce((a, b) => a + b, 0) / ASPECTS.length;
+// Tiles are shaped to match each photo's real aspect ratio (via
+// ASPECT_BY_URL below) rather than a random guess, so object-fit: cover
+// never has to crop a portrait photo as though it were a landscape one.
+// Still clamped to a sane range - the rare panorama or odd screenshot
+// shouldn't produce a sliver tile that breaks the "field of photos" look.
+const ASPECT_CLAMP_MIN = 0.55;
+const ASPECT_CLAMP_MAX = 2.0;
+function aspectForUrl(url: string): number {
+  const raw = ASPECT_BY_URL.get(url) ?? 1;
+  return Math.min(ASPECT_CLAMP_MAX, Math.max(ASPECT_CLAMP_MIN, raw));
+}
+const ASPECT_VALUES = Array.from(ASPECT_BY_URL.values());
+const AVG_ASPECT = ASPECT_VALUES.length > 0
+  ? ASPECT_VALUES.reduce((a, b) => a + b, 0) / ASPECT_VALUES.length
+  : 1;
 
 const BUFFER = 220; // px beyond the viewport edge a tile is kept alive for, to avoid pop-in
 const AUTO_DRIFT_PX_S = 22; // gentle ambient rise even with no input
@@ -92,9 +115,8 @@ interface Tile {
   speedJitter: number; // per-tile multiplier on its depth's scroll speed, so same-depth tiles don't move in lockstep
 }
 
-function randomTileShape(depth: Depth) {
+function randomTileShape(depth: Depth, aspect: number) {
   const width = depth.minW + Math.random() * (depth.maxW - depth.minW);
-  const aspect = ASPECTS[Math.floor(Math.random() * ASPECTS.length)];
   return { width, height: width / aspect };
 }
 
@@ -129,10 +151,11 @@ function tileCountForDepth(depth: Depth, containerW: number, viewportH: number):
 }
 
 function makeFloatingTile(depth: Depth, containerW: number, y: number, nextImage: () => string): Tile {
-  const { width, height } = randomTileShape(depth);
+  const src = nextImage();
+  const { width, height } = randomTileShape(depth, aspectForUrl(src));
   return {
     key: tileKeyCounter++,
-    src: nextImage(),
+    src,
     depth,
     width,
     height,
@@ -159,8 +182,8 @@ function buildField(containerW: number, viewportH: number, nextImage: () => stri
 // each tile recycles independently (no shared ordering to maintain), which
 // is what lets them all wander at their own pace instead of in columns.
 function respawnTile(tile: Tile, containerW: number, viewportH: number, scrollPos: number, edge: 'top' | 'bottom', nextImage: () => string) {
-  const { width, height } = randomTileShape(tile.depth);
   tile.src = nextImage();
+  const { width, height } = randomTileShape(tile.depth, aspectForUrl(tile.src));
   tile.width = width;
   tile.height = height;
   Object.assign(tile, rollMotion(tile.depth));

@@ -20,6 +20,7 @@
 # (scripts/gen-memories-thumbs.mjs) generates from them for the actual site
 /src/assets/memories
 /src/assets/memories-thumbs
+/src/assets/memories-thumbs-meta.json
 
 # misc
 .DS_Store
