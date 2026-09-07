@@ -13,6 +13,7 @@
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
     - [ ] hanna album
     - [ ] instagram / conekt.it / youtube voor dj mixes enzo
+    - [ ] music recommends: artists (zie foto note sato), dj mixes, look within, etc
   - [ ] [karaokeq.md](src/assets/projects/karaokeq.md) 
   - [ ] [kodamap.md](src/assets/projects/kodamap.md) 
   - [ ] [umu.md](src/assets/projects/umu.md) 

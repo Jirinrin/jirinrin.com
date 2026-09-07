@@ -7,6 +7,7 @@ As you could probably tell from how she looks, she is really just a child, who a
 I like to think that my SOUL's neverending wonder at what life can be like and willingness to absorb as much as she can, truly gives me the power to always continue to develop myself and put as much passion into projects as I do~~~
 
 - i'm a tree elf, an otherness being, etc etc
+- soul path lately: finding ways to express myself and give myself to the world in all my Jiri-ness ☺️ I want to make everyone I come into contact with that child-like fun and weirdness and existential bliss many of us think they have lost somewhere along the way!
 
 _(© Tomorrow Corporation™, 1809 for the image I traced this character from)_
 
