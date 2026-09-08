@@ -2,10 +2,10 @@
 
 - [ ] Copy objects
   - [x] [contact-details.md](src/assets/objects/contact-details.md)  
+  - [x] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [octopus-tree.md](src/assets/objects/octopus-tree.md) 
   - [ ] [spiral-tower.md](src/assets/objects/spiral-tower.md) 
   - [ ] [jiri-soul.md](src/assets/objects/jiri-soul.md) 
-  - [ ] [hobby-heap.md](src/assets/objects/hobby-heap.md) 
   - [ ] [future-building.md](src/assets/objects/future-building.md) 
   - [ ] [groove-grove.md](src/assets/objects/groove-grove.md) 
 

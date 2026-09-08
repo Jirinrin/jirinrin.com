@@ -1,4 +1,4 @@
-# The exultance of existence
+# The Exultance of Existence
 
 If there is one saying I do _not_ seem to live by, it's 二兎追う者は一兎も得ず:  
 I love jumping about between things to do in my free time, meaning that I'll prolly never get exceptionally good at _one_ thing... Or maybe I will, who knows!  
@@ -20,13 +20,17 @@ Part of Music but also not part of Music, because it also has to do with the BOD
 
 Dancing by myself is very fun in its own way, especially out in nature, but there is a special kind of magic in dancing at small raves or festivals: putting my all into the dance in such a setting makes me part of the interconnected network that the crowd becomes, synchronized by the music. It makes the energy flowing through a group of humans very tangible, it's probably one of the more tangible ways of experiencing Oneness that I know!
 
+If you ever see an Otherworldly Fairy dancing at a rave, walk up to them, it might be Jiri!
+
 **`Nature & Trees`**  
 
 Being a Tree Elf and all, almost every day I find myself in Nature and in Trees! It's just very very important to me, as a way to connect to one of the deepest parts of my being... Or more simply put, just because it feels so good! That's more than enough reason hehee~
 
-No but there is seriously something very special about just spending a couple hours in the Woods. Just walking around connected to the trees and the animals and the elements... Having a nap... Climbing a tree or two, or three, or more! Really taking my time, sitting up there, chillin' with the insects up there, sometimes even taking my backpack up there and enjoying a little Treetop Picknick, enjoying the view... And then Oops, I didn't notice it's already getting dark!
+No but there is seriously something very special about just spending a couple hours in the Woods. Just walking around connected to the trees and the animals and the elements... Having a nap, followed by a refreshing little fairy dance... Meditating... Climbing a tree or two, or three, or more! Really taking my time, sitting up there, chillin' with the insects up there, sometimes even taking my backpack up there and enjoying a little Treetop Picknick, enjoying the view... And then Oops, I didn't notice it's already getting dark!
 
-I'm telling ya, it's something spiritual. Out in nature, I feel connected to... something. Something inside myself, something about this world. Just the most pure version of me, without all the worldly clutter, and the trees being themselves. The Forest being all one organism, one system. The fairies, you'll never know where exactly they are but you can feel them... That's all I'll say about it for now ☺️
+I'm telling ya, it's something spiritual. Out in nature, I feel connected to... something. Something inside myself, something about this world. Just the most pure version of me, without all the worldly clutter, and the trees, just being themselves. The Forest being all one organism, one system. The fairies, you'll never know where exactly they are but you can feel them... That's all I'll say about it for now ☺️
+
+P.S. There are many more parts of connecting with Nature that I would love to give a proper place, being: multi-day trekking through the Mountains and the Forests of this world, feeling with immeasurable love the Greatness of Mountains in general, diving into the Endless Enchanted Worlds of the Ocean, and more~!
 
 **`Insect Friends`**  
 
@@ -36,14 +40,35 @@ Lately I've been particularly drawn to the Dragonflies and the Isopods, they jus
 
 Fun ideas for insect-related activities: seeing the Bees buzz around harvesting nectar from flowers; watching the Isopods go about their business in their little village in a rotting branch; catching the rare opportunity to see a Spider weave its web in real time; enjoy Stinkbugs trying to climb you like you're a tall-standing tree; stare at a pond as the many Dragonflies do their magical dance, and wait until one large one lands on your leg; battle with your old self who would be disgussted, as you see a Cockroach just chilling on the fence of the local park...
 
----
+**`Spirituality`**  
 
-TODO
-- spirituality: tjaaa het leven is spiritueel van zichzelf, etc, dit is mijn pad de laatste jaren.
-- paddestoelen / psychedelische exploraties
+It feels strange to talk about Spirituality as a Hobby or an Interest, but it's no matter as I put it in this list anyway 😁
 
----
+You know, after walking this path for a while, you start to tap into certain types of Spiritual Insights, and at that point the entirety of Life gets very strange indeed. Time starts to flow "in the Now" in ways that make a Year feel like a Flash and a Flash feel like a Year... Feeling into Cosmic Truths becomes second nature... Life reveals itself as a constant chain of experiences that all have meaning and a sparkling beauty and something to learn to them, even/especially the difficult ones... So many mundane things turn into some of the most refreshing things Life has to offer... Magic shows itself in the everyday more than one could imagine from daily waking consciousness... Deeeep gratitude for just having this crazy turbulent life on this beautiful planet, with so many beautiful things that we're only able to experience in these 3D bodies... Regular explosions of fractalized self-love...
 
+So yes, Spirituality is not so much a 'part of life' to me anymore -- rather it is Life Itself! It's an immensely intense experience, interspersed by plenty of incredibly difficult periods, but WOW is it beautiful! I'd not have it any other way!! :D
+
+Fun Spiritual Activities: meditating, reading books by spiritual teachers, walking in total silence through nature, learning about esoteric traditions like the Tarot, finding opportunities to let your Inner Child feel loved, embodying Love, learning to talk to the Animals and the Trees and the Elementals, learning Astral Travel into other Places and Dimensions, vibing with interdimensional intelligences, learning Telepathy, seeing who will stick with you when you regularly speak in Tongues...
+
+**`The Mushroom`**  
+
+Who or What is The Mushroom? You shall never quite know, unless you embark on a Journey with it... And so I did. On multiple different occasions over the past years. Treated as a sacred, respected road into the Other, towards soul expansion but also diving into the deeeep strangeness... And boy, it turned my world upside down, showed me a completely new way of looking at the world and set into motion a whole journey of spiritual seeking, healing and soul-searching! To quote what I wrote on [LOOK WITHIN](https://kinoko.nosk.be):
+
+_"[The Mushroom] aided me deeply on the spiritual path; brought me in touch with my most authentic dorky self, worrying less about others' opinions; gave me the self-love to start the work of healing my childhood trauma; led me to seek out a much healthier lifestyle; made me see the world more playfully and optimistically; made me live more in the Now; tapped me into my inner intuition, which led me to quit my previous job to go do something personally important to me in the world..."_
+
+_"Woww that's a whole pandemonium of changes in a life that was already plenty turbulent! My current life is certainly not a calm oasis by any means, but the days in which I couldn't imagine a happier self are becoming more and more frequent! 😊 *(Having said that, it's certainly not been an easy journey to get here, so don't go thinking the Mushroom will fix you instantly! Doing the difficult shadow work over the years was most essential to get to this place.)*"_
+
+The Psychedelic Path is not the path for everyone, but to those who feel called to it, it has innumerable gifts to offer. ✨️🍄✨️
+
+**`Topics that I've been thinking about a lot`**  
+
+Self-Love. Lately I've been feeling so much of it, and it's brought me some realisations... Like that we help ourselves much more by allowing ourselves to 'fall into our weakness', and then using that as a catalyst to _choose_ for the healthier and more conscious option, only because it genuinely feels better in the moment and we are whole beings who care about ourselves; rather than feeling we need 'discipline' or need to be hard on ourselves~!
+
+Radical vulnerability. How beautiful to be able to share beautiful vulnerable silence. To be able to show our most fragile selves to each other, as one of the most powerful ways to connect, so much more powerful than getting into arguments and defending ourselves etc...
+
+Dark vs Light. All of us have both of them in ourselves, and I don't think it serves anyone to try to put people/situations of Good vs Bad, Like vs Don't Like, etc.
+
+...And there are many more such topics, that just don't pop into my head right now~
 
 **`Cute stuff`**  
 
@@ -69,7 +94,7 @@ This used to be a _huge_ passion of mine, to the point of being one of the bigge
 
 **`Art`**  
 
-I've been identifying as a type of Artist more and more, even if not in the conventional sense of the word. And ahhhh in terms of collecting art, I used to be intensely into many kinds of anime art, and that still has a big place in my heart, but lately I've been having my mind blown by so many works by visionary psychedelic artists, among other things, that I'm finally coming to realise the true revolutionary power that Art has in this world we inhabit.
+I've been identifying as a type of Artist more and more, even if not in the conventional sense of the word (whatever that means). And ahhhh in terms of collecting art, I used to be intensely into many kinds of anime art, and that still has a big place in my heart, but lately I've been having my mind blown by so many works by visionary psychedelic artists, among other things, that I'm finally coming to realise the true revolutionary power that Art has in this world we inhabit.
 
 Have a look at the [Gallery](/gallery) for some of the things that I make from time to time.
 
