@@ -134,32 +134,27 @@
 
 // The foreground clouds (OpeningClouds, not BackgroundClouds) sit above the
 // navbar - a z-index tie with it (both 100) that resolves by DOM order, see
-// ServiceBubbles.scss - which reads nicely and is worth keeping, but the
-// backing+glass pair above are both full opacity, so together they paint a
-// fully opaque result over whatever's underneath, nav text included. This
-// modifier (added only to OpeningClouds' own wrapper, see its className)
-// moves the peak-opacity breathing from just the cloud image up to the
-// *whole* per-cloud group (backing + image + glass together): the glass
-// pane's backdrop-filter still runs at full strength beforehand, so the
-// color pop inside the cloud's own silhouette stays vivid, but the group's
-// own contribution to the page then blends against the navbar the same
-// ordinary way a translucent PNG always did, rather than painting solid.
+// ServiceBubbles.scss - which reads nicely and is worth keeping, but
+// `__backing` above is a fully opaque swatch, so wherever a cloud's
+// silhouette crosses the navbar it would otherwise completely hide the nav
+// text underneath it, drift-animation notwithstanding.
+//
+// An earlier version of this fix moved the peak-opacity breathing from just
+// the cloud image up to the *whole* per-cloud group (backing + image + glass
+// together) - that did stop the opaque paint-over, but it also diluted the
+// glass pane's already-saturated result the same way, since fading the whole
+// composited group just blends its vivid output toward transparent. That's
+// exactly why these clouds used to read paler/whiter than BackgroundClouds'
+// (same mechanism, full strength, never faded as a group) instead of equally
+// colorful.
+//
+// Thinning only `__backing` fixes the actual opaque-over-navbar problem at
+// its source and leaves everything downstream of it (the glass pane's
+// backdrop-filter, the cloud image's own peak-opacity breathe from the base
+// rules above) running exactly like BackgroundClouds - so these clouds now
+// pick up real, vivid color the same way, just still legible over the navbar.
 .opening-clouds--legible {
-  .opening-clouds__layer {
-    opacity: var(--peak-opacity, 0.3);
-    animation: opening-cloud-breathe var(--breathe-duration, 55s) ease-in-out infinite;
-    animation-delay: var(--breathe-delay, 0s);
-  }
-
-  .opening-clouds__cloud {
-    opacity: 1;
-    animation: opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite;
-    animation-delay: var(--drift-delay, 0s);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .opening-clouds--legible .opening-clouds__layer {
-    animation: none;
+  .opening-clouds__backing {
+    opacity: 0.55;
   }
 }
