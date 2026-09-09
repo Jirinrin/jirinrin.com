@@ -232,10 +232,13 @@ function frameFilter(choice: FrameChoice): string {
   return `url(#${COLOR_GRADE_FILTER_ID}) ${choice.invert ? 'invert(1) ' : ''}saturate(${choice.saturateExtra}) brightness(${choice.brightness})${choice.extraFilter ? ` ${choice.extraFilter}` : ''}`;
 }
 
-// Target box width in px per rank, before real-aspect height and responsive
-// scaling are applied. Higher rank = larger - the "front section" pieces
-// should feel like the showcase of the gallery, not equal-sized thumbnails.
-const RANK_WIDTH_BAND: Record<ArtGalleryItem['rank'], [number, number]> = {
+// Target box size (sqrt of area) in px per rank, before responsive scaling -
+// not a width, since sizing by width alone would let a landscape piece's
+// height (and so its actual on-screen area) shrink well below a portrait
+// piece's at the same rank, making it read as smaller despite being the same
+// rank. Higher rank = larger - the "front section" pieces should feel like
+// the showcase of the gallery, not equal-sized thumbnails.
+const RANK_SIZE_BAND: Record<ArtGalleryItem['rank'], [number, number]> = {
   1: [320, 480],
   2: [235, 330],
   3: [175, 235],
@@ -294,13 +297,18 @@ function computeGalleryLayout(items: ArtGalleryItem[], containerWidth: number): 
   const placed: PlacedTile[] = [];
 
   for (const item of items) {
-    const [lo, hi] = RANK_WIDTH_BAND[item.rank];
-    const width = (lo + rand01(`${item.id}:w`) * (hi - lo)) * scale;
+    const [lo, hi] = RANK_SIZE_BAND[item.rank];
+    const size = (lo + rand01(`${item.id}:w`) * (hi - lo)) * scale;
     // Boxed to the artwork's own real aspect (not the frame's window aspect) -
     // the frame is the thing that gets stretched to fit exactly around this,
     // via non-uniform (independent x/y) scaling in FrameOverlay, rather than
-    // the artwork being letterboxed to match the frame.
-    const height = width / item.aspect;
+    // the artwork being letterboxed to match the frame. Split the size draw
+    // across width/height by sqrt(aspect) rather than putting it all on width,
+    // so the resulting area (width * height = size^2) is the same regardless
+    // of how landscape/portrait the piece is.
+    const sqrtAspect = Math.sqrt(item.aspect);
+    const width = size * sqrtAspect;
+    const height = size / sqrtAspect;
     const pad = RANK_PAD[item.rank] * padScale;
     const overhang = effectiveOverhangFraction(frameChoices[item.id]);
     const padX = pad + overhang.x * width * 2;
