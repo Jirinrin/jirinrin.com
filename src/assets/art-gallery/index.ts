@@ -19,6 +19,7 @@ const artGallery: ArtGalleryItem[] = [
   { id: 'torus', title: 'THE TORUS', rank: 1, image: 'torus-poster', aspect: 0.7069, video: 'torus' },
   { id: 'mystical-hill', title: 'My Third Place', rank: 1, image: 'mystical-hill', aspect: 1 },
   { id: 'crying', title: 'Overflow', rank: 1, image: 'crying', aspect: 0.9237 },
+  { id: 'rainbow-mountains', title: 'The Rainbow Alps', rank: 1, image: 'rainbow-mountains', aspect: 1.5321 },
 
   { id: 'torenrave', title: 'Torenrave', rank: 2, image: 'torenrave-poster', aspect: 0.7069, video: 'torenrave' },
   { id: 'beautiful-corner', title: 'Make One Corner of this Earth More Beautiful', rank: 2, image: 'beautiful-corner', aspect: 0.5945 },

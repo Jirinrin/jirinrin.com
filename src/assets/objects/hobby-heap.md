@@ -48,11 +48,13 @@ You know, after walking this path for a while, you start to tap into certain typ
 
 So yes, Spirituality is not so much a 'part of life' to me anymore -- rather it is Life Itself! It's an immensely intense experience, interspersed by plenty of incredibly difficult periods, but WOW is it beautiful! I'd not have it any other way!! :D
 
-Fun Spiritual Activities: meditating, reading books by spiritual teachers, walking in total silence through nature, learning about esoteric traditions like the Tarot, finding opportunities to let your Inner Child feel loved, embodying Love, learning to talk to the Animals and the Trees and the Elementals, learning Astral Travel into other Places and Dimensions, vibing with interdimensional intelligences, learning Telepathy, seeing who will stick with you when you regularly speak in Tongues...
+Spiritual activities starter kit: meditating, reading books by spiritual teachers, walking barefoot in total silence through nature, learning about esoteric traditions like the Tarot/Kabbalah, finding opportunities to let your Inner Child feel loved, embodying Love, learning to talk to the Animals and the Trees and the Elementals, learning Astral Travel into other Places and Dimensions, vibing with interdimensional intelligences, learning Telepathy, seeing who will stick with you when you regularly speak in Tongues... Well I certainly haven't been able to fully do all of these yet, but just see it as a reference for how much your horizons can expand once you see what things are possible in the world!
+
+And if you're more material-minded and this all feels a little bit much, it might be a fun bridge to go watch the Telepathy Tapes docu/podcast~
 
 **`The Mushroom`**  
 
-Who or What is The Mushroom? You shall never quite know, unless you embark on a Journey with it... And so I did. On multiple different occasions over the past years. Treated as a sacred, respected road into the Other, towards soul expansion but also diving into the deeeep strangeness... And boy, it turned my world upside down, showed me a completely new way of looking at the world and set into motion a whole journey of spiritual seeking, healing and soul-searching! To quote what I wrote on [LOOK WITHIN](https://kinoko.nosk.be):
+Who or What is The Mushroom? You shall never quite know, unless you embark on a Journey with it... And so I did. On multiple different occasions over the past years, once every couple months, I have been working with the Mushroom, with a deep reverence. When approached in such a sacred way, this presence opens gates into the Other, towards soul expansion but also diving into the deeeep strangeness... And boy, it turned my world upside down, showed me a completely new way of looking at the world and set into motion a whole journey of spiritual seeking, healing and soul-searching! To quote what I wrote on [Project KINOKO](https://kinoko.nosk.be):
 
 _"[The Mushroom] aided me deeply on the spiritual path; brought me in touch with my most authentic dorky self, worrying less about others' opinions; gave me the self-love to start the work of healing my childhood trauma; led me to seek out a much healthier lifestyle; made me see the world more playfully and optimistically; made me live more in the Now; tapped me into my inner intuition, which led me to quit my previous job to go do something personally important to me in the world..."_
 
@@ -66,7 +68,7 @@ Self-Love. Lately I've been feeling so much of it, and it's brought me some real
 
 Radical vulnerability. How beautiful to be able to share beautiful vulnerable silence. To be able to show our most fragile selves to each other, as one of the most powerful ways to connect, so much more powerful than getting into arguments and defending ourselves etc...
 
-Dark vs Light. All of us have both of them in ourselves, and I don't think it serves anyone to try to put people/situations of Good vs Bad, Like vs Don't Like, etc.
+Dark vs Light. All of us have both of them in ourselves, and I don't think it serves anyone to try to put people/situations in terms of Good vs Bad, Like vs Don't Like, etc.
 
 ...And there are many more such topics, that just don't pop into my head right now~
 

@@ -123,8 +123,9 @@ const FRAME_ASSIGNMENTS: Record<string, FrameAssignment> = {
   'torus':                         { ratioKey: '4-5', variant: 'a', saturation: .5, brightness: 1.3, plaqueDark: true },
   'mystical-hill':                 { ratioKey: '1-1', variant: 'a', saturation: .2, brightness: 1.3, plaqueDark: false },
   'crying':                        { ratioKey: '3-4', variant: 'a', invert: true, saturation: 0, brightness: 1.5, filter: 'contrast(3)', plaqueDark: true, plaqueTextDark: true },
+  'rainbow-mountains':             { ratioKey: '4-5', rotate: 1, variant: 'b', invert: false, saturation: 0.4, brightness: 1.0, plaqueDark: false },
 
-  'torenrave':                     { ratioKey: '1-1', variant: 'b', saturation: 0, brightness: 1, invert: true,  filter: 'contrast(1.6)', plaqueDark: false, plaqueTextDark: false },
+  'torenrave':                     { ratioKey: '1-1', variant: 'b', saturation: 0.2, brightness: 1, invert: true,  filter: 'contrast(1.6)', plaqueDark: false, plaqueTextDark: false },
   'beautiful-corner':              { ratioKey: '4-5', variant: 'b', saturation: .5, brightness: 1.4 },
   'een-leukertje':                 { ratioKey: '3-4', rotate: 2, saturation: .4, brightness: 1.3 },
   'hanna-cover':                   { ratioKey: '4-5', variant: 'a', saturation: .3, brightness: .7, invert: false },
