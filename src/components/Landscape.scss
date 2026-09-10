@@ -457,14 +457,12 @@ div.landscape--2-enter.landscape--2-enter-active {
     margin: 1.5rem 0;
   }
 
-  // One of the gallery's own light plaque paintings (picked deterministically
-  // per-link in LandscapeContainer.tsx, passed down as --button-plaque-bg) is
+  // button-bg.png (passed down as --button-bg from LandscapeContainer.tsx) is
   // stretched across the button as a ::before - rather than a plain
   // background-image on the link itself - so it can be scaled/brightened
-  // independently on hover/active without touching the text. Deliberately no
-  // border and no overflow clipping: the plaque's own torn/irregular alpha
-  // silhouette *is* the button's shape, not a texture cropped into a clean
-  // rounded rectangle.
+  // independently on hover/active without touching the text. Clipped to a
+  // rounded rectangle via the button's own border-radius/overflow, unlike the
+  // plaque buttons this replaced.
   a.popup-window-button {
     position: relative;
     // Without this, the ::before's negative z-index escapes this element
@@ -473,6 +471,8 @@ div.landscape--2-enter.landscape--2-enter-active {
     // .popup-window-content entirely and making the texture invisible.
     isolation: isolate;
     display: inline-block;
+    overflow: hidden;
+    border-radius: 0.6rem;
     padding: 0.9rem 2.4rem;
     font-size: 1.15em;
     color: rgba(255, 250, 240, 0.95);
@@ -486,12 +486,12 @@ div.landscape--2-enter.landscape--2-enter-active {
       position: absolute;
       inset: 0;
       z-index: -1;
-      background-image: var(--button-plaque-bg);
+      background-image: var(--button-bg);
       background-size: 100% 100%;
       // Same #landscape-color-grade filter the popup box's own ::before
       // uses (see above), chained with this button's own brightness/
-      // saturate - without it the plaque texture sat there static while
-      // the rest of the popup shifted with the page's animated color grade.
+      // saturate - without it the texture sat there static while the rest
+      // of the popup shifted with the page's animated color grade.
       filter: url(#landscape-color-grade) saturate(0.4) brightness(0.82) saturate(0.9);
       transition: filter 0.25s ease, transform 0.4s ease;
     }
