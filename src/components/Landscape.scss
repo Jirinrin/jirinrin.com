@@ -642,14 +642,27 @@ div.landscape--2-enter.landscape--2-enter-active {
 // that - into the window where nothing is visible yet, leaving only the
 // slow, barely-perceptible tail of the curve for once the box actually
 // appears. Syncing the delay keeps the rise inside the same window the box
-// is visible in. Total duration (delay + transition) is still kept
-// comfortably *under* the CSSTransition timeout in LandscapeContainer
-// (enter 700ms): RTG only adds the -active class a couple of frames after
-// -enter (it forces a reflow first), so timing this to land exactly on the
-// JS timeout would leave it still running when the classes get ripped off,
-// cutting the motion short.
+// is visible in.
+//
+// Total duration (delay + transition) is kept *comfortably* under the
+// CSSTransition timeout in LandscapeContainer (enter 900ms) - not just
+// under it: RTG only adds the -active class a couple of frames after -enter
+// (it forces a reflow first), so budgeting this right up against the JS
+// timeout leaves the transition still running when the classes get ripped
+// off. That's invisible for a small transform (the leftover distance rounds
+// to nothing), but scale the distance up and the same leftover fraction is
+// real pixels, which then "snap" into place the instant the classes drop
+// and the base `.popup-window` transition (all 0.2s, see above) takes over
+// instead. Hence the generous 100ms+ margin here rather than shaving it thin.
+//
+// The easing is a custom curve rather than the keyword `ease-out` (whose
+// spec value, cubic-bezier(0, 0, 0.58, 1), still has a fair bit of velocity
+// left in its last stretch and so reads as braking to a stop rather than
+// settling into place) - this one keeps almost all of its deceleration in
+// the first half and trails off very gradually, so it comes to rest instead
+// of visibly stopping.
 .popup-window-background--letter.popup-window-background-enter .popup-window--letter {
-  transform: translateY(20vh);
+  transform: translateY(45vh);
   // `.popup-window` carries a blanket `transition: all 0.2s`, which would
   // otherwise animate the box *down* into this starting offset in the frame
   // between this class and -enter-active below.
@@ -658,7 +671,7 @@ div.landscape--2-enter.landscape--2-enter-active {
 
 .popup-window-background--letter.popup-window-background-enter-active .popup-window--letter {
   transform: translateY(0);
-  transition: transform 450ms ease-out 200ms;
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms;
 }
 
 .popup-window-background--letter.popup-window-background-exit .popup-window--letter {
@@ -667,8 +680,8 @@ div.landscape--2-enter.landscape--2-enter-active {
 }
 
 .popup-window-background--letter.popup-window-background-exit-active .popup-window--letter {
-  transform: translateY(12vh);
-  transition: transform 350ms ease-out;
+  transform: translateY(28vh);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #shadow-wrapper {

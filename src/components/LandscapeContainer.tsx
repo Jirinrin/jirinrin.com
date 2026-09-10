@@ -527,7 +527,16 @@ function LandscapeContainer() {
           in={currentPage.showPopup && currentPage.popup?.type !== 'gallery' && currentPage.popup?.type !== 'memories'}
           classNames="popup-window-background"
           unmountOnExit
-          timeout={{ enter: 700, exit: 500 }}
+          // Generous headroom past what the CSS itself takes (see the letter
+          // variant's rise-in transition in Landscape.scss): RTG strips the
+          // enter/exit classes the instant this timeout fires, whatever the
+          // CSS transition's own progress is. Budgeting it right up against
+          // the CSS duration (as this used to be, at 700/500 matching the
+          // fade's own 700ms/500ms) left ~zero margin for RTG's own reflow
+          // delay before the -active class even lands - invisible for a
+          // small transform, but a big one gets caught mid-flight and
+          // "snaps" the rest of the way when the class is yanked.
+          timeout={{ enter: 900, exit: 650 }}
         >
           <div
             ref={popupRef}
