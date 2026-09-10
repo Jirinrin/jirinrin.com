@@ -30,7 +30,13 @@ const AMBIENT_BUBBLES = [
 ];
 
 function ServiceBubbles() {
-  const [opacity, setOpacity] = useState(0);
+  // Whether the bubbles have crossed their reveal threshold. This is a flag,
+  // not a scroll-scrubbed 0..1 value - the actual rise/settle motion is a
+  // single CSS transition (see .service-bubbles.is-revealed in the
+  // stylesheet) that plays once on crossing, and reverses on its own when
+  // scrolling back up past it, rather than being redrawn on every scroll
+  // pixel (which read as janky rather than elegant).
+  const [revealed, setRevealed] = useState(false);
   // Separate fade applied to the whole section (real bubbles + ambient ones)
   // so everything dissolves away again before it scrolls up underneath the
   // fixed navbar, instead of overlapping nav items like ABOUT.
@@ -40,9 +46,9 @@ function ServiceBubbles() {
   useEffect(() => {
     const handleScroll = () => {
       const vh = window.innerHeight;
-      const fadeStart = vh * 0.1;
-      const fadeEnd = vh * 0.4;
-      setOpacity(Math.min(1, Math.max(0, (window.scrollY - fadeStart) / (fadeEnd - fadeStart))));
+      // A single crossing point rather than a fade range - once past it the
+      // CSS transition below takes over and plays out on its own.
+      setRevealed(window.scrollY > vh * 0.18);
 
       let fadeOut = 1;
       const nav = document.querySelector('nav');
@@ -123,13 +129,8 @@ function ServiceBubbles() {
             />
           ))}
           <div
-            className="service-bubbles"
+            className={`service-bubbles${revealed ? ' is-revealed' : ''}`}
             ref={bubblesWrapperRef}
-            style={{
-              opacity,
-              transform: `translateY(${(1 - opacity) * 24}px) scale(${0.9 + opacity * 0.1})`,
-              filter: `blur(${(1 - opacity) * 6}px)`,
-            }}
           >
             <a
               className="service-bubble float-a"
