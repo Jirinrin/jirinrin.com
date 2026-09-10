@@ -42,20 +42,25 @@
   animation-delay: var(--drift-delay, 0s), var(--breathe-delay, 0s);
 }
 
+// Wider excursions and a touch of scale breathing (a real cloud swells and
+// thins as it tumbles, not just slides) than an earlier, subtler pass at this
+// - shared by every cloud layer (OpeningClouds' both sets and
+// BackgroundClouds), so upping it here reads as more life across the whole
+// scroll, not just the hero.
 @keyframes opening-cloud-drift {
-  0%   { transform: translate(0%, 0%) rotate(0deg); }
-  20%  { transform: translate(calc(var(--drift-direction, 1) * -9%), 6%) rotate(-1.8deg); }
-  45%  { transform: translate(calc(var(--drift-direction, 1) * 6%), -5%) rotate(1.4deg); }
-  70%  { transform: translate(calc(var(--drift-direction, 1) * 13%), 4%) rotate(2.4deg); }
-  88%  { transform: translate(calc(var(--drift-direction, 1) * -4%), -3%) rotate(-1deg); }
-  100% { transform: translate(0%, 0%) rotate(0deg); }
+  0%   { transform: translate(0%, 0%) rotate(0deg) scale(1); }
+  20%  { transform: translate(calc(var(--drift-direction, 1) * -15%), 10%) rotate(-3deg) scale(1.05); }
+  45%  { transform: translate(calc(var(--drift-direction, 1) * 10%), -9%) rotate(2.4deg) scale(0.94); }
+  70%  { transform: translate(calc(var(--drift-direction, 1) * 21%), 7%) rotate(4deg) scale(1.06); }
+  88%  { transform: translate(calc(var(--drift-direction, 1) * -7%), -5%) rotate(-1.6deg) scale(0.97); }
+  100% { transform: translate(0%, 0%) rotate(0deg) scale(1); }
 }
 
 @keyframes opening-cloud-breathe {
-  0%, 100% { opacity: calc(var(--peak-opacity, 0.3) * 0.5); }
+  0%, 100% { opacity: calc(var(--peak-opacity, 0.3) * 0.35); }
   30%      { opacity: var(--peak-opacity, 0.3); }
-  55%      { opacity: calc(var(--peak-opacity, 0.3) * 0.65); }
-  80%      { opacity: calc(var(--peak-opacity, 0.3) * 0.92); }
+  55%      { opacity: calc(var(--peak-opacity, 0.3) * 0.5); }
+  80%      { opacity: calc(var(--peak-opacity, 0.3) * 0.88); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -63,6 +68,17 @@
     animation: none;
     opacity: var(--peak-opacity, 0.3);
   }
+}
+
+// The big, sparse, far-off set (LARGE_CLOUDS in OpeningClouds.tsx) - already
+// far more transparent than the near set via --peak-opacity, but at up to
+// 40vw wide a crisp saturated edge that big would still read as a cutout
+// rather than something genuinely far away. A soft blur (and a touch less of
+// the near set's saturation boost, since a hazier shape doesn't need as much
+// punch) is the difference between "huge nearby cloud" and "high, distant
+// one" at the same opacity.
+.opening-clouds__cloud--large {
+  filter: saturate(1.6) brightness(1.05) blur(3px);
 }
 
 // Sits *behind* the cloud image (and its glass pane), masked to the exact
