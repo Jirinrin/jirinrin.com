@@ -62,23 +62,13 @@ _"Woww that's a whole pandemonium of changes in a life that was already plenty t
 
 The Psychedelic Path is not the path for everyone, but to those who feel called to it, it has innumerable gifts to offer. ✨️🍄✨️
 
-**`Topics that I've been thinking about a lot`**  
-
-Self-Love. Lately I've been feeling so much of it, and it's brought me some realisations... Like that we help ourselves much more by allowing ourselves to 'fall into our weakness', and then using that as a catalyst to _choose_ for the healthier and more conscious option, only because it genuinely feels better in the moment and we are whole beings who care about ourselves; rather than feeling we need 'discipline' or need to be hard on ourselves~!
-
-Radical vulnerability. How beautiful to be able to share beautiful vulnerable silence. To be able to show our most fragile selves to each other, as one of the most powerful ways to connect, so much more powerful than getting into arguments and defending ourselves etc...
-
-Dark vs Light. All of us have both of them in ourselves, and I don't think it serves anyone to try to put people/situations in terms of Good vs Bad, Like vs Don't Like, etc.
-
-...And there are many more such topics, that just don't pop into my head right now~
-
 **`Cute stuff`**  
 
 I like cute things. And cute people. Are you cute today?
 
 **`Japan`**  
 
-My enticement with Japan started about when I turned 17, and has gone through many waves and twists and turns over the years, but its presence has been a true constant! In all that time I've visited the country five times, learned the language, and deeply made many aspects of that culture my own in ways I can't describe... To the point that I now do not feel entirely like a Dutchy anymore, it's like one foot stands in one culture and one foot in the other!
+My enticement with Japan started about when I turned 17, and has gone through many waves and twists and turns over the years, but its presence has been a true constant! In all that time I've visited the country a total of almost a year in the span six trips, learned the language, and deeply made many aspects of that culture my own in ways I can't describe... To the point that I now do not feel entirely like a Dutchy anymore, it's like one foot stands in one culture and one foot in the other!
 
 **`Fantasy`**  
 
