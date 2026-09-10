@@ -1,3 +1,25 @@
+// Holds the two halves of the opening section that need to sit on *opposite*
+// sides of the fixed navbar: the far clouds behind it, everything else in
+// front. Critically it declares no z-index and no filter of its own, so it
+// stays out of the way as a stacking context and lets its two children take
+// z-indexes either side of the navbar's 100. It's also the box the far-cloud
+// layer sizes itself against (`inset: 0`), which is why it takes its height
+// implicitly from .ServiceBubbles below rather than restating it.
+.service-bubbles-section {
+  width: 100vw;
+  position: relative;
+}
+
+// The far/huge cloud sets. Below the navbar (100) so they can blanket the
+// hero as densely as they like without ever touching the legibility of the
+// nav text - the navbar's own dark top gradient paints over them instead.
+.opening-clouds-behind {
+  position: absolute;
+  inset: 0;
+  z-index: 99;
+  pointer-events: none;
+}
+
 .ServiceBubbles {
   // No explicit height of its own - it just auto-sizes to contain
   // .service-bubbles-fade below (its only normal-flow child), which is where
@@ -6,7 +28,11 @@
   // that has to keep working whether or not the fade wrapper is present.
   width: 100vw;
   position: relative;
-  z-index: 100;
+  // Above the navbar (100), so the near cloud set and the name/bubbles keep
+  // drifting in front of it - previously a z-index *tie* with the navbar
+  // resolved by DOM order, which worked but silently dragged the far sets
+  // along with it once they got dense enough to matter.
+  z-index: 101;
   pointer-events: none;
   // Deliberately no background here - this box spans the full ~210-260vh
   // section (see above) at the same z-index as the navbar (Navbar.scss), and

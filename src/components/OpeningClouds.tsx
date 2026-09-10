@@ -23,13 +23,6 @@ export interface CloudSpec {
   delay: number;
   peakOpacity: number;
   direction: 1 | -1;
-  // Per-cloud override for CloudsLayerProps.glass below - lets a layer opt
-  // individual clouds out of the backing+glass panes (the priciest part of
-  // each cloud, being a masked backdrop-filter) rather than being all-or-
-  // nothing for the whole layer. Meant for the biggest/faintest clouds, where
-  // the color-pop is least visible anyway and the backdrop-filter area is
-  // largest.
-  glass?: boolean;
 }
 
 // The foreground set: rendered inside ServiceBubbles, above the name/bubbles'
@@ -78,29 +71,24 @@ const CLOUDS: CloudSpec[] = [
 // below the near set's peak opacity - these still need to read as farther
 // away, just less faint about it than before.
 //
-// Half of these opt out of `glass` (see CloudSpec/CloudsLayer): a masked
-// backdrop-filter costs roughly per pixel of its own footprint, so the
-// biggest, faintest clouds here are simultaneously the most expensive ones to
-// give it to and the least likely for anyone to actually notice the color-pop
-// on, given how transparent and blurred they already are.
 const LARGE_CLOUDS: CloudSpec[] = [
   { img: 2, top: '2vh',   left: '48%', width: '51vw', speed: 0.35, duration: 70, delay: -12, peakOpacity: 0.22, direction: 1 },
   { img: 5, top: '16vh',  left: '78%', width: '32vw', speed: 0.5,  duration: 60, delay: -40, peakOpacity: 0.26, direction: -1 },
-  { img: 0, top: '30vh',  left: '2%',  width: '40vw', speed: 0.4,  duration: 65, delay: -22, peakOpacity: 0.19, direction: -1, glass: false },
-  { img: 3, top: '44vh',  left: '58%', width: '54vw', speed: 0.3,  duration: 80, delay: -55, peakOpacity: 0.16, direction: 1,  glass: false },
+  { img: 0, top: '30vh',  left: '2%',  width: '40vw', speed: 0.4,  duration: 65, delay: -22, peakOpacity: 0.19, direction: -1 },
+  { img: 3, top: '44vh',  left: '58%', width: '54vw', speed: 0.3,  duration: 80, delay: -55, peakOpacity: 0.16, direction: 1 },
   { img: 1, top: '60vh',  left: '18%', width: '35vw', speed: 0.55, duration: 58, delay: -8,  peakOpacity: 0.24, direction: 1 },
   { img: 4, top: '76vh',  left: '70%', width: '46vw', speed: 0.45, duration: 72, delay: -48, peakOpacity: 0.21, direction: -1 },
   { img: 2, top: '92vh',  left: '4%',  width: '30vw', speed: 0.6,  duration: 55, delay: -30, peakOpacity: 0.26, direction: 1 },
-  { img: 5, top: '108vh', left: '42%', width: '49vw', speed: 0.38, duration: 76, delay: -18, peakOpacity: 0.18, direction: -1, glass: false },
+  { img: 5, top: '108vh', left: '42%', width: '49vw', speed: 0.38, duration: 76, delay: -18, peakOpacity: 0.18, direction: -1 },
   // Second pass: denser still, and pushing the top end of the size range
   // further out (a couple of genuinely huge, barely-there ones) for more
   // sense of scale/depth up top.
-  { img: 1, top: '8vh',   left: '8%',  width: '59vw', speed: 0.32, duration: 85, delay: -60, peakOpacity: 0.16, direction: -1, glass: false },
+  { img: 1, top: '8vh',   left: '8%',  width: '59vw', speed: 0.32, duration: 85, delay: -60, peakOpacity: 0.16, direction: -1 },
   { img: 4, top: '22vh',  left: '55%', width: '27vw', speed: 0.65, duration: 50, delay: -5,  peakOpacity: 0.27, direction: 1 },
-  { img: 0, top: '38vh',  left: '88%', width: '38vw', speed: 0.42, duration: 62, delay: -35, peakOpacity: 0.21, direction: -1, glass: false },
-  { img: 3, top: '52vh',  left: '34%', width: '60vw', speed: 0.28, duration: 88, delay: -70, peakOpacity: 0.14, direction: 1,  glass: false },
+  { img: 0, top: '38vh',  left: '88%', width: '38vw', speed: 0.42, duration: 62, delay: -35, peakOpacity: 0.21, direction: -1 },
+  { img: 3, top: '52vh',  left: '34%', width: '60vw', speed: 0.28, duration: 88, delay: -70, peakOpacity: 0.14, direction: 1 },
   { img: 5, top: '68vh',  left: '6%',  width: '27vw', speed: 0.58, duration: 52, delay: -15, peakOpacity: 0.26, direction: -1 },
-  { img: 2, top: '84vh',  left: '60%', width: '40vw', speed: 0.44, duration: 66, delay: -42, peakOpacity: 0.19, direction: 1,  glass: false },
+  { img: 2, top: '84vh',  left: '60%', width: '40vw', speed: 0.44, duration: 66, delay: -42, peakOpacity: 0.19, direction: 1 },
   { img: 4, top: '100vh', left: '20%', width: '32vw', speed: 0.5,  duration: 58, delay: -25, peakOpacity: 0.22, direction: -1 },
   // Dropped: top 118vh (this set's highest) combined with the lowest speed
   // in the array (0.36) meant this one hadn't caught up to being scrolled
@@ -112,21 +100,56 @@ const LARGE_CLOUDS: CloudSpec[] = [
   // properly-colored clouds do.
 ];
 
+// A third layer, behind both sets above: just a couple of genuinely
+// screen-filling clouds, at very low opacity, meant to read as an almost-
+// solid haze right at the top of the page rather than as individual shapes.
+// This is what pushes the hero's existing "dense to sparse" scroll
+// progression further at its densest end - CLOUDS/LARGE_CLOUDS alone already
+// thin out nicely lower down, but the very top could still read as "a sky
+// with clouds in it" rather than "a field of cloud, with sky barely showing
+// through". Concentrated in the first ~40vh (rather than spread the full
+// page height like the sets above) and wide enough (up to 130vw) to guarantee
+// full horizontal coverage regardless of viewport width, so there's no seam
+// at the screen edges for the background to leak through.
+//
+// Kept to just 3 clouds - at 90-110vw each, they're the most expensive thing
+// in the hero to blur and to keep promoted as their own compositing layers,
+// and any more wouldn't read as more "atmosphere" anyway.
+const HUGE_CLOUDS: CloudSpec[] = [
+  { img: 3, top: '-6vh',  left: '-15%', width: '95vw',  speed: 0.22, duration: 100, delay: -50, peakOpacity: 0.12, direction: 1 },
+  { img: 0, top: '2vh',   left: '35%',  width: '110vw', speed: 0.18, duration: 115, delay: -80, peakOpacity: 0.1,  direction: -1 },
+  { img: 4, top: '14vh',  left: '-25%', width: '90vw',  speed: 0.25, duration: 95,  delay: -20, peakOpacity: 0.13, direction: 1 },
+];
+
 interface CloudsLayerProps {
   clouds: CloudSpec[];
   layerClassName?: string;
   cloudClassName?: string;
   // Adds a "glass" pane, masked to the cloud's own silhouette, that sits on
   // top of the cloud image and applies backdrop-filter: saturate() to
-  // whatever's rendered behind it. This is the actual mechanism behind the
-  // service-bubble cards' "trippy" look (their glassy backdrop-filter
-  // sampling+saturating the color-graded content behind them) - a plain
-  // mix-blend-mode on the cloud doesn't reproduce it, since blending a
-  // near-white source mostly just washes toward white rather than picking up
-  // the backdrop's actual hue. Only meaningful where there's something
-  // colorful already painted behind the cloud within the *same* isolated
-  // filter group - see BackgroundClouds.
+  // whatever's rendered behind it - the service-bubble cards' "trippy" look,
+  // applied to a cloud.
+  //
+  // This is worth its (considerable - a backdrop-filter forces a snapshot and
+  // re-filter of the region behind it, which can't be cached across frames
+  // the way an ordinary filter can) cost ONLY where there is something
+  // genuinely colorful already painted behind the cloud within the *same*
+  // isolated filter group. That's true for BackgroundClouds, which shares a
+  // group with the landscape art itself, and false for OpeningClouds, whose
+  // group (.ServiceBubbles) has no background of its own at all - there, the
+  // only thing behind a cloud is its own near-neutral `__backing` swatch, so
+  // saturate()ing it 3.5x achieves almost nothing at maximum expense. Those
+  // layers get their color from the grade itself instead; see __backing.
   glass?: boolean;
+  // Dissolves the whole layer as its own bottom edge - which is where the
+  // landscape below begins - comes into view. Without it the slowest clouds
+  // (speed 0.18-0.35 means they barely move against the page) are still
+  // sitting on screen long after the landscape has scrolled up behind them,
+  // reading as pale smudges over the scenery: they only ever pick up
+  // ServiceBubbles' own palette, never the landscape's, so they can't blend
+  // with it the way BackgroundClouds does. Only the opening sets want this;
+  // BackgroundClouds is *meant* to sit over the landscape.
+  fadeAtSectionEnd?: boolean;
 }
 
 // Shared by OpeningClouds (foreground) and BackgroundClouds (landscape-
@@ -134,16 +157,38 @@ interface CloudsLayerProps {
 // the page, with a scroll-linked parallax offset (each cloud's own `speed`)
 // applied directly via ref so it stays independent of the CSS keyframe
 // animation on the image inside.
-export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud', glass = false }: CloudsLayerProps) {
+export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud', glass = false, fadeAtSectionEnd = false }: CloudsLayerProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     // Scroll-linked parallax is exactly the kind of motion that can trigger
-    // discomfort for motion-sensitive users, so it's skipped entirely here
-    // (the clouds still render, just without the differential-speed effect).
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // discomfort for motion-sensitive users, so it's skipped for them (the
+    // clouds still render, just without the differential-speed effect). The
+    // fade below still runs: it's a plain opacity ramp, not motion, and
+    // without it those users would just get clouds stuck over the landscape.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion && !fadeAtSectionEnd) return;
 
     const onScroll = () => {
+      // Layout read first, writes after - measuring once the transforms below
+      // have been set would force a synchronous reflow every scroll tick.
+      const root = rootRef.current;
+      if (fadeAtSectionEnd && root) {
+        const vh = window.innerHeight;
+        // This layer spans its whole section (inset: 0), so its bottom edge is
+        // where the landscape below begins. Measured in viewport heights from
+        // that edge rather than in scroll position, so the same numbers hold
+        // for both section heights (see .service-bubbles-fade's breakpoint).
+        // Full strength until the landscape is ~0.9vh below the fold, fully
+        // gone a little before the page bottoms out - by which point
+        // BackgroundClouds, which actually blends with the scenery, has taken
+        // over.
+        const distance = root.getBoundingClientRect().bottom - vh * 1.15;
+        root.style.opacity = String(Math.min(1, Math.max(0, distance / (vh * 0.75))));
+      }
+
+      if (reduceMotion) return;
       const y = window.scrollY;
       clouds.forEach((c, i) => {
         const el = layerRefs.current[i];
@@ -153,13 +198,12 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [clouds]);
+  }, [clouds, fadeAtSectionEnd]);
 
   return (
-    <div className={layerClassName} aria-hidden="true">
+    <div className={layerClassName} ref={rootRef} aria-hidden="true">
       {clouds.map((c, i) => {
         const maskUrl = `url(${CLOUD_URLS[c.img]})`;
-        const cloudGlass = c.glass ?? glass;
         return (
           <div
             key={i}
@@ -188,21 +232,22 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
             } as React.CSSProperties}
           >
             {/* Behind the cloud image itself, masked to the exact same
-                silhouette - gives the glass pane below real (if flat/small)
-                content of its own to grab within this isolated filter group,
-                without making anything bigger than the cloud's own shape
-                opaque (compare .color-grade-layer/.ServiceBubbles' own
-                section-wide backdrops - those are safe where nothing else
-                needs to show through, but here Navbar and the landscape both
-                sit right behind this section, so only the cloud's own
-                footprint can afford to stop being transparent). */}
-            {cloudGlass && <div className="opening-clouds__backing" />}
+                silhouette. This is what actually makes these clouds colorful
+                (see .opening-clouds__backing in the .scss for the full why) -
+                never optional, since without it a cloud has nothing but its
+                own near-white art for the grade to read and comes out a flat
+                white smudge. It only ever covers the cloud's own footprint,
+                so Navbar and the landscape still show through everywhere
+                else (compare .color-grade-layer/.ServiceBubbles' own
+                section-wide backdrops - those are safe where nothing needs to
+                show through, which isn't the case here). */}
+            <div className="opening-clouds__backing" />
             <img
               src={CLOUD_URLS[c.img]}
               className={cloudClassName}
               alt=""
             />
-            {cloudGlass && <div className="opening-clouds__glass" />}
+            {glass && <div className="opening-clouds__glass" />}
           </div>
         );
       })}
@@ -214,32 +259,54 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
 // scroll, from the big centered name down toward where the landscape below
 // starts showing through. They sit inside ServiceBubbles' own color-grade
 // subtree, which is its own isolated compositing group (a `filter` on an
-// element isolates blending from everything outside it) - so `glass` here
-// only ever picks up color from what's actually painted inside *this* group
-// (ServiceBubbles' own graded backdrop, see its .scss, plus the ambient/
-// service-bubble cards), never the landscape's own art, which lives in a
-// separate, independently-filtered group. See BackgroundClouds for the
-// clouds meant to blend with that scenery instead.
+// element isolates blending from everything outside it) - and that group has
+// no background of its own (see ServiceBubbles.scss), so there is nothing
+// colorful behind these clouds to sample. That's why none of these layers
+// pass `glass`: their color comes from the grade reading each cloud's own
+// __backing+art composite, not from a backdrop-filter. See BackgroundClouds
+// for the set that does share a group with the landscape art, where a glass
+// pane has something real to grab and earns its cost.
 //
-// `--legible` (see the .scss) keeps these clouds visible over the navbar
-// (a z-index tie broken by DOM order, see ServiceBubbles.scss) without
-// painting fully opaque over its white text - only applied here, not on
-// BackgroundClouds, whose glass panes are deliberately kept at full
-// strength for the landscape's own color-pop effect.
+// `--legible` (see the .scss) thins each cloud's backing so it never paints
+// opaquely over the navbar's white text. Only the near set below still
+// crosses in front of the navbar at all (see OpeningCloudsFar), but the far
+// sets keep the same class so all three stay tonally identical - that backing
+// opacity is also the knob controlling how vivid the grade renders them.
 //
-// Rendered as two separate layers rather than one merged list: the near set
-// (CLOUDS) and the big, faint, far-off set (LARGE_CLOUDS, see above) each get
-// their own scroll listener and DOM subtree, and the large ones get an extra
+// Rendered as separate layers rather than one merged list: each set gets its
+// own scroll listener and DOM subtree, and the two bigger sets get an extra
 // class on just the cloud `<img>` for a softer look befitting something that
-// size (the backing/glass panes stay exactly as strong as the near set's, so
-// they still pick up real color - only the drawn cloud art itself softens).
+// size (the backing stays exactly as strong as the near set's, so they still
+// pick up real color - only the drawn cloud art itself softens).
 function OpeningClouds() {
+  return <CloudsLayer clouds={CLOUDS} fadeAtSectionEnd layerClassName="opening-clouds opening-clouds--legible" />;
+}
+
+// The two big sets, split out so they can be mounted in their own wrapper
+// *behind* the navbar (see ServiceBubbles.tsx/.scss) while the near set above
+// keeps drifting in front of it. They can't simply be given a lower z-index
+// in place: .ServiceBubbles has both a z-index and a `filter`, so it's a
+// single stacking context and everything inside it paints above or below the
+// navbar as one unit.
+//
+// Being a separate compositing group costs these nothing, since each cloud's
+// color comes from its own backing plus the grade rather than from sampling
+// anything around it - they grade identically wherever they're mounted.
+//
+// HUGE_CLOUDS renders first so it paints behind LARGE_CLOUDS (DOM order, no
+// z-index involved between the two).
+export function OpeningCloudsFar() {
   return (
     <>
-      <CloudsLayer clouds={CLOUDS} glass layerClassName="opening-clouds opening-clouds--legible" />
+      <CloudsLayer
+        clouds={HUGE_CLOUDS}
+        fadeAtSectionEnd
+        layerClassName="opening-clouds opening-clouds--legible"
+        cloudClassName="opening-clouds__cloud opening-clouds__cloud--huge"
+      />
       <CloudsLayer
         clouds={LARGE_CLOUDS}
-        glass
+        fadeAtSectionEnd
         layerClassName="opening-clouds opening-clouds--legible"
         cloudClassName="opening-clouds__cloud opening-clouds__cloud--large"
       />
