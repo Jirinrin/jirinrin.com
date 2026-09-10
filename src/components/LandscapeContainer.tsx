@@ -179,6 +179,13 @@ function LandscapeContainer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scaleFactor]);
 
+  // Landscape 1's object popups render as a "letter": one long box wrapped
+  // around all of its content, scrolled as a whole by the backdrop, rather
+  // than a fixed-size window with the text scrolling inside it. Landscape 2's
+  // project popups (type 'project') keep the fixed-size window, since they
+  // have to grow out of, and fit inside, the book.
+  const isLetterPopup = currentPage.popup?.type === 'text' || currentPage.popup?.type === 'about';
+
   // Blocks the page from scrolling behind the modal when the cursor is over
   // the dimmed background (not the popup box itself, which has its own
   // internal scroll). Needs a real non-passive listener via ref - React
@@ -186,16 +193,19 @@ function LandscapeContainer() {
   // silently do nothing. Can't just lock scroll globally (e.g. overflow:
   // hidden on html/body) either: opening a popup can itself trigger a
   // programmatic window.scrollTo (see zoomInCanvas), which a global lock
-  // would swallow and leave the page snapped to the top.
+  // would swallow and leave the page snapped to the top. Skipped entirely for
+  // letter popups: there the background *is* the scroll container, so blocking
+  // its wheel events would stop the letter from scrolling at all -
+  // `overscroll-behavior: contain` keeps it from chaining to the page instead.
   useEffect(() => {
     const bg = popupRef.current;
-    if (!bg) return;
+    if (!bg || isLetterPopup) return;
     const blockBackgroundScroll = (e: WheelEvent) => {
       if (e.target === bg) e.preventDefault();
     };
     bg.addEventListener('wheel', blockBackgroundScroll, { passive: false });
     return () => bg.removeEventListener('wheel', blockBackgroundScroll);
-  }, [currentPage.showPopup]);
+  }, [currentPage.showPopup, isLetterPopup]);
 
   useEffect(() => {
     const prev = prevCurrentPage.current;
@@ -534,8 +544,12 @@ function LandscapeContainer() {
           unmountOnExit
           timeout={{ enter: 700, exit: 500 }}
         >
-          <div ref={popupRef} className="popup-window-background" onClick={hidePopup}>
-            <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}`}>
+          <div
+            ref={popupRef}
+            className={`popup-window-background${isLetterPopup ? ' popup-window-background--letter' : ''}`}
+            onClick={hidePopup}
+          >
+            <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}${isLetterPopup ? ' popup-window--letter' : ''}`}>
               <div className="popup-window-content">
                 {renderPopup()}
               </div>

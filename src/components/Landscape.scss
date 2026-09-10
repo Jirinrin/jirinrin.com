@@ -291,6 +291,35 @@ div.landscape--2-enter.landscape--2-enter-active {
   cursor: pointer;
 }
 
+// Landscape 1's object popups ("letter" variant): instead of a fixed-size
+// window whose *content* scrolls inside it, the box itself grows to fit all
+// of its text and the backdrop is what scrolls - so reading a long piece
+// gets the full screen height rather than a small window inside it.
+// Landscape 2's project popups deliberately keep the old fixed-size window:
+// they grow out of (and shrink back into) the book, so their rect has to
+// stay in sync with Landscape2's own zoom animation.
+.popup-window-background--letter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // Flex (rather than plain block) specifically so the padding-bottom below
+  // survives overflowing content - a block scroll container drops it.
+  overflow-y: auto;
+  // The backdrop is the scroll container now, so reaching its end must not
+  // chain on to the page behind it - which, while zoomed in, is being pinned
+  // by LandscapeContainer's own scroll listener and would fight back.
+  overscroll-behavior: contain;
+
+  // How much of the dimmed backdrop is still visible above the letter when it
+  // first opens. Less on mobile, where vertical space is scarcer anyway.
+  --letter-gap: 12vh;
+  @media (min-width: 1000px) {
+    --letter-gap: 20vh;
+  }
+  padding: var(--letter-gap) 0;
+  box-sizing: border-box;
+}
+
 .popup-window {
   // `.popup-window-content` (not this element) is the actual scroll
   // container, so that the ::before backdrop below - positioned absolute
@@ -350,6 +379,42 @@ div.landscape--2-enter.landscape--2-enter-active {
     background-size: 100% 100%;
     opacity: 0.85;
     filter: url(#landscape-color-grade) saturate(0.4);
+  }
+
+  // See .popup-window-background--letter above. Keeps whatever width the
+  // variant it's combined with gives it, but drops every height constraint so
+  // the box simply ends where the text does. Must stay below both
+  // `&.popup-window-large` and `&::before` - it ties with the former on
+  // specificity, so source order is what decides the height.
+  &.popup-window--letter {
+    height: auto;
+    max-height: none;
+    // The backdrop's own padding does the spacing, and its flexbox the
+    // centering - `margin: auto` would eat the free space instead.
+    margin: 0;
+    flex: 0 0 auto;
+
+    // A long read shouldn't span the full width of a big monitor - the line
+    // length gets tiring and the sheer size of the box is overwhelming. Only
+    // capped from tablet up; on a phone the box may as well stay full width.
+    &.popup-window-large {
+      @media (min-width: 1000px) {
+        width: min(85vw, 1000px);
+      }
+    }
+
+    &::before {
+      // Same texture, but tiled down the letter's length instead of squashed
+      // to fit it: the tile is box-light-small plus a vertically flipped copy
+      // of itself (generated with sharp), so every repeat meets its own
+      // mirror image and the seams disappear. Horizontally it's stretched to
+      // the full box width exactly as before; `auto` height then keeps the
+      // texture's own aspect ratio, making one mirrored tile twice as tall as
+      // the box is wide.
+      background-image: url("../assets/box-light-mirror-tile.png");
+      background-size: 100% auto;
+      background-repeat: repeat-y;
+    }
   }
 
   h1 {
@@ -524,6 +589,13 @@ div.landscape--2-enter.landscape--2-enter-active {
   color: rgb(20, 20, 20);
 }
 
+// In the letter variant the content isn't a scroll container at all - it just
+// grows, and the backdrop scrolls the whole box past the viewport.
+.popup-window--letter .popup-window-content {
+  flex: 0 0 auto;
+  overflow-y: visible;
+}
+
 .popup-window-background-enter {
   opacity: 0;
   filter: blur(40px);
@@ -556,6 +628,40 @@ div.landscape--2-enter.landscape--2-enter-active {
   &  .popup-window-background-exit-active .popup-window {
     transform: scale(0, 0);
   }
+}
+
+// The letter rises up as it unblurs in, rather than just fading in on the
+// spot - and sinks back down on the way out. Only the letter variant:
+// landscape 2's project popup animates by growing out of the book instead,
+// and a drift would fight that.
+//
+// Durations are kept comfortably *under* the CSSTransition timeouts in
+// LandscapeContainer (enter 700ms, exit 500ms), not equal to them: RTG only
+// adds the -active class a couple of frames after -enter (it forces a reflow
+// first), so a transition timed to land exactly on the JS timeout is still
+// running when the classes get ripped off, cutting the motion short. Zero
+// transition-delay for the same reason - it eats into that same margin.
+.popup-window-background--letter.popup-window-background-enter .popup-window--letter {
+  transform: translateY(10vh);
+  // `.popup-window` carries a blanket `transition: all 0.2s`, which would
+  // otherwise animate the box *down* into this starting offset in the frame
+  // between this class and -enter-active below.
+  transition: none;
+}
+
+.popup-window-background--letter.popup-window-background-enter-active .popup-window--letter {
+  transform: translateY(0);
+  transition: transform 500ms ease-out;
+}
+
+.popup-window-background--letter.popup-window-background-exit .popup-window--letter {
+  transform: translateY(0);
+  transition: none;
+}
+
+.popup-window-background--letter.popup-window-background-exit-active .popup-window--letter {
+  transform: translateY(6vh);
+  transition: transform 350ms ease-out;
 }
 
 #shadow-wrapper {
