@@ -635,14 +635,21 @@ div.landscape--2-enter.landscape--2-enter-active {
 // landscape 2's project popup animates by growing out of the book instead,
 // and a drift would fight that.
 //
-// Durations are kept comfortably *under* the CSSTransition timeouts in
-// LandscapeContainer (enter 700ms, exit 500ms), not equal to them: RTG only
-// adds the -active class a couple of frames after -enter (it forces a reflow
-// first), so a transition timed to land exactly on the JS timeout is still
-// running when the classes get ripped off, cutting the motion short. Zero
-// transition-delay for the same reason - it eats into that same margin.
+// The rise has to start at the *same* 200ms delay as the backdrop's own
+// opacity/blur fade above, not sooner: that fade holds the box at opacity 0
+// (fully invisible) for its first 200ms, so a transform with no delay of its
+// own front-loads most of its motion - on a fast-starting ease-out curve, at
+// that - into the window where nothing is visible yet, leaving only the
+// slow, barely-perceptible tail of the curve for once the box actually
+// appears. Syncing the delay keeps the rise inside the same window the box
+// is visible in. Total duration (delay + transition) is still kept
+// comfortably *under* the CSSTransition timeout in LandscapeContainer
+// (enter 700ms): RTG only adds the -active class a couple of frames after
+// -enter (it forces a reflow first), so timing this to land exactly on the
+// JS timeout would leave it still running when the classes get ripped off,
+// cutting the motion short.
 .popup-window-background--letter.popup-window-background-enter .popup-window--letter {
-  transform: translateY(10vh);
+  transform: translateY(20vh);
   // `.popup-window` carries a blanket `transition: all 0.2s`, which would
   // otherwise animate the box *down* into this starting offset in the frame
   // between this class and -enter-active below.
@@ -651,7 +658,7 @@ div.landscape--2-enter.landscape--2-enter-active {
 
 .popup-window-background--letter.popup-window-background-enter-active .popup-window--letter {
   transform: translateY(0);
-  transition: transform 500ms ease-out;
+  transition: transform 450ms ease-out 200ms;
 }
 
 .popup-window-background--letter.popup-window-background-exit .popup-window--letter {
@@ -660,7 +667,7 @@ div.landscape--2-enter.landscape--2-enter-active {
 }
 
 .popup-window-background--letter.popup-window-background-exit-active .popup-window--letter {
-  transform: translateY(6vh);
+  transform: translateY(12vh);
   transition: transform 350ms ease-out;
 }
 
