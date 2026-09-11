@@ -18,6 +18,7 @@ export const OBJECT_SLUGS: Record<string, string> = {
   'spiral-tower': 'pillar-of-paradigm',
   'groove-grove': 'groove-grove',
   'contact-details': 'contact',
+  'privacy': 'privacy',
 };
 
 // Which popup type each object opens as (mirrors the switch in Landscape1's
@@ -32,6 +33,7 @@ export const OBJECT_POPUP_TYPES: Record<string, ObjectPopupType> = {
   'octopus-tree': 'about',
   'spiral-tower': 'about',
   'groove-grove': 'about',
+  'privacy': 'text',
 };
 
 const SLUG_TO_OBJECT_ID: Record<string, string> = Object.fromEntries(

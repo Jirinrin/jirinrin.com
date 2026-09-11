@@ -27,6 +27,7 @@ import githubIcon from '../assets/objects/images/github.png';
 import landscape2Img from '../assets/landscape/landscape-2.png';
 import boxDarkSmall from '../assets/box-dark-small.png';
 import buttonBg from '../assets/button-bg.png';
+import privacyText from '../assets/privacy.md?raw';
 
 // Pre-import dynamic project images and markdown images (Vite replaces require())
 const projectImages = import.meta.glob<string>(
@@ -274,7 +275,8 @@ function LandscapeContainer() {
 
     if (link.popupId) {
       const type = OBJECT_POPUP_TYPES[link.popupId];
-      const text = abouts[link.popupId]?.text;
+      // 'privacy' isn't a landscape object, so its text isn't in `abouts`
+      const text = link.popupId === 'privacy' ? privacyText : abouts[link.popupId]?.text;
       if (type !== 'gallery' && type !== 'memories' && !text) return;
       deepLinkHandledRef.current = true;
       // Same sequence handleObjectClick/goToPopup use: scroll down first,

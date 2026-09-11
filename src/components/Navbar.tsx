@@ -6,6 +6,7 @@ import type { ChangePagePayload } from '../store/currentPageSlice';
 import { useAppDispatch, useAppSelector } from '../store';
 import { SITE_NAME } from '../assets/SITE_NAME';
 import * as C from '../constants';
+import privacyText from '../assets/privacy.md?raw';
 
 import './Navbar.scss';
 
@@ -112,6 +113,17 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
     setOverlayMode(false);
   };
 
+  // 'privacy' isn't a landscape object (no place in the abouts store), so it
+  // gets its text passed in directly rather than looked up via goToPopup.
+  const openPrivacy = () => {
+    dispatch(changePage({
+      landscape: 1,
+      popup: { type: 'text', id: 'privacy', text: privacyText },
+      forceLoad: true,
+    }));
+    setOverlayMode(false);
+  };
+
   const displayForThreshold1 = () => windowWidth > threshold1;
   const displayForThreshold2 = () => windowWidth > threshold2;
 
@@ -180,6 +192,9 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
           {renderNavItem('projects', () => goTo({ landscape: 2 }))}
           {renderNavItem('gallery',   () => goToPopup('gallery', 'gallery'))}
           <li className="nav-item" id="nav-filler-bottom" key="filler" />
+          <li className="nav-item nav-privacy-link" id="privacy" onClick={openPrivacy} key="privacy">
+            <em>privacy~</em>
+          </li>
         </div>
       </CSSTransition>
     </div>
