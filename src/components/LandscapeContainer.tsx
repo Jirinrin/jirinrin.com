@@ -57,15 +57,17 @@ const deobfuscateDigits = (s: string, shift = 4): string =>
 // prop below), so the paragraph's single child here is an element of that custom component, not a
 // literal `'a'` DOM element - checking `.type === 'a'` never matches, so this checks for an `href` prop
 // instead, which every one of our `a` overrides is passed regardless of which one rendered it.
-// Popups get inverted wholesale in dark mode (see Landscape.scss), which
-// would discolor emoji right along with the text. Wrapping each one in its
-// own `.emoji` span lets that stylesheet cancel the inversion back out with
-// a second `invert()`, so emoji keep showing their real colors. Matches
-// characters whose *default* presentation is emoji (color) - plain
+// The spiral tower's popup still cycles through an old-school `invert()`
+// filter in dark mode (see Landscape.scss), which would discolor emoji right
+// along with the text. Wrapping each one in its own `.emoji` span lets that
+// stylesheet cancel the inversion back out with a second, synced `invert()`,
+// so emoji keep showing their real colors. Applied to every popup rather
+// than just that one - harmless elsewhere, since none of the others invert
+// anything and an un-styled `.emoji` span behaves just like plain text.
+// Matches characters whose *default* presentation is emoji (color) - plain
 // pictographic symbols like © or ♥ render in the surrounding text color and
-// should invert along with everything else - plus any pictographic
-// character explicitly forced into emoji style via U+FE0F, and ZWJ-joined
-// sequences of either.
+// should stay that way - plus any pictographic character explicitly forced
+// into emoji style via U+FE0F, and ZWJ-joined sequences of either.
 const EMOJI_RE = /(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}️)(?:‍(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}️))*/gu;
 
 interface EmojiWrappableNode {

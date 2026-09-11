@@ -370,28 +370,6 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
-  // Match the system's dark mode by inverting the whole popup - a plain
-  // `filter: invert()` covers the parchment ::before *and* the text in one
-  // go, since a filter applies to the box's whole rendered output rather
-  // than to individual color properties. Excluded here because the
-  // spiral tower below drives its own filter via animation instead.
-  &:not(.popup-window--inverting) {
-    @media (prefers-color-scheme: dark) {
-      filter: invert(1);
-
-      // Emoji (see the `.emoji`-wrapping rehype plugin in LandscapeContainer)
-      // are full-color glyphs, not text painted in a color property - the
-      // popup's invert() above discolors them right along with everything
-      // else. A second invert() here cancels that back out for just this
-      // element, since filters compose down the tree: this element's own
-      // output gets inverted once by this rule, then inverted again as part
-      // of the ancestor's output, landing back on the original colors.
-      .emoji {
-        filter: invert(1);
-      }
-    }
-  }
-
   // The spiral tower's duality theme, rendered as the popup itself slowly
   // flipping between light and dark - a plain `filter: invert()` on this
   // element covers the parchment ::before *and* the text in one go, since a
@@ -431,6 +409,28 @@ div.landscape--2-enter.landscape--2-enter-active {
     filter: url(#landscape-color-grade) saturate(0.4);
   }
 
+  // Dark mode swaps in a pre-darkened parchment texture and lighter text/
+  // link colors, rather than inverting the whole box the way the spiral
+  // tower does - an invert() here would also flip every image inside a
+  // popup (project galleries, the github icon, ...), not just the parchment
+  // and text. Excluded for the spiral tower: its own invert() cycle further
+  // up is calibrated to flip between exactly this light texture/text
+  // pairing and its inverted colors, so it keeps using those unconditionally.
+  &:not(.popup-window--inverting) {
+    @media (prefers-color-scheme: dark) {
+      &::before {
+        background-image: url("../assets/box-dark-small.png");
+      }
+
+      a {
+        color: rgb(150, 170, 225);
+        &:hover {
+          color: rgb(230, 120, 120);
+        }
+      }
+    }
+  }
+
   // See .popup-window-background--letter above. Keeps whatever width the
   // variant it's combined with gives it, but drops every height constraint so
   // the box simply ends where the text does. Must stay below both
@@ -453,6 +453,9 @@ div.landscape--2-enter.landscape--2-enter-active {
     // length gets tiring and the sheer size of the box is overwhelming. Only
     // capped from tablet up; on a phone the box may as well stay full width.
     &.popup-window-large {
+    // A bit wider on mobile for these long letters
+      width: 85vw;
+      max-width: 85vw;
       @media (min-width: 1000px) {
         width: min(85vw, 1000px);
       }
@@ -469,6 +472,15 @@ div.landscape--2-enter.landscape--2-enter-active {
       background-image: url("../assets/box-light-mirror-tile.png");
       background-size: 100% auto;
       background-repeat: repeat-y;
+    }
+  }
+
+  // Same dark/light swap as the non-letter ::before above (and same
+  // spiral-tower exclusion) - box-dark-mirror-tile is box-dark-small put
+  // through that same mirroring step.
+  &.popup-window--letter:not(.popup-window--inverting)::before {
+    @media (prefers-color-scheme: dark) {
+      background-image: url("../assets/box-dark-mirror-tile.png");
     }
   }
 
@@ -647,7 +659,15 @@ div.landscape--2-enter.landscape--2-enter-active {
   overflow-y: scroll;
   padding: 5vw;
   box-sizing: border-box;
-  color: rgb(20, 20, 20);
+  color: rgb(10, 10, 10);
+}
+
+// Paired with the dark parchment texture above - excludes the spiral tower
+// the same way, since its own invert() cycle already recolors this text.
+.popup-window:not(.popup-window--inverting) .popup-window-content {
+  @media (prefers-color-scheme: dark) {
+    color: rgb(245, 245, 245);
+  }
 }
 
 // In the letter variant the content isn't a scroll container at all - it just
