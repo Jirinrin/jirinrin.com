@@ -31,7 +31,6 @@
     "thumbs": "node scripts/gen-memories-thumbs.mjs",
     "optimize-memories": "node scripts/optimize-memories-originals.mjs",
     "prestart": "npm run thumbs",
-    "predev": "npm run thumbs",
     "prebuild": "npm run thumbs",
     "start": "vite",
     "dev": "vite dev --port 1111",
