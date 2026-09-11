@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 
 import backArrow from '../assets/back-arrow.png';
@@ -76,9 +76,16 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
 
   if (images.length === 0) return null;
 
+  // framer-motion still fires onTap after a drag that never moved the element
+  // (e.g. constrained/elastic drags), so track real drags ourselves and use
+  // that to swallow the resulting phantom tap.
+  const didDragRef = useRef(false);
+
   const handleDragEnd = (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -80 || info.velocity.x < -400) go(1);
     else if (info.offset.x > 80 || info.velocity.x > 400) go(-1);
+    // Runs after onTap's check below, so it clears the flag without racing it.
+    setTimeout(() => { didDragRef.current = false; });
   };
 
   return (
@@ -94,8 +101,12 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.6}
             dragMomentum={false}
+            onDragStart={() => { didDragRef.current = true; }}
             onDragEnd={handleDragEnd}
-            onTap={() => setFullscreen(true)}
+            onTap={() => {
+              if (didDragRef.current) return;
+              setFullscreen(true);
+            }}
             custom={direction}
             initial={{ opacity: 0, x: direction < 0 ? -60 : 60 }}
             animate={{ opacity: 1, x: 0 }}
