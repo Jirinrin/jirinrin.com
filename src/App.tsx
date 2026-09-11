@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { CookiesProvider } from 'react-cookie';
-import ReactGA from 'react-ga4';
 
 import store from './store';
 
@@ -12,15 +11,7 @@ import ColorGradeFilter, { getColorGradeMode } from './components/ColorGradeFilt
 
 import './App.scss';
 
-// TODO: Update tracking ID to your GA4 measurement ID (format: G-XXXXXXXXXX)
-const GA_TRACKING_ID = 'G-TODO';
-
 function App() {
-  useEffect(() => {
-    ReactGA.initialize(GA_TRACKING_ID);
-    ReactGA.send('pageview');
-  }, []);
-
   const gradeEnabled = useMemo(() => getColorGradeMode() === 'on', []);
 
   return (
