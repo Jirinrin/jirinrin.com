@@ -193,7 +193,10 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
           {renderNavItem('gallery',   () => goToPopup('gallery', 'gallery'))}
           <li className="nav-item" id="nav-filler-bottom" key="filler" />
           <li className="nav-item nav-privacy-link" id="privacy" onClick={openPrivacy} key="privacy">
-            <em>privacy~</em>
+            <em>privacy</em>
+          </li>
+          <li className="nav-item nav-studio-nosk" key="studio-nosk">
+            <em>♡ Studio Nosk</em>
           </li>
         </div>
       </CSSTransition>
