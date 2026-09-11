@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import ReactMarkdown from 'react-markdown';
+import type { Plugin } from 'unified';
+import type { Root } from 'hast';
 
 import * as C from '../constants';
 import { SITE_NAME } from '../assets/SITE_NAME';
@@ -55,6 +57,53 @@ const deobfuscateDigits = (s: string, shift = 4): string =>
 // prop below), so the paragraph's single child here is an element of that custom component, not a
 // literal `'a'` DOM element - checking `.type === 'a'` never matches, so this checks for an `href` prop
 // instead, which every one of our `a` overrides is passed regardless of which one rendered it.
+// Popups get inverted wholesale in dark mode (see Landscape.scss), which
+// would discolor emoji right along with the text. Wrapping each one in its
+// own `.emoji` span lets that stylesheet cancel the inversion back out with
+// a second `invert()`, so emoji keep showing their real colors. Matches
+// characters whose *default* presentation is emoji (color) - plain
+// pictographic symbols like © or ♥ render in the surrounding text color and
+// should invert along with everything else - plus any pictographic
+// character explicitly forced into emoji style via U+FE0F, and ZWJ-joined
+// sequences of either.
+const EMOJI_RE = /(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}️)(?:‍(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}️))*/gu;
+
+interface EmojiWrappableNode {
+  type: string;
+  children?: EmojiWrappableNode[];
+  value?: string;
+  tagName?: string;
+  properties?: { className?: string[] };
+}
+
+const splitEmoji = (node: EmojiWrappableNode): EmojiWrappableNode[] => {
+  const matches = node.value?.match(EMOJI_RE);
+  if (!node.value || !matches) return [node];
+  const out: EmojiWrappableNode[] = [];
+  node.value.split(EMOJI_RE).forEach((part, i) => {
+    if (part) out.push({ type: 'text', value: part });
+    if (matches[i]) out.push({
+      type: 'element',
+      tagName: 'span',
+      properties: { className: ['emoji'] },
+      children: [{ type: 'text', value: matches[i] }],
+    });
+  });
+  return out;
+};
+
+const wrapEmoji = (node: EmojiWrappableNode) => {
+  if (!node.children) return;
+  node.children = node.children.flatMap(child => {
+    wrapEmoji(child);
+    return child.type === 'text' ? splitEmoji(child) : [child];
+  });
+};
+
+const rehypeUnEmoji: Plugin<[], Root> = () => (tree) => {
+  wrapEmoji(tree as unknown as EmojiWrappableNode);
+};
+
 const renderParagraph = ({ children }: { children?: React.ReactNode }) => {
   const childArray = React.Children.toArray(children);
   const only = childArray[0];
@@ -376,6 +425,7 @@ function LandscapeContainer() {
         return (
           <ReactMarkdown
             urlTransform={(url) => url}
+            rehypePlugins={[rehypeUnEmoji]}
             components={{
               p: renderParagraph,
               img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
@@ -421,6 +471,7 @@ function LandscapeContainer() {
               </a>
             }
             <ReactMarkdown
+              rehypePlugins={[rehypeUnEmoji]}
               components={{
                 p: renderParagraph,
                 a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
@@ -545,7 +596,7 @@ function LandscapeContainer() {
             className={`popup-window-background${isLetterPopup ? ' popup-window-background--letter' : ''}`}
             onClick={hidePopup}
           >
-            <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}${isLetterPopup ? ' popup-window--letter' : ''}`}>
+            <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}${isLetterPopup ? ' popup-window--letter' : ''}${currentPage.popup?.id === 'spiral-tower' ? ' popup-window--inverting' : ''}`}>
               <div className="popup-window-content">
                 {renderPopup()}
               </div>

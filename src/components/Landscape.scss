@@ -310,11 +310,17 @@ div.landscape--2-enter.landscape--2-enter-active {
   // by LandscapeContainer's own scroll listener and would fight back.
   overscroll-behavior: contain;
 
-  // How much of the dimmed backdrop is still visible above the letter when it
-  // first opens. Less on mobile, where vertical space is scarcer anyway.
-  --letter-gap: 12vh;
+  // This padding does double duty: it's the minimum backdrop peek kept
+  // visible above/below the letter while scrolling a long one, but it also
+  // eats into the space `.popup-window--letter`'s auto margins have to work
+  // with - so it's what decides whether a letter is short enough to center
+  // instead of scroll. Kept modest for that reason: the old 20vh desktop
+  // value was tuned back when the letter always sat flush at the top, and
+  // was reserving nearly half the viewport from ever counting as "fits".
+  // Letters that do end up scrolling still read fine with a smaller peek.
+  --letter-gap: 6vh;
   @media (min-width: 1000px) {
-    --letter-gap: 20vh;
+    --letter-gap: 8vh;
   }
   padding: var(--letter-gap) 0;
   box-sizing: border-box;
@@ -364,6 +370,50 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
+  // Match the system's dark mode by inverting the whole popup - a plain
+  // `filter: invert()` covers the parchment ::before *and* the text in one
+  // go, since a filter applies to the box's whole rendered output rather
+  // than to individual color properties. Excluded here because the
+  // spiral tower below drives its own filter via animation instead.
+  &:not(.popup-window--inverting) {
+    @media (prefers-color-scheme: dark) {
+      filter: invert(1);
+
+      // Emoji (see the `.emoji`-wrapping rehype plugin in LandscapeContainer)
+      // are full-color glyphs, not text painted in a color property - the
+      // popup's invert() above discolors them right along with everything
+      // else. A second invert() here cancels that back out for just this
+      // element, since filters compose down the tree: this element's own
+      // output gets inverted once by this rule, then inverted again as part
+      // of the ancestor's output, landing back on the original colors.
+      .emoji {
+        filter: invert(1);
+      }
+    }
+  }
+
+  // The spiral tower's duality theme, rendered as the popup itself slowly
+  // flipping between light and dark - a plain `filter: invert()` on this
+  // element covers the parchment ::before *and* the text in one go, since a
+  // filter applies to the box's whole rendered output rather than to
+  // individual color properties.
+  &.popup-window--inverting {
+    animation: popup-window-invert 60s linear infinite;
+
+    // In system dark mode, join the cycle already inverted (i.e. halfway
+    // through, per the keyframes below) instead of starting light.
+    @media (prefers-color-scheme: dark) {
+      animation-delay: -30s;
+    }
+
+    // Same cancelling trick as above, but riding the very same animation
+    // (rather than a static invert()) so emoji stay their real colors
+    // through every phase of the cycle, not just at its light/dark extremes.
+    .emoji {
+      animation: inherit;
+    }
+  }
+
   // The parchment texture + a hint of the page's animated color grade live on
   // a ::before behind the text rather than directly on the scrollable content
   // - the color-grade filter remaps every color it's applied to (including
@@ -389,9 +439,14 @@ div.landscape--2-enter.landscape--2-enter-active {
   &.popup-window--letter {
     height: auto;
     max-height: none;
-    // The backdrop's own padding does the spacing, and its flexbox the
-    // centering - `margin: auto` would eat the free space instead.
-    margin: 0;
+    // Vertical auto margins on a flex item are "safe" by construction: when
+    // the letter is short enough to fit, they split the leftover space in
+    // the background's content box evenly above and below it, centering it
+    // between the --letter-gap padding. When it's long enough to overflow,
+    // free space goes negative and the spec resolves auto margins to 0, so
+    // it falls back to sitting flush below the top padding - exactly the old
+    // fixed `margin: 0`, letting overflow-y: auto take over for scrolling.
+    margin: auto 0;
     flex: 0 0 auto;
 
     // A long read shouldn't span the full width of a big monitor - the line
@@ -578,6 +633,12 @@ div.landscape--2-enter.landscape--2-enter-active {
 
   // pre {}
   // blockquote {}
+}
+
+@keyframes popup-window-invert {
+  0%, 40% { filter: invert(0); }
+  50%, 90% { filter: invert(1); }
+  100% { filter: invert(0); }
 }
 
 .popup-window-content {
