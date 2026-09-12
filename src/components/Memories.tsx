@@ -348,11 +348,39 @@ function Memories({ open, onClose }: MemoriesProps) {
     velocityRef.current = -(dy / dt) * 1000 * 0.6;
   }, []);
 
+  // Marks the gesture as a "click the background to close" rather than
+  // closing right here - see onClick below for why the actual close is
+  // deferred to it.
+  const pendingCloseRef = useRef(false);
+
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d || d.id !== e.pointerId) return;
     dragRef.current = null;
-    if (!d.moved) onClose();
+    pendingCloseRef.current = !d.moved;
+  }, []);
+
+  // A canceled gesture (multi-touch, the browser hijacking it for something
+  // else) is aborted, not a click - no trailing `click` event follows a
+  // pointercancel, so there's nothing to defer to and nothing to close.
+  const onPointerCancel = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d || d.id !== e.pointerId) return;
+    dragRef.current = null;
+  }, []);
+
+  // Closing here, on the trailing `click`, rather than back in onPointerUp:
+  // pointerup fires earlier, and the browser's own click event does a
+  // separate hit-test at its own dispatch time rather than reusing
+  // pointerup's. Closing synchronously in onPointerUp can fade this backdrop
+  // out (pointer-events included) before that later click fires, so the
+  // click's hit-test misses the now-transparent backdrop and falls through
+  // onto whatever landscape object sits behind it (e.g. the button that
+  // opened this), reopening it instantly. `click` is the last native event
+  // in the gesture, so closing there leaves nothing left to race with.
+  const onClick = useCallback(() => {
+    if (pendingCloseRef.current) onClose();
+    pendingCloseRef.current = false;
   }, [onClose]);
 
   useEffect(() => {
@@ -377,7 +405,8 @@ function Memories({ open, onClose }: MemoriesProps) {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          onClick={onClick}
         >
           <motion.h1
             className="memories-title"

@@ -637,7 +637,15 @@ function ArtGallery({ open, onClose }: ArtGalleryProps) {
     pointerDownPos.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
+  // Closing on the trailing `click` rather than `pointerup`: `click` does its
+  // own hit-test at dispatch time, separate from (and after) pointerup/mouseup's.
+  // Closing eagerly on pointerup flips this backdrop's pointer-events to 'none'
+  // (see the exit variant below) before that later click event fires, so the
+  // click's hit-test misses the now-transparent backdrop and falls through onto
+  // whatever landscape object sits behind it (e.g. the button that opened this
+  // gallery), instantly reopening it. Reacting to `click` instead means there's
+  // no event left in the gesture to race with.
+  const handleClick = (e: React.MouseEvent) => {
     const start = pointerDownPos.current;
     pointerDownPos.current = null;
     if (!start) return;
@@ -658,7 +666,7 @@ function ArtGallery({ open, onClose }: ArtGalleryProps) {
           exit={{ opacity: 0, pointerEvents: 'none' }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
           onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
+          onClick={handleClick}
         >
           <motion.div
             className="art-gallery-sheet"
