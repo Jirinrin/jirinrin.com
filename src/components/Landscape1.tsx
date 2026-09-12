@@ -233,7 +233,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     return { left, top };
   };
 
-  const zoomPopup = (id: string, type: 'text' | 'about' | 'gallery' | 'memories') => {
+  const zoomPopup = (id: string, type: 'text' | 'about' | 'gallery' | 'memories' | 'groove') => {
     dispatch(changePage({
       popup: { type, id, text: abouts[id]?.text }
     }));
@@ -285,11 +285,13 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
       case 'jiri-soul':
         scrollDown(true, () => zoomPopup(id, 'text'));
         return;
+      case 'groove-grove':
+        scrollDown(true, () => zoomPopup(id, 'groove'));
+        return;
       case 'future-building':
       case 'hobby-heap':
       case 'octopus-tree':
       case 'spiral-tower':
-      case 'groove-grove':
         scrollDown(true, () => zoomPopup(id, 'about'));
         return;
       case 'book-stack':

@@ -22,7 +22,7 @@ const NAV_ITEM_REFERENCE: Record<string, string> = {
   'gallery': 'GALLERY',
   'soul': 'ゆーりのSOUL',
   'life': 'LIFE',
-  'technologies': 'TECHNOLOGIES',
+  'music': 'MUSIC',
   'passions': 'PLEASURES',
   'programming': 'CODING STYLE',
   'future': 'THE FUTURE'
@@ -99,7 +99,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
       document.title = SITE_NAME;
   }, [yOffset, currentPage.landscape]);
 
-  const goToPopup = (type: 'text' | 'about' | 'gallery', id: string) => {
+  const goToPopup = (type: 'text' | 'about' | 'gallery' | 'groove', id: string) => {
     dispatch(changePage({
       landscape: 1,
       popup: { type, id, text: abouts[id]?.text },
@@ -183,7 +183,7 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
             <div>
               {renderNavItem('soul',         () => goToPopup('about', 'jiri-soul'),         true)}
               {renderNavItem('life',         () => goToPopup('about', 'octopus-tree'),      true)}
-              {renderNavItem('technologies', () => goToPopup('about', 'groove-grove'), true)}
+              {renderNavItem('music',        () => goToPopup('groove', 'groove-grove'),  true)}
               {renderNavItem('passions',     () => goToPopup('about', 'hobby-heap'),        true)}
               {renderNavItem('programming',  () => goToPopup('about', 'spiral-tower'),      true)}
               {renderNavItem('future',       () => goToPopup('about', 'future-building'),   true)}

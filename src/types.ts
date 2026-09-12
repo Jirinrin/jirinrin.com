@@ -43,7 +43,7 @@ export interface AboutObject {
   text?: string;
 }
 
-export type PopupType = 'text' | 'about' | 'project' | 'gallery' | 'memories';
+export type PopupType = 'text' | 'about' | 'project' | 'gallery' | 'memories' | 'groove';
 
 export interface Popup {
   type: PopupType;

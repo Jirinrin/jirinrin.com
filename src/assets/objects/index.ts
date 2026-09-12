@@ -67,7 +67,7 @@ const objects: ObjectsMap = {
   'groove-grove': {
     id: 'groove-grove',
     name: 'Groove Grove',
-    left: 0,
+    left: -4,
     top: 3919,
     hasText: true,
     extension: 'png'

@@ -4,7 +4,7 @@
 // to every clickable object plus /projects and /projects/[project-id].
 import type { CurrentPage } from './types';
 
-type ObjectPopupType = 'text' | 'about' | 'gallery' | 'memories';
+type ObjectPopupType = 'text' | 'about' | 'gallery' | 'memories' | 'groove';
 
 // About-object id -> URL slug. Kept explicit (rather than derived from `name`)
 // since several names are non-ascii, long, or otherwise unfit for a URL.
@@ -32,7 +32,7 @@ export const OBJECT_POPUP_TYPES: Record<string, ObjectPopupType> = {
   'hobby-heap': 'about',
   'octopus-tree': 'about',
   'spiral-tower': 'about',
-  'groove-grove': 'about',
+  'groove-grove': 'groove',
   'privacy': 'text',
 };
 

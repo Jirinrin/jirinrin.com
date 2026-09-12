@@ -1,0 +1,888 @@
+@import url('https://fonts.googleapis.com/css?family=Cinzel:400|Cormorant:300,400,400i,600');
+
+// The grove is layered back-to-front: the scrolling field of records, then the
+// treeline they rise up behind, then the player that floats out from between
+// the trees, then the one little gate for the link that leaves the site.
+$z-scroll: 1;
+$z-trees: 2;
+$z-close: 5;
+$z-player: 10;
+$z-gate: 20;
+
+.groove-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background-color: rgba(10, 12, 9, 0.46);
+  backdrop-filter: blur(9px) saturate(0.92) brightness(0.72);
+  -webkit-backdrop-filter: blur(9px) saturate(0.92) brightness(0.72);
+  cursor: pointer;
+}
+
+// ---------------------------------------------------------------------------
+// the scrolling field
+// ---------------------------------------------------------------------------
+
+.groove-scroll {
+  position: absolute;
+  inset: 0;
+  z-index: $z-scroll;
+  overflow-y: auto;
+  // NB for future edits: setting only overflow-y (never overflow-x) still
+  // makes the *computed* overflow-x resolve to auto too, per spec - a lone
+  // `visible` axis paired with a scrolling one doesn't stay visible, it
+  // silently becomes a second clip boundary. Harmless today (nothing here
+  // needs to render past this container's left/right edge any more, now
+  // that the record's flight to the player lives entirely in the player's
+  // own DOM subtree - see GroovePlayer), but worth knowing before adding a
+  // hover effect that bulges a tile sideways.
+  overscroll-behavior: contain;
+  cursor: default;
+
+  // Same idea as the gallery sheet: an overflow box clips hard, so records
+  // drifting past the top edge would get sliced off flush against an invisible
+  // bar. Fading the edge turns that cut into a dissolve.
+  mask-image: linear-gradient(to bottom, transparent 0, black 3.5rem, black 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 3.5rem, black 100%);
+}
+
+.groove-inner {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 3.5rem 2.5rem 0;
+  // Room for the last records to clear the treeline before the scroll ends.
+  padding-bottom: clamp(240px, 46vh, 520px);
+
+  @media (max-width: 700px) {
+    padding: 2.5rem 1rem 0;
+    padding-bottom: clamp(200px, 42vh, 400px);
+  }
+}
+
+.groove-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  pointer-events: none;
+  // opacity/blur are written directly by the scroll handler, so the header
+  // dissolves as you descend into the grove instead of hanging at the top.
+  will-change: opacity, filter;
+}
+
+.groove-title {
+  margin: 0 0 0.9rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4.4vw, 3.1rem);
+  letter-spacing: 0.22em;
+  // The heading comes out of the markdown as "Groove Grove"; the grove wants
+  // it carved.
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 0 1.6rem rgba(220, 255, 210, 0.32), 0 2px 10px rgba(0, 0, 0, 0.55);
+
+  @media (max-width: 700px) {
+    letter-spacing: 0.13em;
+  }
+}
+
+.groove-intro {
+  margin: 0 auto;
+  max-width: 34rem;
+  font-family: 'Cormorant', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(1rem, 2.4vw, 1.3rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.groove-field {
+  position: relative;
+  width: 100%;
+}
+
+.groove-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  // The field above already reserves a safety margin past its lowest disc
+  // (see sectionHeight's +64 buffer in the component) - this only needs to
+  // add a *little* more breathing room on top of that, not repeat it. The
+  // gap to the first "recommends" tile below was the one that was genuinely
+  // too generous before, so that side comes down much further.
+  margin: 0.9rem auto 1rem;
+  max-width: 32rem;
+  pointer-events: none;
+
+  &__rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.32), transparent);
+  }
+
+  &__label {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.72rem, 1.9vw, 0.92rem);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.58);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// a record
+// ---------------------------------------------------------------------------
+
+.groove-vinyl {
+  position: absolute;
+  cursor: pointer;
+  animation: groove-drift var(--drift-duration, 15s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+
+  &:hover {
+    animation-play-state: paused;
+    z-index: 3;
+  }
+
+  // The pick-up: lifts and grows a little, like it's actually coming off the
+  // shelf toward you - no perspective/tilt-tracking and no drop-shadow (the
+  // records want to read as floating free rather than sitting on a surface
+  // catching light), just weight.
+  &__lift {
+    width: 100%;
+    height: 100%;
+    transform: translateY(0) scale(1);
+    transition: transform 1s cubic-bezier(0.2, 0.9, 0.25, 1);
+  }
+
+  &:hover &__lift {
+    transform: translateY(-6px) scale(1.05);
+  }
+
+  &:active &__lift {
+    transform: translateY(-3px) scale(1.03);
+    transition-duration: 0.12s;
+  }
+
+  // Never give this (or any ancestor up to the scroll container) a
+  // `content-visibility`/`contain`/`overflow: hidden` - any of those clip
+  // rendering to their own box, which is exactly what broke the hover lift
+  // above the last time content-visibility was tried here for a perf win.
+  &__disc-shell {
+    width: 100%;
+    height: 100%;
+  }
+
+  // The scroll-driven spin. One custom property is written to the scroll
+  // container per frame; every record turns by its own multiple of it, in its
+  // own direction, from its own starting angle. No ambient idle spin on top
+  // of this any more - every record constantly turning even at rest was
+  // real, needless cost; now a tile is fully still except while actually
+  // scrolling. `will-change` hints the browser to keep this on its own
+  // compositor layer up front, rather than promoting/demoting it right as
+  // scrolling starts - and now that __img/__cover carry no SVG filter of
+  // their own (see __tint above), there's nothing here forcing a re-raster
+  // on every rotate change, just a plain GPU-composited transform.
+  &__disc {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    rotate: calc((var(--spin-base, 0) + var(--groove-scroll, 0) * var(--spin-factor, 0)) * 1deg);
+    will-change: transform;
+  }
+
+  // Rendered at 80% of the box, centered, rather than filling it - leaves an
+  // outer band clear for the ring text (see __ring below) to actually sit
+  // *around* the record instead of overlapping its label. Filter here is
+  // cheap native functions only (brightness/contrast/saturate, set inline -
+  // see discLook), deliberately no color-grade reference - see __tint just
+  // below for why the grade itself lives there instead of here.
+  &__img {
+    position: absolute;
+    inset: 10%;
+    display: block;
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+
+  // The color grade, as a flat non-rotating tint blended over the (rotating)
+  // grayscale image above via mix-blend-mode - same trick as
+  // .groove-embed__tint, but consuming `--color-grade-flat` (see
+  // ColorGradeFilter.tsx) rather than the live `url(#landscape-color-grade)`
+  // filter directly. That filter's own attributes tick every 150ms, and
+  // *every* element referencing it has to be re-rasterized on each tick
+  // regardless of whether that element itself is moving - fine for the
+  // handful of things that use it elsewhere, but a dozen-plus of these tints
+  // can be on screen at once here, and paying that cost that often for that
+  // many elements is what read as broad, scroll-independent jank (confirmed:
+  // removing just this filter reference fixed it). The CSS variable is the
+  // exact same color, just sampled in JS every ~8s instead of pushed through
+  // the filter every 150ms, and eased back into a drift by the staggered
+  // transition below.
+  //
+  // That transition has to stay *short* and out of phase between tiles, which
+  // is the second half of this story: `--color-grade-flat` changes at one
+  // instant for the whole document, so a long transition had every visible
+  // tint animating the exact same frames. background-color is a paint
+  // property and this tint cannot have a compositing layer of its own to
+  // repaint in isolation - `mix-blend-mode` is defined against the backdrop
+  // it sits on, so separating its raster from __disc's is a contradiction in
+  // terms - while its invalidation rect covers most of __disc's box. Every
+  // frame of that transition therefore re-rastered the whole promoted __disc
+  // layer (filtered record, two blend groups, masked cover, stroked ring
+  // text) on a dozen-plus discs at once, for 7.5s out of every 8. That, not
+  // the rotation, was the jank that survived dropping the url() filter.
+  //
+  // Borrowing __disc's own per-tile random angle (0-360) as a delay spreads
+  // those repaints across the tick instead, so roughly one disc is repainting
+  // in any given frame rather than all of them - and records catching the new
+  // light one at a time reads better than the whole field turning at once
+  // anyway. Delay + duration must stay under ColorGradeFilter's
+  // FLAT_GRADE_TICK_MS, or a tile gets retargeted mid-ease.
+  &__tint {
+    position: absolute;
+    inset: 10.8%;
+    border-radius: 50%;
+    pointer-events: none;
+    background: var(--color-grade-flat, #808080);
+    transition: background-color 1s ease-in-out;
+    transition-delay: calc(var(--spin-base, 0) * 0.018s);
+    mix-blend-mode: color;
+  }
+
+  // The release's own artwork, flattened to grayscale and masked to the
+  // grooved band only: the centre label stays clean, and it fades out again
+  // before the outer rim so the record still reads as a record. Same 80%
+  // sizing as __img above, so the mask lines up with the (smaller) disc.
+  &__cover {
+    position: absolute;
+    inset: 10%;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    mask-image: radial-gradient(circle closest-side at 50% 50%,
+      transparent 0 36%, #000 45% 90%, transparent 98%);
+    -webkit-mask-image: radial-gradient(circle closest-side at 50% 50%,
+      transparent 0 36%, #000 45% 90%, transparent 98%);
+  }
+
+  // Carries no filter of its own, and sits outside __tint's own 80%-inset
+  // circle (this is `inset: 0`, i.e. the full box, and the ring itself sits
+  // further out still - see RING_RADIUS) - so it's genuinely ungraded,
+  // which is the point: the grade remaps every tone it touches and this is
+  // the one thing on the record that has to stay readable regardless.
+  &__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    // Unlike __tint, this carries no blend mode, so it's free to get its own
+    // compositing layer - and worth giving it one: this stroked textPath
+    // never changes after first paint, but sits in __disc's shared raster
+    // with everything else, so any repaint __tint's recolor triggers there
+    // (see __tint's own comment) redraws this SVG too for no reason. Off in
+    // its own layer, it's drawn once and never touched again regardless of
+    // what else in __disc repaints.
+    transform: translateZ(0);
+    will-change: transform;
+
+    text {
+      fill: rgba(255, 253, 247, 0.94);
+      font-family: 'Cormorant', serif;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      paint-order: stroke;
+      stroke: rgba(0, 0, 0, 0.6);
+      stroke-width: 0.55;
+    }
+  }
+
+  &__numeral {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 34cqw;
+    line-height: 1;
+    color: rgba(28, 22, 16, 0.82);
+    pointer-events: none;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+}
+
+@keyframes groove-drift {
+  0%   { translate: 0 0; }
+  26%  { translate: calc(var(--drift-x, 8px) * -0.7) calc(var(--drift-y, 8px) * 0.6); }
+  52%  { translate: calc(var(--drift-x, 8px) * 0.55) calc(var(--drift-y, 8px) * -0.8); }
+  78%  { translate: calc(var(--drift-x, 8px) * 0.8) calc(var(--drift-y, 8px) * 0.35); }
+  100% { translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .groove-vinyl {
+    animation: none;
+
+    &__disc { rotate: calc(var(--spin-base, 0) * 1deg); }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// the treeline
+// ---------------------------------------------------------------------------
+
+.groove-trees {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-trees;
+  height: clamp(190px, 36vh, 440px);
+  pointer-events: none;
+  transition: filter 0.7s ease, opacity 0.7s ease;
+
+  // Softens the line where the canopy meets the field, so records dissolve
+  // into the grove instead of sliding behind a cardboard cut-out.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 62%;
+    background: linear-gradient(to bottom, transparent, rgba(8, 10, 7, 0.55));
+  }
+
+  // A very wide image on purpose: wide screens get the whole treeline, narrow
+  // ones keep it at a sane minimum width and crop it evenly on both sides
+  // rather than squashing it into a hedge. `cover` with the position pinned
+  // high keeps the canopy and lets the trunks run off the bottom of the
+  // screen, which is where trunks belong.
+  &__img {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: max(100vw, 880px);
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 18%;
+    filter: url(#landscape-color-grade) saturate(0.8) brightness(0.46) contrast(1.15);
+  }
+}
+
+// While a record is playing the grove steps back a little, which is what lets
+// the player read as floating in front of the trees.
+.groove-backdrop--playing .groove-trees {
+  filter: blur(2.5px) brightness(0.72);
+}
+
+// ---------------------------------------------------------------------------
+// close
+// ---------------------------------------------------------------------------
+
+.groove-close {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  z-index: $z-close;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: 'Cormorant', serif;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover { color: rgba(255, 255, 255, 0.8); }
+
+  @media (max-width: 700px) {
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// the player
+// ---------------------------------------------------------------------------
+
+.groove-player-layer {
+  position: fixed;
+  inset: 0;
+  z-index: $z-player;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// The player's own parts. A separate root from the layer above: nesting them
+// inside it would compile them to `.groove-player-layer__*`, which is not what
+// any of them are called.
+.groove-player {
+  // Darker and lightly blurred (was a thin, unblurred 0.32-alpha wash) so the
+  // grove behind properly recedes and the box reads as sitting *in front of*
+  // it, not just laid over a live view of it.
+  &__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: pointer;
+    background: rgba(5, 7, 5, 0.6);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  &__stage {
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    // Equal top and bottom: the record hanging off the box's bottom edge is
+    // a sibling of this element entirely (see __dock below), positioned by
+    // its own measured coordinates rather than adding to this box's flex-
+    // centered height - without a matching margin-top, a bottom-only margin
+    // here would visually push the whole box-plus-record group up off true
+    // center instead of centering it.
+    margin: clamp(64px, 11vh, 110px) 0;
+  }
+
+  &__box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(92vw, 460px);
+    // A fixed chassis, not a box that resizes to its contents: it is a
+    // portable player, and a player does not change shape when you put a
+    // different record on. It also keeps the docked record's landing spot
+    // still while you flip between ADHDJ entries, instead of sliding it up and
+    // down the bottom edge every time the content length changes.
+    height: min(62vh, 540px);
+    border-radius: 1rem;
+    font-family: 'Cormorant', serif;
+    font-weight: 300;
+    cursor: default;
+
+    // Same parchment the landscape's popups use, so the player reads as part
+    // of the same world - just a much smaller, portable one. Bumped closer to
+    // fully opaque (was 0.92) so the box reads as solid, not a sheet the
+    // grove shows faintly through.
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      background-image: url("../assets/box-light-small.png");
+      background-size: 100% 100%;
+      opacity: 0.97;
+      filter: url(#landscape-color-grade) saturate(0.4);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      &::before {
+        background-image: url("../assets/box-dark-small.png");
+      }
+    }
+  }
+
+  // The docked record. A *sibling* of __stage, not a child of __box - see
+  // the comment in GroovePlayer's JSX for why: this is what lets __box's own
+  // opaque background occlude the disc's top half (this sits behind the
+  // stage in stacking order) while the bottom half, past the box's edge,
+  // shows freely. `left`/`top` are the box's own measured bottom-center
+  // point (see GroovePlayer), so this element's own position is just that
+  // point minus half its size in each direction. The transition on
+  // left/top is what lets it glide smoothly to a new spot if the box
+  // resizes later (an embed finishing loading, a different ADHDJ entry)
+  // without replaying the initial throw-and-catch, which is handled
+  // entirely separately via the x/y/scale framer animation. No drop-shadow,
+  // same as every other record - floating, not resting on anything.
+  &__dock {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    transition: left 0.5s cubic-bezier(0.3, 0.9, 0.3, 1), top 0.5s cubic-bezier(0.3, 0.9, 0.3, 1);
+  }
+
+  // The downward bow of the thrown record's flight, kept off the dock element
+  // itself so it can simply *add* to the spring carrying the record across
+  // (nested transforms compose) instead of being folded into it as keyframes,
+  // which is what used to put a velocity corner mid-flight. In CSS rather than
+  // framer for the second reason too: a CSS animation is started once by the
+  // browser and is indifferent to React re-rendering the player mid-flight,
+  // where a framer keyframe array is something the library can decide to
+  // replay. Peak at 46% with a symmetric ease either side, so the record is
+  // momentarily weightless at the top of the bow rather than kinking through
+  // it, and the timing matches the spring's own settle.
+  &__arc {
+    width: 100%;
+    height: 100%;
+
+    &--throw {
+      animation: groove-dock-arc 0.85s cubic-bezier(0.45, 0, 0.55, 1) 0.1s both;
+    }
+  }
+
+  &__close {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.7rem;
+    z-index: 2;
+    border: none;
+    background: transparent;
+    font-family: 'Cormorant', serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: rgba(40, 30, 20, 0.42);
+    transition: color 0.25s ease;
+
+    &:hover { color: rgba(40, 30, 20, 0.85); }
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(235, 232, 226, 0.42);
+      &:hover { color: rgba(255, 253, 250, 0.9); }
+    }
+  }
+
+  &__content {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.5rem 1.5rem 0;
+
+    @media (max-width: 700px) {
+      padding: 1.2rem 1.1rem 0;
+    }
+  }
+
+  &__foot {
+    flex: 0 0 auto;
+  }
+
+  &__title {
+    margin: 0 0 0.6rem;
+    // Keeps the heading clear of the close button in the corner.
+    padding-right: 1.4rem;
+    font-family: 'Cinzel', serif;
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1.35;
+    color: rgba(30, 22, 14, 0.92);
+    overflow-wrap: break-word;
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(240, 237, 231, 0.94);
+    }
+  }
+
+  &__description {
+    margin: 0 0 1.2rem;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: rgba(40, 32, 24, 0.86);
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(214, 210, 203, 0.88);
+    }
+  }
+
+  &__markdown {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(40, 32, 24, 0.88);
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(214, 210, 203, 0.9);
+    }
+
+    // The markdown file opens with its own title, which the player box has
+    // already shown as the heading above.
+    h1 {
+      display: none;
+    }
+
+    h2 {
+      font-family: 'Cinzel', serif;
+      font-weight: 400;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      margin: 1.4rem 0 0.4rem;
+      opacity: 0.75;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.1rem;
+    }
+
+    li {
+      margin: 0.12rem 0;
+    }
+  }
+}
+
+@keyframes groove-dock-arc {
+  0%   { translate: 0 0; }
+  46%  { translate: 0 var(--groove-arc, 70px); }
+  100% { translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .groove-player__arc--throw { animation: none; }
+}
+
+// ---------------------------------------------------------------------------
+// embeds
+// ---------------------------------------------------------------------------
+
+.groove-embed {
+  position: relative;
+  // Contains the blend below so the tint colors the player and nothing else.
+  isolation: isolate;
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 0.4rem;
+  overflow: hidden;
+
+  iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  &--video {
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+
+  // A flat mid-gray put through the page's own grade filter comes out as
+  // whatever color the grade is currently sitting at, so blending it over the
+  // black-and-white embed pulls the player into the same palette as
+  // everything else, with nothing having to read the filter's state.
+  &__tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: #808080;
+    filter: url(#landscape-color-grade);
+    mix-blend-mode: color;
+    opacity: 0.5;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// the ADHDJ 1-5 selector
+// ---------------------------------------------------------------------------
+
+.groove-series {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+
+  &__disc {
+    position: relative;
+    width: clamp(46px, 12vw, 62px);
+    height: clamp(46px, 12vw, 62px);
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    // Lets the numeral size itself off the disc (font-size: 34cqw) so it stays
+    // proportional at every breakpoint.
+    container-type: inline-size;
+
+    .groove-vinyl__img {
+      transition: filter 0.5s ease;
+    }
+
+    // The one that is playing is lit: brighter, punchier. Only the cheap
+    // native filter on __img changes here (no url() - see discLook/__tint
+    // above); the color-grade tint itself stays the same between the two
+    // states, and the brightness swing alone still reads clearly as
+    // lit/dimmed. The scale-up (see the framer `animate` prop in
+    // SeriesDisc) is what reads as "lifted" - no drop-shadow here either.
+    // The spin-up itself is driven in JS (see useTurntableSpin).
+    &--active {
+      .groove-vinyl__img {
+        filter: brightness(1.32) contrast(1.35) saturate(1.15) !important;
+      }
+
+      .groove-vinyl__numeral {
+        color: rgba(20, 15, 10, 0.92);
+      }
+    }
+
+    &:not(&--active) {
+      .groove-vinyl__img {
+        filter: brightness(0.72) contrast(0.9) saturate(0.6) !important;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// the gate out of the grove
+// ---------------------------------------------------------------------------
+
+.groove-gate-layer {
+  position: fixed;
+  inset: 0;
+  z-index: $z-gate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: rgba(5, 7, 5, 0.5);
+  cursor: pointer;
+}
+
+.groove-gate {
+  position: relative;
+  box-sizing: border-box;
+  width: min(90vw, 340px);
+  padding: 2rem 1.7rem 1.6rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  text-align: center;
+  cursor: default;
+  font-family: 'Cormorant', serif;
+  font-weight: 300;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: url("../assets/box-light-small.png");
+    background-size: 100% 100%;
+    opacity: 0.94;
+    filter: url(#landscape-color-grade) saturate(0.4);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    &::before { background-image: url("../assets/box-dark-small.png"); }
+  }
+
+  // A slow mystical drift of light across the card, so the little gate feels
+  // like a way through rather than a dialog box.
+  &__glow {
+    position: absolute;
+    inset: -40%;
+    pointer-events: none;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.22) 55deg,
+      transparent 130deg,
+      transparent 230deg,
+      rgba(255, 255, 255, 0.14) 290deg,
+      transparent 360deg
+    );
+    mix-blend-mode: soft-light;
+    animation: groove-gate-glow 14s linear infinite;
+  }
+
+  &__title {
+    margin: 0 0 0.7rem;
+    font-family: 'Cinzel', serif;
+    font-weight: 400;
+    font-size: 1.05rem;
+    letter-spacing: 0.16em;
+    text-transform: lowercase;
+    color: rgba(30, 22, 14, 0.9);
+
+    @media (prefers-color-scheme: dark) { color: rgba(240, 237, 231, 0.92); }
+  }
+
+  &__body {
+    margin: 0 0 1.5rem;
+    font-size: 1.02rem;
+    line-height: 1.5;
+    color: rgba(40, 32, 24, 0.84);
+
+    @media (prefers-color-scheme: dark) { color: rgba(214, 210, 203, 0.86); }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  &__go {
+    display: inline-block;
+    padding: 0.5rem 1.5rem;
+    border-radius: 2rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    color: rgba(28, 20, 12, 0.9);
+    border: 1px solid rgba(60, 45, 30, 0.35);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.28);
+      border-color: rgba(60, 45, 30, 0.6);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(240, 237, 231, 0.92);
+      border-color: rgba(230, 226, 220, 0.3);
+      &:hover { background-color: rgba(255, 255, 255, 0.12); }
+    }
+  }
+
+  &__stay {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Cormorant', serif;
+    font-size: 0.92rem;
+    font-style: italic;
+    color: rgba(40, 32, 24, 0.5);
+    transition: color 0.3s ease;
+
+    &:hover { color: rgba(40, 32, 24, 0.85); }
+
+    @media (prefers-color-scheme: dark) {
+      color: rgba(214, 210, 203, 0.45);
+      &:hover { color: rgba(240, 237, 231, 0.85); }
+    }
+  }
+}
+
+@keyframes groove-gate-glow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .groove-gate__glow { animation: none; }
+}

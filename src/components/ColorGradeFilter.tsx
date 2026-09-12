@@ -30,6 +30,27 @@ const GRADE_BLEND_DURATION_MS = 16_000;
 const TICK_MS = 150;
 const GRADE_STEPS = 25;
 
+// Every element with `filter: url(#landscape-color-grade)` has to be
+// re-rasterized on *every* tick above, whether or not that element itself is
+// otherwise animating - referencing a filter whose own attributes just
+// changed forces a repaint of it, full stop. That's a fine cost when only a
+// handful of things reference it at once (the landscape image, one open
+// popup's background), but the Groove Grove can have a dozen-plus small tint
+// overlays (one per visible vinyl) all referencing it simultaneously, and
+// paying that cost 6-7 times a second for a dozen elements is what read as
+// broad, scroll-independent jank there specifically.
+//
+// So a second, much cheaper channel exists alongside the live filter: a flat
+// CSS custom property holding the *color* a plain mid-gray would currently
+// come out as if it really were pushed through the filter (see
+// `flatGradeColor` below - same stop, same hue-rotation, just evaluated once
+// in JS instead of per-pixel in SVG). Written this rarely, and consumed
+// through a slow CSS `transition: background-color`, it gives any tint that
+// doesn't need pixel-level per-tone remapping (a flat circle blended with
+// `mix-blend-mode: color`, e.g. every `.groove-vinyl__tint`) the same slowly-
+// drifting palette without ever touching the SVG filter at all.
+const FLAT_GRADE_TICK_MS = 8_000;
+
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -49,6 +70,18 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 interface Stop { h: number; s: number; l: number; }
+
+// What a flat mid-gray (#808080, i.e. luminance ~0.5) comes out as through
+// the real filter at this instant: the feComponentTransfer table's middle
+// entry *is* the middle stop (see stopsToTables - t=0.5 lands almost exactly
+// there), and the hue-rotate afterward is approximated here as a plain HSL
+// hue shift rather than the SVG spec's RGB rotation matrix - close enough for
+// a low-opacity blended wash, not worth carrying the matrix math twice.
+function flatGradeColor(stops: Stop[], hueDeg: number): string {
+  const mid = stops[1];
+  const [r, g, b] = hslToRgb(mid.h + hueDeg, mid.s, mid.l);
+  return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+}
 
 function buildGradeStops(): Stop[] {
   const h0 = rand(0, 360);
@@ -124,12 +157,14 @@ function ColorGradeFilter() {
   }, [showPopup]);
 
   useEffect(() => {
+    document.documentElement.style.setProperty('--color-grade-flat', flatGradeColor(initialStops, 0));
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     let fromStops = initialStops;
     let toStops = buildGradeStops();
     let blendStart = performance.now();
     const hueStart = performance.now();
+    let lastFlatWrite = 0;
 
     const id = window.setInterval(() => {
       const now = performance.now();
@@ -149,7 +184,13 @@ function ColorGradeFilter() {
       }
 
       const hueElapsed = (now - hueStart) % HUE_ROTATE_PERIOD_MS;
-      hueRef.current?.setAttribute('values', String((hueElapsed / HUE_ROTATE_PERIOD_MS) * 360));
+      const hueDeg = (hueElapsed / HUE_ROTATE_PERIOD_MS) * 360;
+      hueRef.current?.setAttribute('values', String(hueDeg));
+
+      if (now - lastFlatWrite >= FLAT_GRADE_TICK_MS) {
+        lastFlatWrite = now;
+        document.documentElement.style.setProperty('--color-grade-flat', flatGradeColor(currentStops, hueDeg));
+      }
     }, TICK_MS);
     return () => clearInterval(id);
   }, [initialStops]);

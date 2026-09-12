@@ -16,6 +16,7 @@ import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
 import ArtGallery from './ArtGallery';
 import Memories from './Memories';
+import GrooveGrove from './GrooveGrove';
 import ProjectGallery from './ProjectGallery';
 import BackgroundClouds from './BackgroundClouds';
 
@@ -294,7 +295,7 @@ function LandscapeContainer() {
         (!oldPopup
           || popup.id !== oldPopup.id
           || (currentPage.showPopup !== prev.showPopup && currentPage.showPopup)) &&
-        (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery' || popup.type === 'memories')) {
+        (popup.type === 'about' || popup.type === 'text' || popup.type === 'gallery' || popup.type === 'memories' || popup.type === 'groove')) {
       zoomInCanvas();
     }
 
@@ -359,7 +360,7 @@ function LandscapeContainer() {
       const type = OBJECT_POPUP_TYPES[link.popupId];
       // 'privacy' isn't a landscape object, so its text isn't in `abouts`
       const text = link.popupId === 'privacy' ? privacyText : abouts[link.popupId]?.text;
-      if (type !== 'gallery' && type !== 'memories' && !text) return;
+      if (type !== 'gallery' && type !== 'memories' && type !== 'groove' && !text) return;
       deepLinkHandledRef.current = true;
       // Same sequence handleObjectClick/goToPopup use: scroll down first,
       // then open the popup once we're there, so the zoom-in/modal only
@@ -586,7 +587,8 @@ function LandscapeContainer() {
         );
       case 'gallery':
       case 'memories':
-        // Rendered separately by <ArtGallery> / <Memories>, outside this generic popup box.
+      case 'groove':
+        // Rendered separately by <ArtGallery> / <Memories> / <GrooveGrove>, outside this generic popup box.
         return null;
       default:
         throw new Error('Nonexisting popup type');
@@ -667,7 +669,7 @@ function LandscapeContainer() {
 
         <CSSTransition
           nodeRef={popupRef}
-          in={currentPage.showPopup && currentPage.popup?.type !== 'gallery' && currentPage.popup?.type !== 'memories'}
+          in={currentPage.showPopup && currentPage.popup?.type !== 'gallery' && currentPage.popup?.type !== 'memories' && currentPage.popup?.type !== 'groove'}
           classNames="popup-window-background"
           unmountOnExit
           // Generous headroom past what the CSS itself takes (see the letter
@@ -701,6 +703,11 @@ function LandscapeContainer() {
 
         <Memories
           open={currentPage.showPopup && currentPage.popup?.type === 'memories'}
+          onClose={zoomOutCanvas}
+        />
+
+        <GrooveGrove
+          open={currentPage.showPopup && currentPage.popup?.type === 'groove'}
           onClose={zoomOutCanvas}
         />
       </div>
