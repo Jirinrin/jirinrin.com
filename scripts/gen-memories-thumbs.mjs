@@ -31,7 +31,14 @@ const SUPPORTED = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif']);
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
 
-  const entries = await readdir(SRC_DIR, { withFileTypes: true });
+  // The raw originals only ever exist on a dev machine (see .gitignore) -
+  // on Netlify's build agent this dir is simply absent, and that's fine:
+  // the committed thumbs + meta json (also read below) are already
+  // everything the site needs, so just skip generation rather than fail.
+  const entries = await readdir(SRC_DIR, { withFileTypes: true }).catch(err => {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  });
   const files = entries.filter(e => e.isFile());
 
   let generated = 0;

@@ -16,11 +16,11 @@
 /ps
 
 # raw Well of Memories originals (kept locally only - unoptimized, can be
-# several MB each) and the small webp thumbnails `npm run thumbs`
-# (scripts/gen-memories-thumbs.mjs) generates from them for the actual site
+# several MB each). The small webp thumbnails `npm run thumbs`
+# (scripts/gen-memories-thumbs.mjs) generates from them, plus their meta
+# json, ARE checked in (~11MB) since the site (and the Netlify build, which
+# has no access to the originals) needs them to exist.
 /src/assets/memories
-/src/assets/memories-thumbs
-/src/assets/memories-thumbs-meta.json
 
 # misc
 .DS_Store
