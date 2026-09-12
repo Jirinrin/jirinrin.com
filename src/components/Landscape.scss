@@ -777,6 +777,136 @@ div.landscape--2-enter.landscape--2-enter-active {
 
   // pre {}
   // blockquote {}
+
+  // Hobby Heap's long list of interests, each under its own h3, collapsed
+  // into an accordion (see the 'hobby-heap' branch of renderPopup in
+  // LandscapeContainer.tsx) so the full list of headings stays scannable
+  // without forcing a scroll through every section's text at once.
+  .accordion-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .accordion-section {
+    border-top: 1px solid rgba(70, 70, 70, 0.2);
+
+    &:last-child {
+      border-bottom: 1px solid rgba(70, 70, 70, 0.2);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .accordion-section__heading {
+    margin: 0;
+  }
+
+  // A plain reset button dressed up as the h3 it replaces (font/size inherited
+  // from the `h3` rule above via `font: inherit`), so it keeps reading as a
+  // heading while actually being clickable/focusable. The slight indent on
+  // hover/open is a small "coming forward" cue - paired with the chevron and
+  // the panel's own blur-fade below, it's meant to feel like the heading
+  // itself is what's drawing its content out, mist gathering into shape.
+  .accordion-section__header {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    width: 100%;
+    margin: 0;
+    padding: 0.9rem 0.2rem;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.3s ease, padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:hover,
+    &:focus-visible {
+      color: rgb(15, 15, 15);
+      padding-left: 0.7rem;
+    }
+
+    &:focus-visible {
+      outline: 1px dashed currentColor;
+      outline-offset: 2px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      &:hover,
+      &:focus-visible {
+        color: rgb(255, 255, 255);
+      }
+    }
+  }
+
+  .accordion-section--open > .accordion-section__heading .accordion-section__header {
+    color: rgb(15, 15, 15);
+
+    @media (prefers-color-scheme: dark) {
+      color: rgb(255, 255, 255);
+    }
+  }
+
+  .accordion-section__chevron {
+    flex: 0 0 auto;
+    width: 0.5em;
+    height: 0.5em;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: 0.6;
+    transform: rotate(-45deg);
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  }
+
+  .accordion-section--open .accordion-section__chevron {
+    opacity: 0.9;
+    transform: rotate(45deg);
+  }
+
+  // The classic 0fr/1fr grid-template-rows trick: animates smoothly to/from
+  // the content's real height without ever needing to know what that height
+  // is (unlike max-height, which would need a guessed cap or a JS measurement
+  // pass). `overflow: hidden` + `min-height: 0` on the inner wrapper is what
+  // lets the 0fr row actually collapse to nothing instead of the content's
+  // intrinsic size winning out.
+  .accordion-section__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .accordion-section--open .accordion-section__panel {
+    grid-template-rows: 1fr;
+  }
+
+  .accordion-section__panel-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding: 0 0.2rem;
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(-0.4em);
+    transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease;
+  }
+
+  .accordion-section__panel-inner p {
+    margin-top: 0;
+  }
+
+  // Opening fades/unblurs in with a slight delay behind the height expanding,
+  // like mist settling into place after the space for it opens up. Closing
+  // has no such delay - it dissolves away immediately as the section shrinks,
+  // rather than lingering after its space is already gone.
+  .accordion-section--open .accordion-section__panel-inner {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+    transition-delay: 0.12s;
+  }
 }
 
 @keyframes popup-window-invert {

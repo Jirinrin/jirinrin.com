@@ -106,6 +106,28 @@ const rehypeUnEmoji: Plugin<[], Root> = () => (tree) => {
   wrapEmoji(tree as unknown as EmojiWrappableNode);
 };
 
+// Hobby Heap's "about" text lists a couple dozen interests under their own
+// ### headings - way too much to read as one continuous scroll, so it's
+// rendered as an accordion instead (see the 'hobby-heap' branch in
+// renderPopup below). This just splits the raw markdown on those headings;
+// everything before the first one is the always-visible intro, and each
+// heading's own text becomes one collapsible section's body.
+interface AccordionSection { title: string; body: string }
+
+const ACCORDION_HEADING_RE = /^### (.+)$/gm;
+
+const splitAccordionSections = (markdown: string): { intro: string; sections: AccordionSection[] } => {
+  const headings = [...markdown.matchAll(ACCORDION_HEADING_RE)];
+  if (!headings.length) return { intro: markdown, sections: [] };
+
+  const intro = markdown.slice(0, headings[0].index).trim();
+  const sections = headings.map((heading, i) => ({
+    title: heading[1].trim(),
+    body: markdown.slice(heading.index! + heading[0].length, headings[i + 1]?.index ?? markdown.length).trim(),
+  }));
+  return { intro, sections };
+};
+
 const renderParagraph = ({ children }: { children?: React.ReactNode }) => {
   const childArray = React.Children.toArray(children);
   const only = childArray[0];
@@ -133,6 +155,9 @@ function LandscapeContainer() {
   const [zoomIn, setZoomIn] = useState(false);
   const [frameOffset, setFrameOffset] = useState(0);
   const [animationOngoing, setAnimationOngoing] = useState(false);
+  // Which Hobby Heap section (by index) is currently expanded - null means
+  // all collapsed. Only one at a time, accordion-style.
+  const [openHobbySection, setOpenHobbySection] = useState<number | null>(null);
 
   // Use a ref for frameOffset so the scroll listener always sees the latest value
   const frameOffsetRef = useRef(0);
@@ -159,6 +184,12 @@ function LandscapeContainer() {
       img.src = src;
     }
   }, []);
+
+  // Always start fresh (all collapsed) whenever a popup opens or changes,
+  // rather than remembering what was left open from a previous visit.
+  useEffect(() => {
+    setOpenHobbySection(null);
+  }, [currentPage.popup?.id, currentPage.showPopup]);
 
   const calculateScaleFactor = (windowSize = window.innerWidth) => windowSize / C.CANVAS_WIDTH;
 
@@ -423,41 +454,82 @@ function LandscapeContainer() {
 
     switch (popup.type) {
       case 'text':
-      case 'about':
-        return (
-          <ReactMarkdown
-            urlTransform={(url) => url}
-            rehypePlugins={[rehypeUnEmoji]}
-            components={{
-              p: renderParagraph,
-              img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
-                <img
-                  src={getObjectDetailImage(src ?? '')}
-                  className={alt}
-                  alt={(src ?? '').split('/').reverse()[0]}
-                  title={popup.id === 'groove-grove' ? `${title} | ${getExperienceLevel(alt)} experience` : undefined}
-                />
-              ),
-              a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => {
-                if (href?.startsWith('tel-obf:')) {
-                  const realTel = `tel:${deobfuscateDigits(href.slice('tel-obf:'.length))}`;
+      case 'about': {
+        const aboutMarkdownComponents = {
+          p: renderParagraph,
+          img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
+            <img
+              src={getObjectDetailImage(src ?? '')}
+              className={alt}
+              alt={(src ?? '').split('/').reverse()[0]}
+              title={popup.id === 'groove-grove' ? `${title} | ${getExperienceLevel(alt)} experience` : undefined}
+            />
+          ),
+          a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => {
+            if (href?.startsWith('tel-obf:')) {
+              const realTel = `tel:${deobfuscateDigits(href.slice('tel-obf:'.length))}`;
+              return (
+                <a href={realTel} className={className} style={style} onClick={() => window.open(realTel, '_blank')}>
+                  {deobfuscateDigits(String(children))}
+                </a>
+              );
+            }
+            return (
+              <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                {children}
+              </a>
+            );
+          }
+        };
+
+        // Hobby Heap's interest list is long enough that reading it as one
+        // continuous letter got unwieldy - split into an accordion instead,
+        // so every interest's heading is visible up front but only one body
+        // of text is open (and thus scrolled through) at a time.
+        if (popup.id === 'hobby-heap') {
+          const { intro, sections } = splitAccordionSections(popup.text ?? '');
+          return (
+            <>
+              <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
+                {intro}
+              </ReactMarkdown>
+              <div className="accordion-list">
+                {sections.map((section, i) => {
+                  const isOpen = openHobbySection === i;
                   return (
-                    <a href={realTel} className={className} style={style} onClick={() => window.open(realTel, '_blank')}>
-                      {deobfuscateDigits(String(children))}
-                    </a>
+                    <div className={`accordion-section${isOpen ? ' accordion-section--open' : ''}`} key={section.title}>
+                      <h3 className="accordion-section__heading">
+                        <button
+                          type="button"
+                          className="accordion-section__header"
+                          aria-expanded={isOpen}
+                          onClick={() => setOpenHobbySection(isOpen ? null : i)}
+                        >
+                          <span className="accordion-section__chevron" aria-hidden="true" />
+                          {section.title}
+                        </button>
+                      </h3>
+                      <div className="accordion-section__panel">
+                        <div className="accordion-section__panel-inner">
+                          <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
+                            {section.body}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
                   );
-                }
-                return (
-                  <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
-                    {children}
-                  </a>
-                );
-              }
-            }}
-          >
+                })}
+              </div>
+            </>
+          );
+        }
+
+        return (
+          <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
             {popup.text ?? ''}
           </ReactMarkdown>
         );
+      }
       case 'project':
         return (
           <div>
