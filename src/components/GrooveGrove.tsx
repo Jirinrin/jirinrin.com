@@ -1048,7 +1048,16 @@ function GrooveGrove({ open, onClose }: GrooveGroveProps) {
     if (e.button !== 0) return;
     pointerDownPos.current = { x: e.clientX, y: e.clientY };
   };
-  const handlePointerUp = (e: React.PointerEvent) => {
+  // Closing on the trailing `click` rather than `pointerup`: `click` does its
+  // own hit-test at dispatch time, separate from (and after) pointerup/mouseup's.
+  // Closing eagerly on pointerup flips this backdrop's pointer-events to 'none'
+  // (see the exit variant below) before that later click event fires, so the
+  // click's hit-test misses the now-transparent backdrop and falls through onto
+  // whatever landscape object sits behind it at that screen position - which,
+  // since the grove is opened zoomed in on the groove-grove object itself, is
+  // usually that very button, instantly reopening the grove it just closed.
+  // Reacting to `click` means there's no event left in the gesture to race with.
+  const handleClick = (e: React.MouseEvent) => {
     const start = pointerDownPos.current;
     pointerDownPos.current = null;
     if (!start || selected) return;
@@ -1070,7 +1079,7 @@ function GrooveGrove({ open, onClose }: GrooveGroveProps) {
           exit={{ opacity: 0, pointerEvents: 'none' }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
           onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
+          onClick={handleClick}
         >
           <div className="groove-scroll" ref={scrollRef}>
             <div className="groove-inner">
