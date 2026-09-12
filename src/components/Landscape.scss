@@ -454,7 +454,7 @@ div.landscape--2-enter.landscape--2-enter-active {
       // the light popup, but at the same intensity against the dark
       // parchment it reads as a jarring, over-exposed flash. Toned down here.
       a.popup-window-button:hover::after {
-        opacity: 0.15;
+        opacity: 0.3;
       }
     }
   }
@@ -549,7 +549,7 @@ div.landscape--2-enter.landscape--2-enter-active {
   p.popup-window-button-line {
     display: flex;
     justify-content: center;
-    margin: 1.5rem 0;
+    margin: 2rem 0 3rem;
   }
 
   // button-bg.png (passed down as --button-bg from LandscapeContainer.tsx) is
@@ -591,7 +591,7 @@ div.landscape--2-enter.landscape--2-enter-active {
       // with brightness()/saturate(), so animating it just snapped between
       // states instead of transitioning. The hover brighten effect below
       // lives on ::after instead, as a plain opacity fade.
-      filter: url(#landscape-color-grade) brightness(0.8) saturate(1.2);
+      filter: url(#landscape-color-grade) brightness(0.8) saturate(0.7);
       transition: transform 0.4s ease;
     }
 
@@ -603,7 +603,7 @@ div.landscape--2-enter.landscape--2-enter-active {
       inset: 0;
       z-index: -1;
       background: #fff;
-      mix-blend-mode: color-dodge;
+      mix-blend-mode: overlay;
       opacity: 0;
       transition: opacity 0.25s ease;
     }
@@ -616,13 +616,14 @@ div.landscape--2-enter.landscape--2-enter-active {
       // clash on top of that.
       color: rgba(0, 0, 0, 1);
       text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+      font-weight: bold;
 
       &::before {
         transform: scale(1.08);
       }
 
       &::after {
-        opacity: 1;
+        opacity: .4;
       }
     }
 
