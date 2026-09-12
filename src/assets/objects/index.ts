@@ -24,7 +24,7 @@ const objects: ObjectsMap = {
   },
   'future-building': {
     id: 'future-building',
-    name: 'あたしの FUTURE HOME',
+    name: 'The Future',
     left: 479.5,
     top: 3765,
     hasText: true,

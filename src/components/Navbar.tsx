@@ -25,7 +25,7 @@ const NAV_ITEM_REFERENCE: Record<string, string> = {
   'technologies': 'TECHNOLOGIES',
   'passions': 'PLEASURES',
   'programming': 'CODING STYLE',
-  'future': 'THE FUTURE OF 侍鈴'
+  'future': 'THE FUTURE'
 };
 
 const calculateY = (scroll = window.pageYOffset): number => {
