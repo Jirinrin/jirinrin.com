@@ -74,7 +74,8 @@ const projects: ProjectBase[] = [
     id: 'umu',
     title: 'umu',
     github: true,
-    images: ['umu-1.webp', 'umu-2.webp']
+    images: ['umu-1.webp', 'umu-2.webp'],
+    landscapeGallery: true,
   },
   {
     id: 'irukadrive',
@@ -82,6 +83,7 @@ const projects: ProjectBase[] = [
     github: true,
     images: ['irukadrive-1.webp', 'irukadrive-2.webp'],
     cover: { type: 'image', src: 'irukadrive-cover.webp', ratio: 1600 / 435 },
+    landscapeGallery: true,
   },
 ];
 

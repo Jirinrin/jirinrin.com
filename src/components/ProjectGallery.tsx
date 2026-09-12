@@ -7,6 +7,7 @@ import { usePinchZoom } from '../hooks/usePinchZoom';
 interface ProjectGalleryProps {
   images: string[];
   getImage: (img: string) => string;
+  landscape?: boolean;
 }
 
 interface FullscreenImageProps {
@@ -52,7 +53,7 @@ function FullscreenImage({ src, onClose }: FullscreenImageProps) {
   );
 }
 
-function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
+function ProjectGallery({ images, getImage, landscape }: ProjectGalleryProps) {
   // Direction travels alongside the index so the crossfade/slide knows which
   // way to animate in and out - a plain index alone can't tell "went to 0
   // via next" from "went to 0 via prev".
@@ -90,13 +91,13 @@ function ProjectGallery({ images, getImage }: ProjectGalleryProps) {
 
   return (
     <div className="project-gallery" onClick={e => e.stopPropagation()}>
-      <div className="project-gallery__viewport">
+      <div className={`project-gallery__viewport${landscape ? ' project-gallery__viewport--landscape' : ''}`}>
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.img
             key={index}
             src={getImage(images[index])}
             alt=""
-            className="project-gallery__image"
+            className={`project-gallery__image${landscape ? ' project-gallery__image--landscape' : ''}`}
             drag={images.length > 1 ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.6}

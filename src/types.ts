@@ -14,6 +14,9 @@ export interface ProjectBase {
   github: boolean;
   images: string[];
   cover?: ProjectCover;
+  // Locks the gallery viewport to a 16/9 box regardless of device size,
+  // cropping images to fill it instead of letterboxing them.
+  landscapeGallery?: boolean;
 }
 
 export interface ProjectBook {

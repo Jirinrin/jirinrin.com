@@ -982,13 +982,21 @@ svg {
 .project-gallery__viewport {
   position: relative;
   width: 100%;
-  height: 42vh;
+  height: 58vh;
   min-height: 220px;
-  max-height: 460px;
+  max-height: 600px;
   border-radius: 1rem;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.06);
   box-shadow: inset 0 0 2.5rem rgba(0, 0, 0, 0.15);
+
+  // Locked to a 16/9 box regardless of device size, instead of the viewport
+  // height (and thus ratio) varying with vh.
+  &--landscape {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: none;
+  }
 }
 
 .project-gallery__image {
@@ -1002,6 +1010,11 @@ svg {
 
   &:active {
     cursor: grabbing;
+  }
+
+  // Crop to fill the 16/9 box rather than letterboxing.
+  &--landscape {
+    object-fit: cover;
   }
 }
 

@@ -499,14 +499,16 @@ function LandscapeContainer() {
             >
               {popup.project?.description ?? ''}
             </ReactMarkdown>
-            <br/>
-            <br/>
             {popup.project?.images[0] &&
-              <ProjectGallery
-                key={popup.project.id}
-                images={popup.project.images}
-                getImage={getProjectImage}
-              />
+              <>
+                <br/>
+                <ProjectGallery
+                  key={popup.project.id}
+                  images={popup.project.images}
+                  getImage={getProjectImage}
+                  landscape={popup.project.landscapeGallery}
+                />
+              </>
             }
           </div>
         );
