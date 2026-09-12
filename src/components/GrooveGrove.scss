@@ -473,7 +473,7 @@ $z-gate: 20;
     // different record on. It also keeps the docked record's landing spot
     // still while you flip between ADHDJ entries, instead of sliding it up and
     // down the bottom edge every time the content length changes.
-    height: min(62vh, 540px);
+    height: min(62vh, 580px);
     border-radius: 1rem;
     font-family: 'Cormorant', serif;
     font-weight: 300;
@@ -573,10 +573,6 @@ $z-gate: 20;
     @media (max-width: 700px) {
       padding: 1.2rem 1.1rem 0;
     }
-  }
-
-  &__foot {
-    flex: 0 0 auto;
   }
 
   &__title {

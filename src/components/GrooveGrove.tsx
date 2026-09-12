@@ -262,8 +262,8 @@ function tileSize(containerWidth: number): number {
   // them further to "fit more" just reads as fiddly, so mobile gets its own,
   // more generous floor/ceiling instead of the same formula scaled down.
   const mobile = containerWidth < 700;
-  const base = mobile ? containerWidth / 2.1 : containerWidth / 3.7;
-  return Math.round(mobile ? Math.min(230, Math.max(150, base)) : Math.min(258, Math.max(160, base)));
+  const base = mobile ? containerWidth / 1.7 : containerWidth / 3.7;
+  return Math.round(mobile ? Math.min(280, Math.max(190, base)) : Math.min(258, Math.max(160, base)));
 }
 
 function layoutSection(vinyls: GrooveVinyl[], containerWidth: number): GroveSection['placed'] {
@@ -796,9 +796,6 @@ function GroovePlayer({ vinyl, fromRect, seriesIndex, onSeriesIndex, onClose }: 
                 )}
               </motion.div>
             </AnimatePresence>
-            {/* Keeps the last line of content clear of the record docked
-                across the bottom edge of the box. */}
-            <div className="groove-player__foot" style={{ height: dockSize * 0.34 }} />
           </div>
         </div>
       </motion.div>
