@@ -726,10 +726,13 @@ function GroovePlayer({ vinyl, fromRect, seriesIndex, onSeriesIndex, onClose }: 
             style={throwAnim.arc ? ({ '--groove-arc': `${throwAnim.arc}px` } as React.CSSProperties) : undefined}
           >
             <div className="groove-vinyl__disc" ref={discRef}>
+              {/* No ringText here: the dock only ever shows the record's
+                  bottom half (see .groove-player__dock above), so the title
+                  ring would read as a half-cut, upside-down fragment rather
+                  than something worth keeping legible. */}
               <DiscFace
                 uid={`dock-${vinyl.id}`}
                 vinylId={vinyl.id}
-                ringText={vinyl.ringTitle ?? vinyl.title}
                 coverKey={series?.cover ?? vinyl.cover}
               />
             </div>
