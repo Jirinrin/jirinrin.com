@@ -631,6 +631,42 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
+  // Stands in for the `# Title` heading on projects that have a cover image/
+  // video: a full-width banner cropped down to a narrow strip (see the
+  // asset-prep notes alongside the project data) rather than the tall
+  // screenshot/video it's cut from. `--cover-ratio` (width/height of that
+  // already-cropped asset) comes in as an inline custom property per project,
+  // sizing the box via aspect-ratio so it never jumps once the media loads.
+  .project-cover {
+    // `overflow: hidden` (needed to clip the media below) makes this box a
+    // new block formatting context, which would otherwise squeeze it into
+    // the space beside a.github-icon's float instead of spanning full width -
+    // clear it so the banner always drops below that icon first.
+    clear: both;
+    width: 100%;
+    aspect-ratio: var(--cover-ratio);
+    overflow: hidden;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+
+    img, video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0;
+    }
+
+    // On a narrow popup the same aspect ratio reads as a barely-there sliver,
+    // so zoom into the center ~66% of the width instead - cropping the sides
+    // rather than shrinking the strip further. Achieved by tightening the box
+    // itself (rather than scaling the media) so object-fit: cover crops
+    // symmetric left/right without touching the vertical extent.
+    @media (max-width: 999px) {
+      aspect-ratio: calc(var(--cover-ratio) * 0.667);
+    }
+  }
+
   a.github-icon {
     float: right;
     opacity: 0.3;

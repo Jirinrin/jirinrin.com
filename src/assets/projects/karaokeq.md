@@ -7,3 +7,5 @@ A fun custom system to find/queue songs on your local modded Ultrastar Deluxe ka
 P.S. If you're curious about the tech / how it was built, check out this blog post:  
 
 [Help, Our Karaoke Machine Is on Fire! 🔥](https://engineering.q42.nl/karaoke-machine/)
+
+![](karaokeq-1.webp)

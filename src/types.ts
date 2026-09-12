@@ -1,10 +1,19 @@
 // Shared type definitions for the portfolio website
 
+export interface ProjectCover {
+  type: 'image' | 'video';
+  src: string;
+  // width / height of the cover asset itself (post-crop), so the banner can
+  // reserve its box up front instead of jumping once the media loads.
+  ratio: number;
+}
+
 export interface ProjectBase {
   id: string;
   title: string;
   github: boolean;
   images: string[];
+  cover?: ProjectCover;
 }
 
 export interface ProjectBook {

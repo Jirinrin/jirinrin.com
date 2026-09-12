@@ -1,5 +1,3 @@
-# LOOK WITHIN
-
 *"Sacred Mushroom Journeys, guided by a soul who cares"*
 
 What can I say, it's my current calling! These sacred Mushrooms have deeply transformed my life in indescribably beautiful ways, and facilitating these inner journeys in a respectful, intentional way is something that I can deeply pour myself into!

@@ -472,10 +472,24 @@ function LandscapeContainer() {
                 <img src={githubIcon} alt="github icon"/>
               </a>
             }
+            {popup.project?.cover &&
+              <div
+                className="project-cover"
+                style={{ '--cover-ratio': popup.project.cover.ratio } as React.CSSProperties}
+              >
+                {popup.project.cover.type === 'video'
+                  ? <video src={getProjectImage(popup.project.cover.src)} autoPlay loop muted playsInline />
+                  : <img src={getProjectImage(popup.project.cover.src)} alt="" />
+                }
+              </div>
+            }
             <ReactMarkdown
               rehypePlugins={[rehypeUnEmoji]}
               components={{
                 p: renderParagraph,
+                img: ({ src, alt }: { src?: string; alt?: string }) => (
+                  <img src={getProjectImage(src ?? '')} alt={alt ?? ''} />
+                ),
                 a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
                   <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                     {children}

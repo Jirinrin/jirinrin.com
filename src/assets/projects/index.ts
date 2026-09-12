@@ -41,13 +41,15 @@ const projects: ProjectBase[] = [
     id: 'projekt-kinoko',
     title: 'LOOK WITHIN',
     github: false,
-    images: []
+    images: [],
+    cover: { type: 'video', src: 'look-within-cover.mp4', ratio: 1200 / 396 },
   },
   {
     id: 'kodamap',
     title: 'KODAMAP',
     github: false,
-    images: []
+    images: [],
+    cover: { type: 'image', src: 'kodamap-cover.webp', ratio: 1600 / 337 },
   },
   {
     id: 'karaokeq',
@@ -65,19 +67,21 @@ const projects: ProjectBase[] = [
     id: 'projectdansurando',
     title: 'Project Dansurando',
     github: false,
-    images: []
+    images: [],
+    cover: { type: 'video', src: 'dansurando-cover.mp4', ratio: 1600 / 296 },
   },
   {
     id: 'umu',
     title: 'umu',
     github: true,
-    images: []
+    images: ['umu-1.webp', 'umu-2.webp']
   },
   {
     id: 'irukadrive',
     title: 'Iruka Drive',
     github: true,
-    images: []
+    images: ['irukadrive-1.webp', 'irukadrive-2.webp'],
+    cover: { type: 'image', src: 'irukadrive-cover.webp', ratio: 1600 / 435 },
   },
 ];
 
