@@ -23,3 +23,5 @@ With beginless + endless love,
 ### <3 Jiri's SOUL
 
 _(© Tomorrow Corporation™, 1809 for the image Jiri traced this character from)_
+
+_(P.S. If this website is only in black-and-white for you: for the full trippy experience you might consider opening it in a Chrome-based browser ♡)_

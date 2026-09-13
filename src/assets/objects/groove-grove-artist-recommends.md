@@ -1,6 +1,6 @@
 # Artists to listen to
 
-Some of my personal recommends, if you're looking for some new music!
+Some of my personal recommends, if you're looking for some new music to explore!
 
 ## Calm カーム
 - Vangelis

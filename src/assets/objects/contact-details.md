@@ -1,6 +1,6 @@
 # Find me
 
-Find out more about me? Yay!! Here are some ways to reach me:
+Wanna find out more about me? Yay gezellig!! You can find me here:
 
 [![icon social-media-icon](instagram.png)](https://instagram.com/jiri_maaask)
 [![icon social-media-icon](github.png)](https://github.com/Jirinrin)

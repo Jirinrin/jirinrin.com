@@ -456,6 +456,10 @@ div.landscape--2-enter.landscape--2-enter-active {
       a.popup-window-button:hover::after {
         opacity: 0.3;
       }
+
+      hr {
+        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.35), transparent);
+      }
     }
   }
 
@@ -770,6 +774,17 @@ div.landscape--2-enter.landscape--2-enter-active {
   
   code {
     font-size: 1rem;
+  }
+
+  // A plain `<hr>` renders as a harsh solid bar against the parchment - faded
+  // out at both ends via a gradient (rather than a solid line) so it reads as
+  // an elegant divider instead of a hard rule, with extra margin so it gets
+  // room to breathe from the text around it.
+  hr {
+    margin: 2.5em 0;
+    height: 1px;
+    border: none;
+    background: linear-gradient(to right, transparent, rgba(70, 70, 70, 0.35), transparent);
   }
 
   // ul {
