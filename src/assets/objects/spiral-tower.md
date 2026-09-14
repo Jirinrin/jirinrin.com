@@ -18,6 +18,7 @@ Purely for the Joy of exploring the infinite shapes that can exist within that E
 It seems I am, after all, chilling here as just another creature within Duality. But even within this world of Duality, each one of us is oh so unique in our own ways, a puzzle piece that's oh so necessary for the entire puzzle to be complete!  
 
 This inherently means that I, too, have a perspective to bring to the table, which can bring you (being the reader in this context) something valuable... and vice versa :D  
+
 I'm telling ya, it's fascinating being a Jiri~!
 
 And so, I feel called to share something about how the Polarized Forces seem to work within this Jiri that I'm being these days~ :)
@@ -40,7 +41,7 @@ The two states of Pure Being without Future or Past: Meditativeness and Play. Be
 
 It seems I love to flick between these two extremes in a squiggly square-wave pattern, without much time spent in-between.
 
-And yet, as the Stuff of Life keeps unfolding, the Liminal somehow is starting to take up more and more space...  
+And yet, as the Stuff of Life keeps unfolding, the Liminal somehow is taking up more and more space...  
 Not as Indecisiveness, not as Mediocrity (although both of those occur often enough!), but as the Neither-Or, or you might say Both sides at the same time...  
 A state of holding complexity without it needing to be resolved, without needing it to be a clear black-and-white picture. Of accepting that sometimes you just don't know anything anymore, that sometimes you have to somehow find peace within the endless todo-lists, insecurities, worries and pains that keep our lives so busy...  
 Peace with not knowing what's the point of it all...  
@@ -56,4 +57,4 @@ _Radical vulnerability._ I'm still slowly peeling back the layers of that Little
 
 _Dark vs Light._ If all of us have both of them in ourselves (that's the whole point of a world of Duality!), then does it really serve anyone to try to put people/situations in terms of Good vs Bad, Like vs Don't Like, etc...?
 
-_...And there are probably many more such topics, that just don't pop into my head right now~_
+_...And there are many more such topics, that just don't pop into my head right now~_
