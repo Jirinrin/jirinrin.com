@@ -434,7 +434,13 @@ function Memories({ open, onClose }: MemoriesProps) {
                   transform: `translate3d(${tile.x - tile.width / 2}px, ${tile.y - scrollPosRef.current * tile.depth.speed * tile.speedJitter}px, 0) rotate(${tile.rotationBase}deg)`,
                 }}
               >
-                <img src={tile.src} alt="" draggable={false} loading="lazy" decoding="async" />
+                {/* No loading="lazy": tiles are already mounted only within BUFFER
+                    of the viewport (see above), so this component is already doing
+                    its own version of what lazy-loading provides - stacking native
+                    lazy-loading on top just adds a second, less generous margin
+                    (especially in Firefox), reintroducing the pop-in BUFFER exists
+                    to avoid. */}
+                <img src={tile.src} alt="" draggable={false} decoding="async" />
               </div>
             ))}
           </div>

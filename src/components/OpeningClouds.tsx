@@ -170,7 +170,15 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion && !fadeAtSectionEnd) return;
 
-    const onScroll = () => {
+    // The actual work, run at most once per animation frame (see onScroll
+    // below) so these writes land in sync with paint. Without that, a
+    // `scroll` event fired off-frame - which Firefox does far more readily
+    // than Chromium, whose scroll dispatch tends to already track its
+    // compositor frame cadence - means these transforms get set mid-frame,
+    // which is exactly what reads as jagged/juddery here despite the exact
+    // same code being smooth on Chromium.
+    const update = () => {
+      rafId = null;
       // Layout read first, writes after - measuring once the transforms below
       // have been set would force a synchronous reflow every scroll tick.
       const root = rootRef.current;
@@ -195,9 +203,19 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
         if (el) el.style.transform = `translateY(${y * (1 - c.speed)}px)`;
       });
     };
-    onScroll();
+    let rafId: number | null = null;
+    const onScroll = () => {
+      // Coalesce bursts of `scroll` events into a single update per frame,
+      // rather than running the (getBoundingClientRect + up to ~19 style
+      // writes) work once per event.
+      if (rafId == null) rafId = requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
   }, [clouds, fadeAtSectionEnd]);
 
   return (
