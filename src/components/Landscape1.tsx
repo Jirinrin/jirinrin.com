@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import { isMobile } from 'react-device-detect';
 import { useCookies } from 'react-cookie';
@@ -45,6 +45,40 @@ const getTechImage = (filename: string) =>
 const getCloudImage = (n: number) =>
   cloudImages[`../assets/objects/images/circle-cloud-${n}.png`] ?? '';
 
+// Screen-space camera: the container is drawn at `translate(x, y) scale(s)` around its
+// `left bottom` transform-origin, so x/y are in screen pixels.
+interface Camera { x: number; y: number; s: number }
+
+const CAMERA_DURATION = 1000;
+const CAMERA_KEYFRAMES = 60;
+
+const cameraToTransform = ({ x, y, s }: Camera) => `translate(${x}px, ${y}px) scale(${s})`;
+
+const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+// Path between two cameras that *looks* like a steady zoom.
+//
+// Perceived zoom speed is relative (going 1x -> 2x feels the same as 10x -> 20x), so
+// the scale has to move geometrically: s(u) = s0 * k^u with k = s1/s0. Lerping s
+// linearly instead rushes the start of a zoom-in and crawls at the end.
+//
+// Any two cameras differ by a zoom of k about one fixed screen point c, found from
+// T1 = c + k(T0 - c). Zooming about c with that same k^u keeps every point on a
+// straight ray out of c, so objects still glide in straight lines while the zoom
+// rate stays constant.
+const cameraPath = (a: Camera, b: Camera): ((u: number) => Camera) => {
+  const k = b.s / a.s;
+  // No real zoom: c runs off to infinity, and this is just a pan.
+  if (Math.abs(k - 1) < 1e-4)
+    return u => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, s: a.s + (b.s - a.s) * u });
+  const cx = (b.x - k * a.x) / (1 - k);
+  const cy = (b.y - k * a.y) / (1 - k);
+  return u => {
+    const g = Math.pow(k, u);
+    return { x: cx + g * (a.x - cx), y: cy + g * (a.y - cy), s: a.s * g };
+  };
+};
+
 interface Landscape1Props {
   scaleFactor: number;
   zoomInCanvas: (scroll?: number) => void;
@@ -89,7 +123,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
-  const [zoomTranslation, setZoomTranslation] = useState('');
+  const [zoomTranslation, setZoomTranslation] = useState({ x: 0, y: 0 });
   const [bookShadow, setBookShadow] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const [activeCreatures, setActiveCreatures] = useState<Creature[]>([]);
@@ -97,6 +131,15 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
 
   const tooltipNodeRef = useRef<HTMLParagraphElement>(null);
   const prevZoomIn = useRef(zoomIn);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const prevCamera = useRef<{ camera: Camera; zoomed: boolean } | null>(null);
+  const cameraAnim = useRef<{ path: (u: number) => Camera; anim: Animation } | null>(null);
+
+  const setContainerRef = useCallback((node: HTMLDivElement | null) => {
+    containerRef.current = node;
+    if (typeof ref === 'function') ref(node);
+    else if (ref) ref.current = node;
+  }, [ref]);
 
   const getTooltipFontSize = () => `${C.TOOLTIP_FONT_SIZE / scaleFactor}rem`;
   const getTooltipPaddingX = () => `${(C.TOOLTIP_PADDING - C.TOOLTIP_FONT_SIZE / 2) / scaleFactor}rem`;
@@ -262,12 +305,62 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
     if (canvasHeightDiff > 0) yOffsetExtra = 1 / (1920 / window.innerWidth * 0.2) * canvasHeightDiff;
 
     setZoomScale(sf);
-    setZoomTranslation(`translate(${xOffset + xOffsetExtra}px, ${yOffset + yOffsetExtra}px)`);
+    setZoomTranslation({ x: xOffset + xOffsetExtra, y: yOffset + yOffsetExtra });
   };
 
-  const getTransformation = () => zoomIn
-    ? `scale(${zoomScale}) ${zoomTranslation}`
-    : `scale(${scaleFactor})`;
+  // The inline transform is always the camera's resting state; zooms are played on top
+  // of it with the Web Animations API so they can follow `cameraPath` rather than the
+  // straight lerp a CSS transition would do. Keeping the pan in screen pixels
+  // (translate before scale) is also what the page-switch slide rules expect.
+  const camera: Camera = zoomIn
+    ? { x: zoomTranslation.x * zoomScale, y: zoomTranslation.y * zoomScale, s: zoomScale }
+    : { x: 0, y: 0, s: scaleFactor };
+
+  const getTransformation = () => cameraToTransform(camera);
+
+  useLayoutEffect(() => {
+    const prev = prevCamera.current;
+    prevCamera.current = { camera, zoomed: zoomIn };
+    const el = containerRef.current;
+    const running = cameraAnim.current;
+    // Plain resizes while zoomed out are left to the CSS transition.
+    if (!prev || !el || (!running && !zoomIn && !prev.zoomed)) return;
+
+    // Retargeting mid-flight (e.g. the zoom data landing a render after zoomIn flips)
+    // continues from wherever the camera currently is.
+    let from = prev.camera;
+    if (running) {
+      const t = Math.min(Number(running.anim.currentTime ?? 0) / CAMERA_DURATION, 1);
+      from = running.path(easeInOutCubic(t));
+      running.anim.cancel();
+      cameraAnim.current = null;
+    }
+
+    if (from.x === camera.x && from.y === camera.y && from.s === camera.s) {
+      el.style.transition = '';
+      return;
+    }
+
+    const path = cameraPath(from, camera);
+    const keyframes = Array.from({ length: CAMERA_KEYFRAMES + 1 }, (_, i) => {
+      const t = i / CAMERA_KEYFRAMES;
+      return { offset: t, transform: cameraToTransform(path(easeInOutCubic(t))) };
+    });
+
+    // A running CSS transition would override the animation in the cascade, so switch
+    // it off (this runs before the browser sees the new inline transform).
+    el.style.transition = 'none';
+    const anim = el.animate(keyframes, { duration: CAMERA_DURATION, easing: 'linear' });
+    cameraAnim.current = { path, anim };
+    anim.onfinish = () => {
+      if (cameraAnim.current?.anim !== anim) return;
+      cameraAnim.current = null;
+      el.style.transition = '';
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera.x, camera.y, camera.s]);
+
+  useEffect(() => () => cameraAnim.current?.anim.cancel(), []);
 
   const getBlur = () => zoomIn ? C.BASE_ZOOM_BLUR / zoomScale : 0;
 
@@ -363,7 +456,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
 
   return (
     <div
-      ref={ref}
+      ref={setContainerRef}
       id="landscape-variant-container--1"
       className="bottom-container landscape-variant-container landscape--1"
       style={{
