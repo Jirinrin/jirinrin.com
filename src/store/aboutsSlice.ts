@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import objectsData from '../assets/objects';
 import type { AboutObject } from '../types';
 import type { RootState } from './index';
@@ -9,6 +9,9 @@ const aboutMarkdown = import.meta.glob<string>(
   { eager: true, query: '?raw', import: 'default' }
 );
 
+export const getAboutMarkdown = (id: string): string | undefined =>
+  aboutMarkdown[`../assets/objects/${id}.md`];
+
 export const fetchAboutTexts = createAsyncThunk(
   'abouts/fetchTexts',
   (_arg, { getState }) => {
@@ -17,8 +20,7 @@ export const fetchAboutTexts = createAsyncThunk(
     Object.values(abouts)
       .filter(about => about.hasText)
       .forEach(about => {
-        const key = `../assets/objects/${about.id}.md`;
-        const text = aboutMarkdown[key];
+        const text = getAboutMarkdown(about.id);
         if (text) newAbouts[about.id] = { text };
       });
     return newAbouts;
@@ -28,7 +30,11 @@ export const fetchAboutTexts = createAsyncThunk(
 const aboutsSlice = createSlice({
   name: 'abouts',
   initialState: objectsData as Record<string, AboutObject>,
-  reducers: {},
+  reducers: {
+    setAboutText: (state, action: PayloadAction<{ id: string; text: string }>) => {
+      if (state[action.payload.id]) state[action.payload.id].text = action.payload.text;
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(fetchAboutTexts.fulfilled, (state, action) => {
       Object.entries(action.payload).forEach(([id, val]) => {
@@ -38,4 +44,5 @@ const aboutsSlice = createSlice({
   },
 });
 
+export const { setAboutText } = aboutsSlice.actions;
 export default aboutsSlice.reducer;
