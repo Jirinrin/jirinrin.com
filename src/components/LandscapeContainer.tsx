@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import ReactMarkdown from 'react-markdown';
+import { isChromium } from 'react-device-detect';
 import type { Plugin } from 'unified';
 import type { Root } from 'hast';
 
@@ -28,6 +29,7 @@ import sunrays from '../assets/landscape/sunrays.png';
 import jiriHead from '../assets/landscape/jiri-head.png';
 import githubIcon from '../assets/objects/images/github.png';
 import landscape2Img from '../assets/landscape/landscape-2.png';
+import boxLightSmall from '../assets/box-light-small.png';
 import boxDarkSmall from '../assets/box-dark-small.png';
 import buttonBg from '../assets/button-bg.png';
 import privacyText from '../assets/privacy.md?raw';
@@ -113,6 +115,19 @@ const rehypeUnEmoji: Plugin<[], Root> = () => (tree) => {
 // renderPopup below). This just splits the raw markdown on those headings;
 // everything before the first one is the always-visible intro, and each
 // heading's own text becomes one collapsible section's body.
+// A markdown line prefixed with `<!-- non-chromium-only -->` (e.g. the Chromium
+// callout at the end of jiri-soul.md) only makes sense to readers who AREN'T on
+// a Chromium browser - drop the whole line for Chromium visitors, and just strip
+// the marker for everyone else, so the source stays plain markdown otherwise.
+const NON_CHROMIUM_ONLY_RE = /^<!--\s*non-chromium-only\s*-->\s*/;
+
+const applyBrowserConditionals = (markdown: string): string =>
+  markdown
+    .split('\n')
+    .filter(line => !(isChromium && NON_CHROMIUM_ONLY_RE.test(line)))
+    .map(line => line.replace(NON_CHROMIUM_ONLY_RE, ''))
+    .join('\n');
+
 interface AccordionSection { title: string; body: string }
 
 const ACCORDION_HEADING_RE = /^### (.+)$/gm;
@@ -172,15 +187,18 @@ function LandscapeContainer() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Preload eagerly: the back arrow, and Landscape2's own background/book images,
-  // only ever load once the user first reaches Projects (mountOnEnter/unmountOnExit
-  // above and in Landscape2). On that first visit the browser fetching+decoding
-  // landscape-2.png and box-dark-small.png (much heavier than the arrow itself)
-  // jams the main thread right as the back arrow's fade-in starts, so it drops
-  // frames and appears to pop in instead of fading. Warming the cache for all of
-  // them ahead of time keeps that first visit as cheap as every later one.
+  // Preload eagerly: the back arrow, Landscape2's own background/book images, and
+  // both light/dark parchment textures every popup's ::before uses. Landscape2's
+  // images only ever load once the user first reaches Projects (mountOnEnter/
+  // unmountOnExit above and in Landscape2), and box-{light,dark}-small.png only
+  // ever load once a popup first opens (they're referenced solely from CSS, which
+  // doesn't fetch until the ::before is actually painted) - in both cases the
+  // browser fetching+decoding these (much heavier than the arrow itself) right as
+  // the popup/back-arrow fade-in starts makes it drop frames and pop in instead of
+  // fading. Warming the cache for all of them ahead of time keeps that first
+  // reveal as cheap as every later one.
   useEffect(() => {
-    for (const src of [backArrow, landscape2Img, boxDarkSmall]) {
+    for (const src of [backArrow, landscape2Img, boxLightSmall, boxDarkSmall]) {
       const img = new Image();
       img.src = src;
     }
@@ -430,6 +448,30 @@ function LandscapeContainer() {
     dispatch(changePage({ landscape: 1 }));
   };
 
+  // Internal links within markdown text (e.g. hobby-heap's "Check the Groove
+  // Grove" link) point at one of our own deeplink paths - rather than opening
+  // that path in a new tab, do the SPA-native thing: swap the currently open
+  // popup for the one that path resolves to, same as Navbar's goToPopup.
+  // Falls back to a real navigation for any internal path we can't resolve
+  // (e.g. a project link), and is a no-op for anything else.
+  const navigateInternalLink = (href: string) => {
+    const link = resolveDeepLinkPath(href);
+    if (link?.popupId) {
+      const text = link.popupId === 'privacy' ? privacyText : abouts[link.popupId]?.text;
+      dispatch(changePage({
+        landscape: 1,
+        popup: { type: OBJECT_POPUP_TYPES[link.popupId], id: link.popupId, text },
+        forceLoad: true,
+      }));
+      return;
+    }
+    if (link) {
+      dispatch(changePage({ landscape: link.landscape, showPopup: false, forceLoad: true }));
+      return;
+    }
+    window.location.href = href;
+  };
+
   const setPageName = (customName?: string | null) => {
     if (customName)
       document.title = `${customName} | ${SITE_NAME}`;
@@ -456,6 +498,7 @@ function LandscapeContainer() {
     switch (popup.type) {
       case 'text':
       case 'about': {
+        const text = applyBrowserConditionals(popup.text ?? '');
         const aboutMarkdownComponents = {
           p: renderParagraph,
           img: ({ src, alt, title }: { src?: string; alt?: string; title?: string }) => (
@@ -475,6 +518,22 @@ function LandscapeContainer() {
                 </a>
               );
             }
+            if (href?.startsWith('/')) {
+              return (
+                <a
+                  href={href}
+                  className={className}
+                  style={style}
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    navigateInternalLink(href);
+                  }}
+                >
+                  {children}
+                </a>
+              );
+            }
             return (
               <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
                 {children}
@@ -488,7 +547,7 @@ function LandscapeContainer() {
         // so every interest's heading is visible up front but only one body
         // of text is open (and thus scrolled through) at a time.
         if (popup.id === 'hobby-heap') {
-          const { intro, sections } = splitAccordionSections(popup.text ?? '');
+          const { intro, sections } = splitAccordionSections(text);
           return (
             <>
               <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
@@ -527,7 +586,7 @@ function LandscapeContainer() {
 
         return (
           <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
-            {popup.text ?? ''}
+            {text}
           </ReactMarkdown>
         );
       }

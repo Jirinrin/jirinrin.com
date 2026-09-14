@@ -937,14 +937,14 @@ div.landscape--2-enter.landscape--2-enter-active {
   overflow-y: scroll;
   padding: 5vw;
   box-sizing: border-box;
-  color: rgb(10, 10, 10);
+  color: rgb(0, 0, 0);
 }
 
 // Paired with the dark parchment texture above - excludes the spiral tower
 // the same way, since its own invert() cycle already recolors this text.
 .popup-window:not(.popup-window--inverting) .popup-window-content {
   @media (prefers-color-scheme: dark) {
-    color: rgb(245, 245, 245);
+    color: rgb(255, 255, 255);
   }
 }
 
