@@ -1,1 +1,1 @@
-export const SITE_NAME = '侍鈴々原作';
+export const SITE_NAME = 'The World of Jiri';
