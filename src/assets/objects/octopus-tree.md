@@ -1,32 +1,65 @@
-## _I_ am the _Octopus Tree_.  
-### Let me tell you a story that is conveniently written in a first person perspective...
+# _I_ am the _Tree of Life_.  
+### Let me tell you a little story about a Tree Elf and her process of Eternal Becoming...
 
-Yeah yeah, so that's that. Now then, let's talk about my life and how it got to this point.
+In 1997, a little seedling of a Jiri was planted on Earth, in a loving family in the Netherlands. Oh, what a pure presence of wonder and magic! A sensitive being, so fragile, so beautiful...
 
-I was raised in a normal family, went to a normal school, and had normal friends. But _then_ the Fire Nation attacked...
+And slowly, she began to sprout and grow roots, growing more and more connected to this world. She began learning these things known as Life Lessons, for better or for worse. She also gained a younger brother and later another one -- two new presences who would come to teach her many things!
 
-So anyway, starting from when things got interesting to tell about:  
-I really wanted to study Architecture after middelbare school, so I did. With my cum laude graduation I could get a wildcard into any university, but I didn't really need that as they would just let in anyone at the TU Delft Architecture faculty. Hah.  
-And it was fantastic... at least for the first while. I loved designing buildings that were as cool as possible and integrating every little conceptual detail into a comprehensive and technically viable solution. And well, let's say that my grades reflected my passion.  
-Then the second year came and we started to work with 3D software Rhinoceros + Grasshopper, which allowed for some very advanced 3D scripting. Wowzers! I had already used this at the end of high school for my profielwerkstuk and got _way_ into it, working sometimes 18 hours in a single day, and got another `10`. Yay~!
+By the time the Earth had passed around the Sun twelve times, Jiri had grown into a lovely sapling, with many thin but sturdy branches of attachment, both to all those wonderful things Life has to offer, and to her own insecurities through bullying and heartbreak. How many experiences one can amass in such a short span of time! She was flowing through Life in a state of pure Play and Creation, deeply believing in Magic ("Wanneer ik later groot ben dan word ik Jiri maar dan dat ik kan Toveren!"), but at the same time being oh so Afraid of many things, a deeply sensitive being, oh so easily Overwhelmed by such a chaotic world... She would find shelter from this overwhelm in her own World of Imagination. The world still had many challenges in store for her...
 
-Okay, but then Architecture (btw I'm apparently not supposed to capitalise it) got less captivating. The project got more bureaucratic and accounting of circumstances like finances, government regulations and 'what the gemiddelde Nederlander wants'. My grades also dropped like a bomb (no they didn't, I still graduated cum laude).  
-The point is, I slowly lost my passion for Architecture and still had to come to the realisation that making something that has to eventually exist in the real world just isn't for me.
+## Rainfall
 
-Then I went on an exchange semester to the University of Bath and took one large(-ish) Computer Science module. Which, you know how it goes, completely enticed me.  
-This is what made me realise just how much all programming-like things I had done in my life I had enjoyed and how much I wanted this to continue for the rest of my life.  
-So yes, at this point I actually wanted to quit Architecture just one semester before attaining my bachelor.  
-Which I did not do, but from that point on I have continued to spend a significant amount of my time on programming-related things and loved (almost: think hours of bugfixing for a single stupidly simple bug, the usual story) every second of it.  
+Then came the next major trial in her growth process: the initiation of attending a new School, and the harrowing process called Puberty. Slowly, little Jiri had no option but to come to terms with the fact that she was in a Male Body that was growing ever more away from how she felt inside. She retreated deeply into that little Divine Seed that was still somewhere inside of her, a Cocoon of Non-Being, less and less able to connect to the physical world around her, as her tree-body was becoming less and less Jiri. On the surface, she looked completely unbothered not having friends and was performing well in school, but deep inside, a precious flower that wanted to come out was quietly withering...
 
-And that brings me to the point where I graduated Architecture and went on to a 10 week webdev bootcamp called Codaisseur, which has the same moustache as the very tree that is telling this story. Codaisseur basically _promises_ graduates to get a job in web development / programming, so I figured this would be a good 'shortcut' to get into the field.
+Jiri turned Twenty Years Old. The last two years, she had been using the raw Creative Fire of her new Architecture education, as well as her newfound fascination for the Japanese language, as a very "productive" escape from the Emptiness of Existence, still being mentally uprooted and all. She had just joined a student society and had, to her great delight, met some people whom she felt somewhat connected to. But something completely unseen was growing at the very tip of her roots... Jiri was starting to realise she might be a _'she'_...!
 
-So yes. And indeed, the shortcut worked! Because of my immense passion for coding / the fact that it was woven deeply(-ish) into my everyday life (think: small hobby ideas, scripts to automate parts of my life, or things that actually benefit other people (okay maybe putting all these in plural is a bit much but oh well); hashtag learn something new every day, right? No I'm not hip like that so no hashtag this time.)  
-,  
-the job searching did at least go somewhat smoothly. Yay! ヽ(;^o^ヽ)
+Suddenly a barrage of catalystical events worked their way through her. And after a beautiful experimental period trying out the British university grounds, it was all clear to her deep within, even if she was still constantly plagued by haggering self-doubt. Within one month of coming back home, Jiri's entire world had turned upside down. Not just because she had just found a more true identity that she was slowly growing into, but why not, also add to that a total disillusionment with the world of Architecture!
 
-And _that_ brings me to today: I am working at a lovely little / not so little company/agency called [Q42](https://q42.nl). If you want to know about my adventure at the company that uses the ultimate answer to life, the universe and everything in their name like it's nothing, please... _check back in a couple years or sth, as I probably won't feel like updating this text for a while from now_. Hah.
+## Eclipse
+
+The world turned dark. Not because it was, but because the light had to be blocked off for a while so Jiri could properly turn inside. As her sense perception went deep into her root system and she became completely unavailable to the outside world, and all her previous visions of the future she had had, she slowly came to terms with the fact that she had been living a lie for a lot of her life. She had grown into an outwardly tall-standing tree, that on the inside was completely hollow. It was time to strip away all the layers of identity, and take the first glimpse since birth of her Core.
+
+After months of navigating through this difficult but important Dark Night, Jiri slowly started to See again. From her newfound Truth, it was time to make a new plan. It was not going to be easy, but there had never been another option. She had to strap in for the long haul: changing her outward appearance to match how she felt inside, was something that would still take many years, especially with years-long waiting lists for medical support. But she was going to take all the steps she could already take. And this next chapter was announcing itself in a second way: after finishing up her Architecture bachelor in a couple more months, she was going to pivot to pursue a Coding Career!
+
+## Suspension
+
+Jiri's Icey Winter slowly came to an end, although Spring did not follow for a couple more years. But the world took on a lot more color. There was suddenly so much to be excited about: a new world of interests and self-expression possibilities that she now allowed herself to experience! And she participated in a new course in Web Development, which felt to her like the most refreshingly fun thing to learn about in the whole world! And before this new chapter, she impulsively went on a trip to Japan by herself, an incredible, empowering experience of Becoming that taught her many unexpected lessons.
+
+A new firey passion dragged Jiri along. In the ever-seeming suspended liminality between Winter and Spring, ephemeral flowers started to blossom on her rejuvenating tree-body, birthing glass Apples, things that could not help but fall from her, fuelled by that pure Creative Force moving through her... ([The original form of this website](https://v1.jirinrin.com) is one of the things that 'fell' from Jiri in that time!)
+
+Things started to flow effortlessly, in a way that she had not experienced for over a decade. Jiri found herself being hired in a traineeship programme at Q42, the company of her dreams, where she would spend her next Six Years. She eased into this warm bath, a family of Fellow Nerds, which was to become a second home through many of her phases of Becoming that were to follow. Here, she learned so many aspects of what it means to be a Human, how good it can feel to Grow Up, how it feels to Belong. Slowly, as she started to ask more questions about who she was, she allowed herself to have the Explorations of Youth that she wasn't able to have before in that dream-like uprooted state, parallel to exploring the limitless horizons of Creating Things with her new Programming Skills.
+
+## Blossom
+
+After three years of working at Q42, having lived through so many internal realisations, struggles and explorations, it was suddenly time for her Body to start the transition to the Female side of things. And with that, Spring truly began for Jiri. Within weeks, she began to feel things she had never felt before, and it felt oh so right... Where the last years, her Self had still been suspended outside that masculine body, she was now feeling more and more home in her body every single day, even if it was an intense and confronting experience beyond words.
+
+With the pulsating electric force of Second Puberty thrusting through Jiri's body, it was now _really_ time for the Explorations of Youth. She became more and more social. She fell in love. She grew into the passion of Dance. She became as free/unreliable and sporadic as many teenage girls are at their peak. She started to DJ and organise dancing events. And so much more... Time began to flow like water as life became more and more exciting in this endless spiral of self-nourishing!
+
+And together with all these tectonic changes that were completely reshaping Jiri's tree-body along with her entire root system, and together with the new breathing room that comes together with feeling happy in oneself, something _'new'_ began to grow. A new layer of authenticity emanating out from Jiri's Divine Core. A strange feeling that could not yet have a name... A yearning for something Other. Something New.
+
+Although she would not yet admit it, Jiri was slowly growing out of that comfortable warm bath. But her Soul was already setting up everything behind the scenes...
+
+## Magic
+
+Then finally came the tipping point after all those years of deep self-examination, shadow work, meditation, outward exploration... A book about the possibilities of Psychedelics entered Jiri's life. And this was the perfect puzzle piece: that child-like fascination with Magic she thought she had lost somewhere in childhood, directly lit up! "Wowww there was this whole magical Inner World with endless possibilities all along, which I can go _explore!?_" Jiri thought to herself. And so she started carefully planning and researching for her first Inner Journey...
+
+In the years that followed, Jiri's life turned more and more into a Life of Magical Becoming. Jiri's well-paced inner work with the Mushroom opened door after door, accompanied by an unbelievable sequence of unfolding realisations. She was moving through a Spiritual Awakening! Dormant intuitions and other abilities began waking up in her body, the Observing Consciousness that lies behind her started taking the Wheel of Fate, she began very actively purging and healing old traumas to become more and more Whole, cared more and more about her body in a healthy way, discovered more and more ways to be the Real Jiri in all of her strangeness and playfulness... Jiri started to deeply Know that she had never been just that one Tree, she had been the whole Forest, all of which is intergrown into the one giant organism of roots and mycelium, there were had never been any boundaries! In fact, she had also been the Birds and the Insects and the Fungi and all the rest, all interwoven in a Web of Life! In fact in fact, she had also been all of the Tree Elves and the Gnomes and the Sylphs and all the rest of them, as well as the Others, interwoven in a higher-density layer of that same Web, or you might even say, a multidimensional Tree of Life, wait that's *me*!!?And you can work with everything in this Fabric of Oneness in strange esoteric-astral-telepathic ways!? And wowww everything is radiating everythingness and livingness in such extraordinary ways... And it turns out both space and time are an illusion, everything in all locations and all moments is all Here and Now, all touchable from this moment and place!!? And how tangibly one can feel that everything is made out of vibrations...! Ahhh it's so crazy, oh and let's move back to my parents then go to Japan for two months and work remote and have many crazy flowy synchronistic situations and soul-encounters, oh and now that Nine-to-Five Job suddenly feels properly suffocating, seems the urge to follow the Fire of Passion instead of staying in the Cauldron of Comfort can't be supressed any longer, time to tell the supervisor tomorrow.....
+
+Okay okay okayyyy, this is all going just a little bit fast, don't you think, Jiri-of-the-past? All in less than a year...
+
+With way too many realisations to properly integrate, Jiri had yet to realise that there is a very simple point to all of this, that she has a limited tree-body on this World to experience having a limited tree-body on a World. In all that focus on Everythingness, she had silently uprooted and left her sacred tree-body! 
+
+## Life
+
+...So now, with almost all burdens removed, it was time to... Calm down. Ground. Wow. How much the world begins to sparkle once you can allow yourself to be fully Here and Now, in full Conscious Presence, not taking anything for granted, being oh so grateful that I (intentional first-person usage for effect) have this Three-Dimensional Tree-Body on this infinitely beautiful dualistic planet, going through this journey of Becoming, having all these worldly sensations, being able to Take a Breath, Touch a Plant, Taste an Orange, Smell a Flower... The immense pleasure of simply walking barefoot through a forest, taking everything in, while exchanging a loving conversation with one's mother... The catharsis of having a real cry about all that's painful in the world... It's all indescribably beautiful. All those same 'normal' things, simply met with more Presence and Wonder, with less Anxiety, less Thinking. What a feeling to be discovering how to Surrender to Life, in full intuitive Flow, constantly moving through very difficult and very delightful things alike...... Finding more and more ways be the very truest version of what I AM...
+
+...And that brings us to Jiri in her current form: a Transdimensional Tree Elf! Just trying to live her most authentic life, from moment to moment, without worry about Future Outcomes or Opinions, cruising along in all her weirdness, simply pursuing her highest excitement... And at this moment that means expressing herself, sporadically creating all kinds of projects, and putting her heart and soul into facilitating Sacred Mushroom Journeys, helping people love themselves in their most strange real-ness!
+
+And as we speak, a whole new type of flowers are starting to blossom on the new Crystallizing Tree-Body that we still call Jiri. A blossoming of Otherworldly Crystalline Flowers, turning into unthinkably strange fruits, most of which are yet to see the Light of Day...
+
+To find out Anything & Everything about The Jiri, click around on this website~!
+
+❤ The Tree of Life (surprise, it was Me, Jiri!)
 
 
-Programming has proven to be for me, the ideal alternative to this dumb thing called _'society'_ （　´∀｀）
-
-For a sample of my 'best' work in Architecture, I included a Project about it in the Projects stack.
+*P.S. Oh and by the way, with me being a Wise Tree of Life and all, I shall tell you that I would love for you to come climb me! How would you find me, you ask? Well, just go over to [KODAMAP](https://kodamap.app) and look around! (just kidding, that easter egg doesn't exist just yet)*

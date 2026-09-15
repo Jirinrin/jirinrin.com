@@ -1,0 +1,168 @@
+import React, { useEffect, useRef, useState } from 'react';
+
+import OpeningClouds, { OpeningCloudsFar } from './OpeningClouds';
+
+import './ServiceBubbles.scss';
+
+// Static so bubbles don't reshuffle on every re-render; values are hand-picked
+// for a scattered, non-repeating spread rather than randomized. `top` is a
+// vh offset from the very top of the page (the section starts at document
+// y=0) rather than a percentage of the section's own height, so the spread
+// stays consistent regardless of how tall the section is on a given
+// breakpoint. The lowest `top` values sit within the first viewport on
+// purpose: combined with the tall rise distance in the keyframe below, those
+// bubbles are already mid-rise, visible drifting up from below, while the
+// big centered name is still the only other thing on screen.
+const AMBIENT_BUBBLES = [
+  { size: 14, top: '22vh',  left: '12%', duration: 12, delay: -3 },
+  { size: 22, top: '48vh',  left: '82%', duration: 16, delay: -9 },
+  { size: 10, top: '68vh',  left: '25%', duration: 10, delay: -1 },
+  { size: 30, top: '80vh',  left: '55%', duration: 18, delay: -12 },
+  { size: 16, top: '92vh',  left: '6%',  duration: 11, delay: -5 },
+  { size: 36, top: '105vh', left: '70%', duration: 19, delay: -2 },
+  { size: 12, top: '118vh', left: '38%', duration: 9,  delay: -7 },
+  { size: 24, top: '130vh', left: '90%', duration: 14, delay: -10 },
+  { size: 18, top: '145vh', left: '16%', duration: 13, delay: -4 },
+  { size: 42, top: '158vh', left: '60%', duration: 20, delay: -15 },
+  { size: 15, top: '172vh', left: '32%', duration: 10, delay: -6 },
+  { size: 26, top: '186vh', left: '78%', duration: 15, delay: -11 },
+  { size: 20, top: '200vh', left: '46%', duration: 12, delay: -8 },
+];
+
+function ServiceBubbles() {
+  // Whether the bubbles have crossed their reveal threshold. This is a flag,
+  // not a scroll-scrubbed 0..1 value - the actual rise/settle motion is a
+  // single CSS transition (see .service-bubbles.is-revealed in the
+  // stylesheet) that plays once on crossing, and reverses on its own when
+  // scrolling back up past it, rather than being redrawn on every scroll
+  // pixel (which read as janky rather than elegant).
+  const [revealed, setRevealed] = useState(false);
+  // Separate fade applied to the whole section (real bubbles + ambient ones)
+  // so everything dissolves away again before it scrolls up underneath the
+  // fixed navbar, instead of overlapping nav items like ABOUT.
+  const [sectionOpacity, setSectionOpacity] = useState(1);
+  const bubblesWrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const vh = window.innerHeight;
+      // A single crossing point rather than a fade range - once past it the
+      // CSS transition below takes over and plays out on its own.
+      setRevealed(window.scrollY > vh * 0.18);
+
+      let fadeOut = 1;
+      const nav = document.querySelector('nav');
+      const wrapper = bubblesWrapperRef.current;
+      if (nav && wrapper) {
+        const navBottom = nav.getBoundingClientRect().bottom;
+        const rect = wrapper.getBoundingClientRect();
+        // A small lead-in so the section has finished dissolving a little
+        // before it would actually start overlapping the navbar, rather
+        // than right as it touches.
+        const buffer = 40;
+        const effectiveNavBottom = navBottom + buffer;
+        // Scale the fade with how much of the whole bubble cluster (top to
+        // bottom) is still below the navbar: stays fully visible until the
+        // top edge starts sliding under it, and only reaches 0 once the
+        // entire cluster has passed underneath. Using the full top-to-bottom
+        // span (rather than just the top edge against a fixed distance)
+        // means tall stacked layouts on narrow screens - where the bottom
+        // bubble can be far below the top one - don't dissolve away early
+        // just because the top edge alone got close to the navbar.
+        fadeOut = Math.min(1, Math.max(0, (rect.bottom - effectiveNavBottom) / (rect.bottom - rect.top)));
+      }
+      setSectionOpacity(fadeOut);
+    };
+
+    handleScroll(); // set initial value
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Subtle mouse-driven tilt so each bubble catches the light like a real
+  // glass sphere as the cursor passes over it.
+  const handleTilt = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.setProperty('--tilt-x', x.toFixed(3));
+    el.style.setProperty('--tilt-y', y.toFixed(3));
+  };
+
+  const resetTilt = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.currentTarget.style.setProperty('--tilt-x', '0');
+    e.currentTarget.style.setProperty('--tilt-y', '0');
+  };
+
+  return (
+    // Wrapper exists purely to give the far clouds below a box to fill that
+    // matches .ServiceBubbles exactly. Deliberately has no z-index (and no
+    // filter) of its own, so it does NOT create a stacking context and its
+    // two children can sit on either side of the fixed navbar's z-index.
+    <div className="service-bubbles-section">
+      {/* The big/huge cloud sets, behind the navbar. They have to live out
+          here rather than inside .ServiceBubbles: that element has both a
+          z-index and a `filter`, making it one stacking context, so nothing
+          inside it can paint below the navbar while the rest paints above. */}
+      <div className="opening-clouds-behind color-grade">
+        <OpeningCloudsFar />
+      </div>
+      <div className="ServiceBubbles color-grade">
+        {/* Deliberately outside the fade-out wrapper below: the clouds have
+            their own scroll-driven fade (see CloudsLayer's fadeAtSectionEnd)
+            timed to the landscape transition, rather than dissolving early
+            just because the name/bubbles duck under the navbar. */}
+        <OpeningClouds />
+        <div className="service-bubbles-fade" style={{ opacity: sectionOpacity }}>
+          {AMBIENT_BUBBLES.map((b, i) => (
+            <span
+              key={i}
+              className="ambient-bubble"
+              style={{
+                '--bubble-size': `${b.size}px`,
+                top: b.top,
+                left: b.left,
+                animationDuration: `${b.duration}s`,
+                animationDelay: `${b.delay}s`,
+              } as React.CSSProperties}
+            />
+          ))}
+          <div
+            className={`service-bubbles${revealed ? ' is-revealed' : ''}`}
+            ref={bubblesWrapperRef}
+          >
+            <a
+              className="service-bubble float-a"
+              href="https://kinoko.nosk.be"
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseMove={handleTilt}
+              onMouseLeave={resetTilt}
+            >
+              <span className="bubble-title">LOOK WITHIN</span>
+              <span className="bubble-sub">Sacred Mushroom Journeys, guided by a soul who cares</span>
+            </a>
+            <a
+              className="service-bubble float-b"
+              href="https://kodamap.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseMove={handleTilt}
+              onMouseLeave={resetTilt}
+            >
+              <span className="bubble-title">KODAMAP</span>
+              <span className="bubble-sub">Find a tree that wants to be climbed ♡</span>
+            </a>
+            {/* <a className="service-bubble float-b" href="#" target="_blank" rel="noopener noreferrer">
+              <span className="bubble-title">Sample Service</span>
+              <span className="bubble-sub">sample description</span>
+            </a> */}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ServiceBubbles;

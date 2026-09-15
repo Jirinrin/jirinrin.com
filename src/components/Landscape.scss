@@ -223,23 +223,23 @@ img.book--large__background {
   pointer-events: none;
 }
 
-.tooltip-enter, .back-arrow-enter {
+.tooltip-enter {
   opacity: 0 !important;
   filter: blur(40px);
 }
 
-.tooltip-enter-active, .back-arrow-enter-active {
+.tooltip-enter-active {
   opacity: 1 !important;
   filter: blur(0);
   transition: all 500ms ease;
 }
 
-.tooltip-exit, .back-arrow-exit, .back-arrow-exit:hover {
+.tooltip-exit {
   opacity: 1 !important;
   filter: blur(0);
 }
 
-.tooltip-exit-active, .back-arrow-exit-active, .back-arrow-exit-active:hover {
+.tooltip-exit-active {
   opacity: 0 !important;
   filter: blur(40px);
   transition: all 500ms ease;
@@ -291,15 +291,54 @@ div.landscape--2-enter.landscape--2-enter-active {
   cursor: pointer;
 }
 
+// Landscape 1's object popups ("letter" variant): instead of a fixed-size
+// window whose *content* scrolls inside it, the box itself grows to fit all
+// of its text and the backdrop is what scrolls - so reading a long piece
+// gets the full screen height rather than a small window inside it.
+// Landscape 2's project popups deliberately keep the old fixed-size window:
+// they grow out of (and shrink back into) the book, so their rect has to
+// stay in sync with Landscape2's own zoom animation.
+.popup-window-background--letter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  // Flex (rather than plain block) specifically so the padding-bottom below
+  // survives overflowing content - a block scroll container drops it.
+  overflow-y: auto;
+  // The backdrop is the scroll container now, so reaching its end must not
+  // chain on to the page behind it - which, while zoomed in, is being pinned
+  // by LandscapeContainer's own scroll listener and would fight back.
+  overscroll-behavior: contain;
+
+  // This padding does double duty: it's the minimum backdrop peek kept
+  // visible above/below the letter while scrolling a long one, but it also
+  // eats into the space `.popup-window--letter`'s auto margins have to work
+  // with - so it's what decides whether a letter is short enough to center
+  // instead of scroll. Kept modest for that reason: the old 20vh desktop
+  // value was tuned back when the letter always sat flush at the top, and
+  // was reserving nearly half the viewport from ever counting as "fits".
+  // Letters that do end up scrolling still read fine with a smaller peek.
+  --letter-gap: 6vh;
+  @media (min-width: 1000px) {
+    --letter-gap: 8vh;
+  }
+  padding: var(--letter-gap) 0;
+  box-sizing: border-box;
+}
+
 .popup-window {
-  background-image: url("../assets/box-light-small.png");
-  background-size: 100% 100%;
+  // `.popup-window-content` (not this element) is the actual scroll
+  // container, so that the ::before backdrop below - positioned absolute
+  // relative to this element - stays put as a backdrop instead of scrolling
+  // away with the text: an absolutely positioned element takes its
+  // containing block's *own* scroll container as its containing block too,
+  // so if this element scrolled, ::before would have scrolled with it.
+  position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: 1rem;
-  opacity: 0.8;
   margin: auto auto;
   z-index: 125;
-  padding: 5vw;
-  overflow-y: scroll;
   cursor: default;
   font-family: 'Cormorant', serif;
   font-weight: 300;
@@ -307,17 +346,173 @@ div.landscape--2-enter.landscape--2-enter-active {
   font-size: 1rem;
 
   max-width: 80vw;
-  max-height: calc(100vh - 20vw);
-  @media (max-width: 1400px) {
-    max-height: calc(100vh - 30vw);
+  max-height: calc(100vh - 23vw);
+  @media (min-width: 1000px) {
+    max-width: 85vw;
+    max-height: calc(100vh - 20vw);
+  }
+  @media (min-width: 1400px) {
+    max-width: min(85vw, 1400px);
+    max-height: min(calc(100vh - 15vw), 1000px);
   }
 
   &.popup-window-large {
     width: 80vw;
-    height: calc(100vh - 20vw);
+    height: calc(100vh - 23vw);
 
-    @media (max-width: 1400px) {
-      height: calc(100vh - 30vw);
+    @media (min-width: 1000px) {
+      width: 85vw;
+      height: calc(100vh - 20vw);
+    }
+    @media (min-width: 1400px) {
+      width: min(85vw, 1400px);
+      height: min(calc(100vh - 15vw), 1000px);
+    }
+  }
+
+  // The spiral tower's duality theme, rendered as the popup itself slowly
+  // flipping between light and dark - a plain `filter: invert()` on this
+  // element covers the parchment ::before *and* the text in one go, since a
+  // filter applies to the box's whole rendered output rather than to
+  // individual color properties.
+  &.popup-window--inverting {
+    animation: popup-window-invert 60s linear infinite;
+
+    // In system dark mode, join the cycle already inverted (i.e. halfway
+    // through, per the keyframes below) instead of starting light.
+    @media (prefers-color-scheme: dark) {
+      animation-delay: -30s;
+    }
+
+    // Same cancelling trick as above, but riding the very same animation
+    // (rather than a static invert()) so emoji stay their real colors
+    // through every phase of the cycle, not just at its light/dark extremes.
+    .emoji {
+      animation: inherit;
+    }
+  }
+
+  // The parchment texture + a hint of the page's animated color grade live on
+  // a ::before behind the text rather than directly on the scrollable content
+  // - the color-grade filter remaps every color it's applied to (including
+  // text color), so putting it straight on the content made the text
+  // noticeably harder to read.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: url("../assets/box-light-small.png");
+    background-size: 100% 100%;
+    opacity: 0.85;
+    filter: url(#landscape-color-grade) saturate(0.4);
+  }
+
+  // Dark mode swaps in a pre-darkened parchment texture and lighter text/
+  // link colors, rather than inverting the whole box the way the spiral
+  // tower does - an invert() here would also flip every image inside a
+  // popup (project galleries, the github icon, ...), not just the parchment
+  // and text. Excluded for the spiral tower: its own invert() cycle further
+  // up is calibrated to flip between exactly this light texture/text
+  // pairing and its inverted colors, so it keeps using those unconditionally.
+  &:not(.popup-window--inverting) {
+    @media (prefers-color-scheme: dark) {
+      &::before {
+        background-image: url("../assets/box-dark-small.png");
+      }
+
+      // Excludes the button below - it sets its own hover-independent text
+      // color rather than following plain-link colors. Also excludes icon
+      // links (the contact-details social icons): they have no visible text
+      // for this color to apply to, and this rule only overrides the input
+      // gray - the color-grade filter itself is shared with light mode below.
+      a:not(.popup-window-button):not(:has(img)) {
+        color: rgb(205, 205, 205);
+        &:hover {
+          color: rgb(240, 240, 240);
+        }
+      }
+
+      // These are plain black line-art icons, invisible against the dark
+      // parchment otherwise.
+      img.social-media-icon {
+        filter: invert(1);
+      }
+
+      // The plain hover rule below (a img.icon:hover) darkens the icon
+      // towards black for a "pressed" look - fine on the light parchment,
+      // but on the already-inverted-to-white icon above it flips it right
+      // back to invisible-on-dark. Extra classes in the selector to outrank
+      // that rule's specificity regardless of source order.
+      img.icon.social-media-icon:hover {
+        filter: invert(1);
+      }
+
+      // The light-mode hover highlight (a white overlay blended in via
+      // mix-blend-mode, see a.popup-window-button below) pops nicely against
+      // the light popup, but at the same intensity against the dark
+      // parchment it reads as a jarring, over-exposed flash. Toned down here.
+      a.popup-window-button:hover::after {
+        opacity: 0.3;
+      }
+
+      hr {
+        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.35), transparent);
+      }
+    }
+  }
+
+  // See .popup-window-background--letter above. Keeps whatever width the
+  // variant it's combined with gives it, but drops every height constraint so
+  // the box simply ends where the text does. Must stay below both
+  // `&.popup-window-large` and `&::before` - it ties with the former on
+  // specificity, so source order is what decides the height.
+  &.popup-window--letter {
+    height: auto;
+    max-height: none;
+    // Vertical auto margins on a flex item are "safe" by construction: when
+    // the letter is short enough to fit, they split the leftover space in
+    // the background's content box evenly above and below it, centering it
+    // between the --letter-gap padding. When it's long enough to overflow,
+    // free space goes negative and the spec resolves auto margins to 0, so
+    // it falls back to sitting flush below the top padding - exactly the old
+    // fixed `margin: 0`, letting overflow-y: auto take over for scrolling.
+    margin: auto 0;
+    flex: 0 0 auto;
+
+    // A long read shouldn't span the full width of a big monitor - the line
+    // length gets tiring and the sheer size of the box is overwhelming. Only
+    // capped from tablet up; on a phone the box may as well stay full width.
+    &.popup-window-large {
+    // A bit wider on mobile for these long letters
+      width: 85vw;
+      max-width: 85vw;
+      @media (min-width: 1000px) {
+        width: min(85vw, 1000px);
+      }
+    }
+
+    &::before {
+      // Same texture, but tiled down the letter's length instead of squashed
+      // to fit it: the tile is box-light-small plus a vertically flipped copy
+      // of itself (generated with sharp), so every repeat meets its own
+      // mirror image and the seams disappear. Horizontally it's stretched to
+      // the full box width exactly as before; `auto` height then keeps the
+      // texture's own aspect ratio, making one mirrored tile twice as tall as
+      // the box is wide.
+      background-image: url("../assets/box-light-mirror-tile.png");
+      background-size: 100% auto;
+      background-repeat: repeat-y;
+    }
+  }
+
+  // Same dark/light swap as the non-letter ::before above (and same
+  // spiral-tower exclusion) - box-dark-mirror-tile is box-dark-small put
+  // through that same mirroring step.
+  &.popup-window--letter:not(.popup-window--inverting)::before {
+    @media (prefers-color-scheme: dark) {
+      background-image: url("../assets/box-dark-mirror-tile.png");
     }
   }
 
@@ -328,6 +523,13 @@ div.landscape--2-enter.landscape--2-enter-active {
     line-height: 4rem;
     margin-bottom: 2rem;
     margin-top: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
+    @media (max-width: 999px) {
+      font-size: 2.6rem;
+      line-height: 2.8rem;
+    }
   }
 
   h2 {
@@ -346,6 +548,128 @@ div.landscape--2-enter.landscape--2-enter-active {
     font-size: 1.3rem;
     // strong {}
     // em {}
+  }
+
+  p.popup-window-button-line {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0 3rem;
+  }
+
+  // button-bg.png (passed down as --button-bg from LandscapeContainer.tsx) is
+  // stretched across the button as a ::before - rather than a plain
+  // background-image on the link itself - so it can be scaled/brightened
+  // independently on hover/active without touching the text. Clipped to a
+  // rounded rectangle via the button's own border-radius/overflow, unlike the
+  // plaque buttons this replaced.
+  a.popup-window-button {
+    position: relative;
+    // Without this, the ::before's negative z-index escapes this element
+    // (position: relative alone doesn't form a stacking context) and resolves
+    // against .popup-window's own z-index instead - landing it behind
+    // .popup-window-content entirely and making the texture invisible.
+    isolation: isolate;
+    display: inline-block;
+    overflow: hidden;
+    border-radius: 0.6rem;
+    padding: 0.9rem 2.4rem;
+    font-size: 1.15em;
+    color: rgba(255, 250, 240, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+    text-align: center;
+    text-decoration: none;
+    transition: transform 0.15s ease, color 0.25s ease, text-shadow 0.25s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image: var(--button-bg);
+      background-size: 100% 100%;
+      // Same #landscape-color-grade filter the popup box's own ::before
+      // uses (see above) - without it the texture sat there static while
+      // the rest of the popup shifted with the page's animated color grade.
+      // Kept constant rather than brightening this on hover: browsers can't
+      // smoothly interpolate a filter list that mixes this url() reference
+      // with brightness()/saturate(), so animating it just snapped between
+      // states instead of transitioning. The hover brighten effect below
+      // lives on ::after instead, as a plain opacity fade.
+      filter: url(#landscape-color-grade) brightness(0.8) saturate(0.7);
+      transition: transform 0.4s ease;
+    }
+
+    // A plain white layer blended over the texture, faded in on hover -
+    // opacity always interpolates smoothly, unlike the filter() above.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: #fff;
+      mix-blend-mode: overlay;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    &:hover {
+      // Near-black rather than following the popup's plain-link hover color
+      // (see the excluded a:not(.popup-window-button) rules above) - once
+      // the texture brightens via ::after, the base near-white text loses
+      // contrast, and the inherited link color read as an ugly, unrelated
+      // clash on top of that.
+      color: rgba(0, 0, 0, 1);
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+      font-weight: bold;
+
+      &::before {
+        transform: scale(1.08);
+      }
+
+      &::after {
+        opacity: .4;
+      }
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+  }
+
+  // Stands in for the `# Title` heading on projects that have a cover image/
+  // video: a full-width banner cropped down to a narrow strip (see the
+  // asset-prep notes alongside the project data) rather than the tall
+  // screenshot/video it's cut from. `--cover-ratio` (width/height of that
+  // already-cropped asset) comes in as an inline custom property per project,
+  // sizing the box via aspect-ratio so it never jumps once the media loads.
+  .project-cover {
+    // `overflow: hidden` (needed to clip the media below) makes this box a
+    // new block formatting context, which would otherwise squeeze it into
+    // the space beside a.github-icon's float instead of spanning full width -
+    // clear it so the banner always drops below that icon first.
+    clear: both;
+    width: 100%;
+    aspect-ratio: var(--cover-ratio);
+    overflow: hidden;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+
+    img, video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0;
+    }
+
+    // On a narrow popup the same aspect ratio reads as a barely-there sliver,
+    // so zoom into the center ~66% of the width instead - cropping the sides
+    // rather than shrinking the strip further. Achieved by tightening the box
+    // itself (rather than scaling the media) so object-fit: cover crops
+    // symmetric left/right without touching the vertical extent.
+    @media (max-width: 999px) {
+      aspect-ratio: calc(var(--cover-ratio) * 0.667);
+    }
   }
 
   a.github-icon {
@@ -388,14 +712,13 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
-  a {
+  // Icon links (the contact-details social icons) get no text-color/filter
+  // treatment below - they have no visible text, and layering the
+  // color-grade filter over their already-tuned invert/hover handling
+  // (see the dark-mode block above) would just muddy it.
+  a:not(.popup-window-button) {
     text-decoration: none;
-    color: rgb(87, 87, 87);
-    filter: sepia(5);
-    &:hover {
-      color: rgb(233, 233, 233);
-    }
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
 
     img.icon {
       transition: all 0.4s ease;
@@ -406,9 +729,62 @@ div.landscape--2-enter.landscape--2-enter-active {
       }
     }
   }
+
+  // Plain text links ride the same #landscape-color-grade filter the
+  // parchment texture and button above use, rather than a color hardcoded
+  // to look good against only one slice of the shifting gradient (that used
+  // to read as an oddly-blue outlier once the grade drifted elsewhere, in
+  // both light and dark mode). The color below is the filter's *input* - a
+  // near-neutral gray - rather than the color actually shown: the filter
+  // remaps it per-channel using the gradient, with lightness picking which
+  // point of it comes out, so light/dark mode still pick different grays to
+  // stay legible against their respective parchment.
+  a:not(.popup-window-button):not(:has(img)) {
+    position: relative;
+    color: rgb(70, 70, 70);
+    filter: url(#landscape-color-grade) saturate(0.4);
+    transition: color 0.25s ease;
+
+    // A thin underline that grows in from the left on hover instead of
+    // being always-on - `background: currentColor` (rather than
+    // text-decoration) so it rides the very same element filter as the text
+    // it's under, staying visually tied to it as the grade shifts.
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -0.15em;
+      width: 100%;
+      height: 1px;
+      background: currentColor;
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 0.35s ease;
+    }
+
+    &:hover {
+      color: rgb(25, 25, 25);
+
+      &::after {
+        transform: scaleX(1);
+        transform-origin: left;
+      }
+    }
+  }
   
   code {
     font-size: 1rem;
+  }
+
+  // A plain `<hr>` renders as a harsh solid bar against the parchment - faded
+  // out at both ends via a gradient (rather than a solid line) so it reads as
+  // an elegant divider instead of a hard rule, with extra margin so it gets
+  // room to breathe from the text around it.
+  hr {
+    margin: 2.5em 0;
+    height: 1px;
+    border: none;
+    background: linear-gradient(to right, transparent, rgba(70, 70, 70, 0.35), transparent);
   }
 
   // ul {
@@ -417,6 +793,166 @@ div.landscape--2-enter.landscape--2-enter-active {
 
   // pre {}
   // blockquote {}
+
+  // Hobby Heap's long list of interests, each under its own h3, collapsed
+  // into an accordion (see the 'hobby-heap' branch of renderPopup in
+  // LandscapeContainer.tsx) so the full list of headings stays scannable
+  // without forcing a scroll through every section's text at once.
+  .accordion-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .accordion-section {
+    border-top: 1px solid rgba(70, 70, 70, 0.2);
+
+    &:last-child {
+      border-bottom: 1px solid rgba(70, 70, 70, 0.2);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .accordion-section__heading {
+    margin: 0;
+  }
+
+  // A plain reset button dressed up as the h3 it replaces (font/size inherited
+  // from the `h3` rule above via `font: inherit`), so it keeps reading as a
+  // heading while actually being clickable/focusable. The slight indent on
+  // hover/open is a small "coming forward" cue - paired with the chevron and
+  // the panel's own blur-fade below, it's meant to feel like the heading
+  // itself is what's drawing its content out, mist gathering into shape.
+  .accordion-section__header {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    width: 100%;
+    margin: 0;
+    padding: 0.9rem 0.2rem;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.3s ease, padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:hover,
+    &:focus-visible {
+      color: rgb(15, 15, 15);
+      padding-left: 0.7rem;
+    }
+
+    &:focus-visible {
+      outline: 1px dashed currentColor;
+      outline-offset: 2px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      &:hover,
+      &:focus-visible {
+        color: rgb(255, 255, 255);
+      }
+    }
+  }
+
+  .accordion-section--open > .accordion-section__heading .accordion-section__header {
+    color: rgb(15, 15, 15);
+
+    @media (prefers-color-scheme: dark) {
+      color: rgb(255, 255, 255);
+    }
+  }
+
+  .accordion-section__chevron {
+    flex: 0 0 auto;
+    width: 0.5em;
+    height: 0.5em;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: 0.6;
+    transform: rotate(-45deg);
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  }
+
+  .accordion-section--open .accordion-section__chevron {
+    opacity: 0.9;
+    transform: rotate(45deg);
+  }
+
+  // The classic 0fr/1fr grid-template-rows trick: animates smoothly to/from
+  // the content's real height without ever needing to know what that height
+  // is (unlike max-height, which would need a guessed cap or a JS measurement
+  // pass). `overflow: hidden` + `min-height: 0` on the inner wrapper is what
+  // lets the 0fr row actually collapse to nothing instead of the content's
+  // intrinsic size winning out.
+  .accordion-section__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .accordion-section--open .accordion-section__panel {
+    grid-template-rows: 1fr;
+  }
+
+  .accordion-section__panel-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding: 0 0.2rem;
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(-0.4em);
+    transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease;
+  }
+
+  .accordion-section__panel-inner p {
+    margin-top: 0;
+  }
+
+  // Opening fades/unblurs in with a slight delay behind the height expanding,
+  // like mist settling into place after the space for it opens up. Closing
+  // has no such delay - it dissolves away immediately as the section shrinks,
+  // rather than lingering after its space is already gone.
+  .accordion-section--open .accordion-section__panel-inner {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+    transition-delay: 0.12s;
+  }
+}
+
+@keyframes popup-window-invert {
+  0%, 40% { filter: invert(0); }
+  50%, 90% { filter: invert(1); }
+  100% { filter: invert(0); }
+}
+
+.popup-window-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  padding: 5vw;
+  box-sizing: border-box;
+  color: rgb(0, 0, 0);
+}
+
+// Paired with the dark parchment texture above - excludes the spiral tower
+// the same way, since its own invert() cycle already recolors this text.
+.popup-window:not(.popup-window--inverting) .popup-window-content {
+  @media (prefers-color-scheme: dark) {
+    color: rgb(255, 255, 255);
+  }
+}
+
+// In the letter variant the content isn't a scroll container at all - it just
+// grows, and the backdrop scrolls the whole box past the viewport.
+.popup-window--letter .popup-window-content {
+  flex: 0 0 auto;
+  overflow-y: visible;
 }
 
 .popup-window-background-enter {
@@ -451,6 +987,60 @@ div.landscape--2-enter.landscape--2-enter-active {
   &  .popup-window-background-exit-active .popup-window {
     transform: scale(0, 0);
   }
+}
+
+// The letter rises up as it unblurs in, rather than just fading in on the
+// spot - and sinks back down on the way out. Only the letter variant:
+// landscape 2's project popup animates by growing out of the book instead,
+// and a drift would fight that.
+//
+// The rise has to start at the *same* 200ms delay as the backdrop's own
+// opacity/blur fade above, not sooner: that fade holds the box at opacity 0
+// (fully invisible) for its first 200ms, so a transform with no delay of its
+// own front-loads most of its motion - on a fast-starting ease-out curve, at
+// that - into the window where nothing is visible yet, leaving only the
+// slow, barely-perceptible tail of the curve for once the box actually
+// appears. Syncing the delay keeps the rise inside the same window the box
+// is visible in.
+//
+// Total duration (delay + transition) is kept *comfortably* under the
+// CSSTransition timeout in LandscapeContainer (enter 900ms) - not just
+// under it: RTG only adds the -active class a couple of frames after -enter
+// (it forces a reflow first), so budgeting this right up against the JS
+// timeout leaves the transition still running when the classes get ripped
+// off. That's invisible for a small transform (the leftover distance rounds
+// to nothing), but scale the distance up and the same leftover fraction is
+// real pixels, which then "snap" into place the instant the classes drop
+// and the base `.popup-window` transition (all 0.2s, see above) takes over
+// instead. Hence the generous 100ms+ margin here rather than shaving it thin.
+//
+// The easing is a custom curve rather than the keyword `ease-out` (whose
+// spec value, cubic-bezier(0, 0, 0.58, 1), still has a fair bit of velocity
+// left in its last stretch and so reads as braking to a stop rather than
+// settling into place) - this one keeps almost all of its deceleration in
+// the first half and trails off very gradually, so it comes to rest instead
+// of visibly stopping.
+.popup-window-background--letter.popup-window-background-enter .popup-window--letter {
+  transform: translateY(45vh);
+  // `.popup-window` carries a blanket `transition: all 0.2s`, which would
+  // otherwise animate the box *down* into this starting offset in the frame
+  // between this class and -enter-active below.
+  transition: none;
+}
+
+.popup-window-background--letter.popup-window-background-enter-active .popup-window--letter {
+  transform: translateY(0);
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms;
+}
+
+.popup-window-background--letter.popup-window-background-exit .popup-window--letter {
+  transform: translateY(0);
+  transition: none;
+}
+
+.popup-window-background--letter.popup-window-background-exit-active .popup-window--letter {
+  transform: translateY(28vh);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #shadow-wrapper {
@@ -490,6 +1080,11 @@ svg {
   }
 }
 
+// Always mounted (see LandscapeContainer) and faded via the --hidden modifier
+// rather than react-transition-group's mount/unmount enter-exit dance - that
+// combo (mountOnEnter/unmountOnExit) raced the very first fade-in of a session
+// against the freshly-mounted node's own ref attachment and made it pop straight
+// to full opacity instead of fading, only ever on that first visit.
 .back-arrow {
   position: fixed !important;
   width: 8vw;
@@ -497,74 +1092,199 @@ svg {
   left: 4vw;
   top: calc(50vh - 4vw);
   z-index: 30;
+  mix-blend-mode: color-dodge;
 
+  opacity: 0.5;
+  filter: blur(0);
+  transition: opacity 0.5s ease, filter 0.5s ease;
+
+  &--hidden {
+    opacity: 0 !important;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  &:hover:not(.back-arrow--hidden) {
+    filter: sepia(3);
+    cursor: pointer;
+    animation: left-right 0.5s ease-in-out infinite alternate;
+    opacity: 1;
+  }
+}
+
+@keyframes left-right {
+  to { transform: scale(0.9) translateX(-1rem); }
+}
+
+.project-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  user-select: none;
+}
+
+.project-gallery__viewport {
+  position: relative;
+  width: 100%;
+  height: 58vh;
+  min-height: 220px;
+  max-height: 600px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: inset 0 0 2.5rem rgba(0, 0, 0, 0.15);
+
+  // Locked to a 16/9 box regardless of device size, instead of the viewport
+  // height (and thus ratio) varying with vh.
+  &--landscape {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: none;
+  }
+}
+
+.project-gallery__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 1rem;
+  cursor: zoom-in;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // Crop to fill the 16/9 box rather than letterboxing.
+  &--landscape {
+    object-fit: cover;
+  }
+}
+
+.project-gallery__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0.5;
   transition: 0.4s all ease;
-  opacity: 0.7;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
 
   &:hover {
-    &:not(.back-arrow-exit) {
-      filter: sepia(3);
-      cursor: pointer;
-      animation: left-right 0.5s ease-in-out infinite alternate;
-      opacity: 1;
-
-      @keyframes left-right {
-        to {transform: scale(0.9) translateX(-1rem)}
-      }
-    }
+    filter: sepia(3);
+    opacity: 1;
   }
 }
 
-.back-arrow-enter-active {
-  transition: all 500ms ease 700ms !important;
-}
+.project-gallery__nav--prev {
+  left: 0.75rem;
 
-.back-arrow-exit-active {
-  transition: all 500ms ease !important;
-}
-
-.image-gallery-slides {
-  height: 50vh;
-
-  .image-gallery-slide {
-    transition: all 1s ease !important;
-    background: none;
-    height: 100%;
-    display: flex;
-
-    .image-gallery-image {
-      // margin: auto auto;
-      // display: flex;
-
-      img {
-        max-height: 100%;
-        max-width: 100%;
-        width: unset !important;
-        border-radius: 1rem;
-        display: flex;
-        margin: auto auto;
-        // box-shadow: inset 30px 30px 10px #000000;
-      }
-    }
-
-    &:not(.center) {
-      opacity: 0;
-      filter: blur(20px);
-    }
+  &:hover {
+    animation: gallery-nav-left-right-prev 0.5s ease-in-out infinite alternate;
   }
 }
 
-.image-gallery-left-nav, .image-gallery-right-nav {
-  text-shadow: none;
-  mix-blend-mode: multiply;
+.project-gallery__nav--next {
+  right: 0.75rem;
 
-  &::before {
-    text-shadow: none !important;
-    color: rgb(199, 199, 199) !important;
+  img {
+    transform: scaleX(-1);
   }
 
-  &:hover::before {
-    color: rgb(80, 80, 80) !important;
+  &:hover {
+    animation: gallery-nav-left-right-next 0.5s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes gallery-nav-left-right-prev {
+  to { transform: translateY(-50%) scale(0.9) translateX(-0.6rem); }
+}
+
+@keyframes gallery-nav-left-right-next {
+  to { transform: translateY(-50%) scale(0.9) translateX(0.6rem); }
+}
+
+.project-gallery__dots {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.project-gallery__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgba(44, 44, 44, 0.25);
+  cursor: pointer;
+  transition: 0.3s all ease;
+
+  &:hover {
+    background: rgba(44, 44, 44, 0.5);
+  }
+
+  &--active {
+    background: rgba(44, 44, 44, 0.7);
+    transform: scale(1.3);
+  }
+}
+
+.project-gallery-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(4, 3, 3, 0.88);
+  cursor: pointer;
+}
+
+// `img.` (not just `.project-gallery-fullscreen__image`) to out-specificity
+// `.popup-window img`, whose `width: 100%` would otherwise stretch this to
+// fill the backdrop instead of sizing to the image's own aspect ratio.
+img.project-gallery-fullscreen__image {
+  max-width: 92vw;
+  max-height: 88vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.3rem;
+  cursor: default;
+  touch-action: none;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.project-gallery-fullscreen__close {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  z-index: 210;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: 'Cormorant', serif;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.75);
   }
 }
 
@@ -582,6 +1302,48 @@ svg {
   pointer-events: none;
   z-index: 14;
   transition: all 0.1s ease;
+}
+
+#well-of-memories {
+  // Hugs the sprite's own natural size (rather than a fixed width/height
+  // like jiri-soul's two-image setup needs) so the glow div below - sized
+  // and positioned entirely in percentages - can bleed outward from it
+  // however the sprite ends up sized, without a second number to keep in
+  // sync in objects/index.ts.
+  width: max-content;
+  height: max-content;
+}
+
+#well-of-memories__sprite {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+// A soft animated glow "overtop" the well sprite - a plain radial-gradient
+// blob rather than another PNG asset, so it costs nothing to load and can be
+// freely re-tuned/recolored later. `screen` (same recipe as #shining-effect
+// above) lets it genuinely brighten whatever's already painted behind it
+// instead of just sitting on top as a flat highlight.
+#well-of-memories__shine {
+  position: absolute;
+  z-index: 2;
+  inset: -60% -35%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 244, 205, 0.95), rgba(255, 205, 140, 0.4) 55%, transparent 78%);
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: well-of-memories-glow 7s ease-in-out infinite;
+
+  @keyframes well-of-memories-glow {
+    0%, 100% { opacity: 0.1;  transform: scale(0.6); }
+    50%      { opacity: 0.4; transform: scale(1.1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.55;
+  }
 }
 
 .creature {
@@ -634,7 +1396,7 @@ svg {
   }
 }
 
-.tech-cloud-container {
+.music-cloud-container {
   position: absolute;
   width:  100px * $canvas-scale;
   height: 100px * $canvas-scale;
@@ -661,13 +1423,15 @@ svg {
   }
 }
 
-.tech-cloud__cloud {
+.music-cloud__cloud {
   position: absolute;
   width: 100%;
   z-index: 14;
 }
 
-.tech-cloud__icon {
+.music-cloud__icon {
+  transform: scale(.7);
+  transform-origin: center;
   position: absolute;
   width: 100%;
   z-index: 15;
