@@ -27,6 +27,8 @@ If you're ever at a rave and you see a Fairy that seems to be dancing in a diffe
 
 I wouldn't be a Tree Elf if I didn't find myself in Nature and Trees almost every day of my life! This is super super important to me, as a grounded way to connect to one of the deepest parts of my being... Or more simply put, just because it feels sooooo good! That's more than enough reason hehee~ 😁
 
+_(Ah and do note that we really cannot possibly be 'in Nature', because we ARE Nature!! This is a statement that I've heard many times from different sources, and more and more I'm starting to feel how extremely profound it is 😌)_
+
 No but there is seriously something very special about just spending a couple hours in the Woods. Just walking around, connected to the trees and the animals and the elements... Having a nap, followed by a refreshing little fairy dance... Meditating... Climbing a tree or two, or three, or more! Really taking my time, sitting up there, chillin' with the insects up there, sometimes even taking my backpack up there and enjoying a little Treetop Picknick, enjoying the view... And then Oops, I didn't notice it's already getting dark!
 
 I'm telling ya, it's something spiritual. Out in nature, I feel connected to... something. Something inside myself, something about this world. Just the purest version of me, in my full human-ness, without all that worldly clutter or ego-based stuff, and the trees, just being themselves. The Forest being all one organism, one system. The fairies, you'll never know where exactly they are, but you can feel them...  
