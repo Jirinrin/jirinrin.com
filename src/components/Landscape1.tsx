@@ -195,7 +195,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
 
     showTooltipFn({
       currentTarget: jiriSoul,
-      message: 'Welcome to Jiri\'s Domain! Click on the stuffs to get cool info!'
+      message: 'Welcome to Jiri\'s Domain! Click on the things~!'
     });
     setTimeout(hideTooltip, 5000);
   };
