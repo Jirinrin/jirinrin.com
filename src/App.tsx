@@ -18,7 +18,7 @@ function App() {
     <CookiesProvider>
       <Provider store={store}>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-        <div className="App">
+        <div className={`App${gradeEnabled ? '' : ' color-grade-off'}`}>
           {gradeEnabled && <ColorGradeFilter />}
           {gradeEnabled && <div className="color-grade-background color-grade" aria-hidden />}
           <Navbar showAboutOptions={false} />

@@ -745,29 +745,33 @@ div.landscape--2-enter.landscape--2-enter-active {
     filter: url(#landscape-color-grade) saturate(0.4);
     transition: color 0.25s ease;
 
-    // A thin underline that grows in from the left on hover instead of
-    // being always-on - `background: currentColor` (rather than
-    // text-decoration) so it rides the very same element filter as the text
-    // it's under, staying visually tied to it as the grade shifts.
+    // A faint underline, always present rather than hover-only - relying on
+    // the color difference alone to mark these as links was too subtle once
+    // Firefox's near-black filter input color (this rule's own `color`, see
+    // above) ended up on screen undistorted: Firefox skips the color grade
+    // entirely (see getColorGradeMode in ColorGradeFilter.tsx), so there the
+    // link color isn't remapped through the gradient at all and just reads as
+    // a dark, easy-to-miss gray almost indistinguishable from body text.
+    // `background: currentColor` (rather than text-decoration) so it rides
+    // the very same element filter as the text it's under, staying visually
+    // tied to it as the grade shifts.
     &::after {
       content: '';
       position: absolute;
       left: 0;
-      bottom: -0.15em;
+      bottom: 0;
       width: 100%;
       height: 1px;
       background: currentColor;
-      transform: scaleX(0);
-      transform-origin: right;
-      transition: transform 0.35s ease;
+      opacity: 0.45;
+      transition: opacity 0.25s ease;
     }
 
     &:hover {
       color: rgb(25, 25, 25);
 
       &::after {
-        transform: scaleX(1);
-        transform-origin: left;
+        opacity: 1;
       }
     }
   }
@@ -1343,6 +1347,19 @@ img.project-gallery-fullscreen__image {
   @media (prefers-reduced-motion: reduce) {
     animation: none;
     opacity: 0.55;
+  }
+
+  // Without the SVG color grade running (Firefox, or reduced-motion - see
+  // getColorGradeMode in ColorGradeFilter.tsx), the well sprite itself falls
+  // back to its native black-and-white art, but this glow's own hardcoded
+  // warm cream/orange gradient isn't part of that graded image - it's a
+  // plain CSS background, so it keeps its color regardless and ends up as an
+  // odd, out-of-place splash of hue on an otherwise monochrome scene. Swap in
+  // a neutral white/gray version of the same gradient so it still reads as a
+  // glowing light source, just without a color that has nothing left to sit
+  // alongside.
+  .color-grade-off & {
+    background: radial-gradient(closest-side, rgba(235, 235, 235, 0.95), rgba(205, 205, 205, 0.4) 55%, transparent 78%);
   }
 }
 
