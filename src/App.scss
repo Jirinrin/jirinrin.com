@@ -157,6 +157,23 @@ body, #root {
 //            layers stacked over the landscape. If the art colours up without
 //            them, it is the memory spike the comment at the top of
 //            Landscape.scss predicted, not blending as such.
+// noanim    - stop every animation and compositor hint inside the graded
+//             groups. A running compositable animation promotes an element to
+//             its own layer, and a promoted layer can be composited past an
+//             ancestor's filter instead of through it. That is the one
+//             difference between the probe that comes back coloured (a static
+//             div inside .color-grade-layer) and the art beside it, which
+//             animates.
+.grade-bisect-noanim {
+  .color-grade-layer *,
+  .ServiceBubbles *,
+  .opening-clouds-behind * {
+    animation: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+}
+
 .grade-bisect-noblend {
   .color-grade-layer *,
   .ServiceBubbles * {

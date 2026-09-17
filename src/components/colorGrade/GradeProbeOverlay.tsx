@@ -481,6 +481,33 @@ function GradeProbeOverlay() {
         hosts.inner,
       )}
 
+      {/* N is M with one property added: a running transform animation, which
+          promotes it to its own compositor layer. Same parent, same lack of a
+          filter of its own, same reliance on the ancestor's grade. If N is
+          grey while M is coloured, a promoted layer is escaping the group's
+          filter - which is exactly what the animating art does and the static
+          probe does not. */}
+      {hosts.inner && createPortal(
+        <div
+          style={{
+            position: 'absolute',
+            top: 156,
+            left: 4,
+            zIndex: 9999,
+            animation: 'gradeprobe-drift 3s ease-in-out infinite alternate',
+          }}
+        >
+          <div style={{ font: '9px monospace', color: '#fff', background: '#000' }}>N animated in layer</div>
+          {expected.map(e => (
+            <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+          ))}
+        </div>,
+        hosts.inner,
+      )}
+      <style>
+        {'@keyframes gradeprobe-drift { from { transform: translateX(0) } to { transform: translateX(40px) } }'}
+      </style>
+
       <div style={rowLabel}>untouched input ramp, for reference</div>
       <Ramp />
 
