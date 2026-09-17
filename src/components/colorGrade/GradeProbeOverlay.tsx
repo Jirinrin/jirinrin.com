@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   expectedRamp,
   probeSvgDataUrl,
@@ -61,6 +62,36 @@ function measure(selector: string): string {
   return `${Math.round(r.width)}x${Math.round(r.height)} ${filter} ${wc}`;
 }
 
+// Every row of this panel renders inside the panel, which is a fixed element
+// near the root. The real graded elements sit deep inside the landscape. Since
+// the panel says the filter works and the page says it does not, the
+// difference is somewhere in that ancestry - so list every ancestor that does
+// something a filter cares about: its own filter (nested filtering), a
+// transform or opacity (both force a separate rasterization), a blend mode, or
+// backdrop-filter.
+function ancestry(selector: string): string[] {
+  const start = document.querySelector(selector);
+  if (!start) return [`${selector}: not in DOM`];
+  const out: string[] = [];
+  let el: Element | null = start.parentElement;
+  while (el && el !== document.documentElement) {
+    const cs = getComputedStyle(el);
+    const notes: string[] = [];
+    if (cs.filter && cs.filter !== 'none') notes.push(`filter:${cs.filter.slice(0, 28)}`);
+    if (cs.transform && cs.transform !== 'none') notes.push(`transform:${cs.transform.slice(0, 28)}`);
+    if (cs.opacity && cs.opacity !== '1') notes.push(`opacity:${cs.opacity}`);
+    if (cs.mixBlendMode && cs.mixBlendMode !== 'normal') notes.push(`blend:${cs.mixBlendMode}`);
+    if (cs.backdropFilter && cs.backdropFilter !== 'none') notes.push('backdrop-filter');
+    if (cs.isolation && cs.isolation !== 'auto') notes.push(`isolation:${cs.isolation}`);
+    if (notes.length) {
+      const name = el.id ? `#${el.id}` : `.${(el.className || '').toString().split(' ')[0] || el.tagName}`;
+      out.push(`${name} ${notes.join(' ')}`);
+    }
+    el = el.parentElement;
+  }
+  return out.length ? out : ['(no ancestor does anything unusual)'];
+}
+
 const swatch: React.CSSProperties = {
   width: SW,
   height: SW,
@@ -111,6 +142,21 @@ function GradeProbeOverlay() {
   }, []);
 
   const [sizes, setSizes] = useState<Record<string, string>>({});
+  const [anc, setAnc] = useState<string[]>([]);
+
+  // Portal targets, resolved after mount because the landscape renders after
+  // this panel does.
+  const [hosts, setHosts] = useState<{ outer: Element | null; inner: Element | null }>({
+    outer: null,
+    inner: null,
+  });
+  useEffect(() => {
+    const id = window.setTimeout(() => setHosts({
+      outer: document.querySelector('#Landscape-container'),
+      inner: document.querySelector('.color-grade-layer'),
+    }), 400);
+    return () => window.clearTimeout(id);
+  }, []);
   useEffect(() => {
     const read = () => setSizes({
       '.color-grade-layer': measure('.color-grade-layer'),
@@ -118,6 +164,7 @@ function GradeProbeOverlay() {
       '.ServiceBubbles': measure('.ServiceBubbles'),
       '#Landscape-container': measure('#Landscape-container'),
     });
+    setAnc(ancestry('.color-grade-layer'));
     read();
     const id = window.setInterval(read, 1500);
     return () => window.clearInterval(id);
@@ -200,6 +247,11 @@ function GradeProbeOverlay() {
         <div>.color-grade-background &nbsp; <b>{sizes['.color-grade-background']}</b></div>
         <div>.ServiceBubbles &nbsp; <b>{sizes['.ServiceBubbles']}</b></div>
         <div>#Landscape-container &nbsp; <b>{sizes['#Landscape-container']}</b></div>
+      </div>
+
+      <div style={{ fontSize: 10, opacity: 0.8, marginBottom: 6, lineHeight: 1.5 }}>
+        <div style={{ opacity: 0.6 }}>ancestors of .color-grade-layer that affect filtering:</div>
+        {anc.map(a => <div key={a}>&nbsp;&nbsp;{a}</div>)}
       </div>
 
       <div
@@ -366,6 +418,44 @@ function GradeProbeOverlay() {
           <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
         ))}
       </div>
+
+      {/* The panel is a fixed element near the root; the graded elements are
+          deep inside the landscape. These two put the same ramp INSIDE that
+          subtree, which is the one thing no row above does. */}
+      <div style={rowLabel}>
+        L &amp; M are drawn on top of the landscape itself, not in this panel &mdash; look at the
+        top-left of the page, above the art. L is a ramp carrying the site filter itself; M is a
+        ramp carrying NO filter of its own, sitting inside .color-grade-layer, so the layer&rsquo;s
+        own grade should colour it.
+      </div>
+
+      {hosts.outer && createPortal(
+        <div
+          style={{
+            position: 'absolute',
+            top: 4,
+            left: 4,
+            zIndex: 9999,
+            filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          }}
+        >
+          <div style={{ font: '9px monospace', color: '#fff', background: '#000' }}>L in-landscape</div>
+          {expected.map(e => (
+            <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+          ))}
+        </div>,
+        hosts.outer,
+      )}
+
+      {hosts.inner && createPortal(
+        <div style={{ position: 'absolute', top: 60, left: 4, zIndex: 9999 }}>
+          <div style={{ font: '9px monospace', color: '#fff', background: '#000' }}>M inside layer</div>
+          {expected.map(e => (
+            <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+          ))}
+        </div>,
+        hosts.inner,
+      )}
 
       <div style={rowLabel}>untouched input ramp, for reference</div>
       <Ramp />
