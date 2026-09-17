@@ -10,9 +10,17 @@
 
 # production
 /build
+/dist
 
 # large photoshop files
 /ps
+
+# raw Well of Memories originals (kept locally only - unoptimized, can be
+# several MB each). The small webp thumbnails `npm run thumbs`
+# (scripts/gen-memories-thumbs.mjs) generates from them, plus their meta
+# json, ARE checked in (~11MB) since the site (and the Netlify build, which
+# has no access to the originals) needs them to exist.
+/src/assets/memories
 
 # misc
 .DS_Store
