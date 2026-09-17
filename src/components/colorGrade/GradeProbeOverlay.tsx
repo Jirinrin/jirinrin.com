@@ -290,13 +290,90 @@ function GradeProbeOverlay() {
         style={{ height: SW, width: SW * expected.length, imageRendering: 'pixelated', display: 'block' }}
       />
 
+      {/* Everything above this point passes on iPad, including a 5000px tall
+          layer - so size is not the answer. What every row above still lacks
+          is what .color-grade actually carries besides the filter itself. */}
+
+      <div style={rowLabel}>
+        H. url() + saturate(1) + <b>transition: filter 0.6s ease</b> &mdash; what .color-grade carries.
+        a url() filter is not interpolable, so the list has to fall back to discrete.
+      </div>
+      <Ramp
+        style={{
+          filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          transition: 'filter 0.6s ease',
+        }}
+      />
+
+      <div style={rowLabel}>
+        I. H + will-change: filter &mdash; the exact property set on .color-grade-layer
+      </div>
+      <Ramp
+        style={{
+          filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          transition: 'filter 0.6s ease',
+          willChange: 'filter',
+        }}
+      />
+
+      <div style={rowLabel}>
+        J. I + a moving child &mdash; a filtered group whose contents never stop changing,
+        which is the one thing a static swatch can never reproduce
+      </div>
+      <div
+        style={{
+          filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          transition: 'filter 0.6s ease',
+          willChange: 'filter',
+          position: 'relative',
+          height: SW,
+          overflow: 'hidden',
+        }}
+      >
+        {expected.map(e => (
+          <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+        ))}
+        <span
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 18,
+            height: SW,
+            background: '#fff',
+            animation: 'gradeprobe-sweep 1.6s linear infinite',
+          }}
+        />
+      </div>
+      <style>{'@keyframes gradeprobe-sweep { from { transform: translateX(0) } to { transform: translateX(180px) } }'}</style>
+
+      <div style={rowLabel}>
+        K. position: fixed + filter &mdash; the .color-grade-background shape (pinned bottom-left,
+        below this panel)
+      </div>
+      <div
+        style={{
+          position: 'fixed',
+          left: 6,
+          bottom: 6,
+          zIndex: 99998,
+          filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          transition: 'filter 0.6s ease',
+          willChange: 'filter',
+        }}
+      >
+        {expected.map(e => (
+          <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+        ))}
+      </div>
+
       <div style={rowLabel}>untouched input ramp, for reference</div>
       <Ramp />
 
       <div style={{ ...rowLabel, opacity: 0.5, fontSize: 10, marginTop: 10 }}>
-        the first row that does NOT match EXPECTED names the problem. row F uses whatever palette the site
-        is currently on, so it will not match EXPECTED &mdash; for F the question is only whether it is
-        COLOURED (working) or GREY (broken).
+        the first row that does NOT match EXPECTED names the problem. rows F and H&ndash;K use whatever
+        palette the site is currently on, so they will not match EXPECTED &mdash; for those the only
+        question is whether they are COLOURED (working) or GREY (broken).
       </div>
     </div>
   );
