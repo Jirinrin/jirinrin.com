@@ -1,10 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 
+import { isLowPowerDevice } from '../utils/deviceTier';
+
 import './OpeningClouds.scss';
 
-// Pre-import the drawn cloud art (Vite replaces require())
-const cloudImages = import.meta.glob<string>('../assets/clouds/*.png', { eager: true, import: 'default' });
-export const CLOUD_URLS = Object.values(cloudImages);
+// Pre-import the drawn cloud art (Vite replaces require()). Two variants of
+// each cloud, both generated from the source PNGs by scripts/optimize-assets.mjs:
+// `cloud-N.webp` is the crisp art (also what every layer's CSS mask reads
+// its silhouette from), and `cloud-N-soft.webp` is the same art with the
+// blur pre-baked that the big far-off sets used to get from a per-element
+// `filter: blur(3px)` (see the .scss for why that got expensive). Both have
+// the old `brightness(1.05)` baked in too. Sorted by name so index N-1 is
+// cloud N in both lists.
+const byName = (o: Record<string, string>) => Object.keys(o).sort().map(k => o[k]);
+export const CLOUD_URLS = byName(import.meta.glob<string>('../assets/clouds/cloud-[0-9].webp', { eager: true, import: 'default' }));
+const SOFT_CLOUD_URLS = byName(import.meta.glob<string>('../assets/clouds/cloud-[0-9]-soft.webp', { eager: true, import: 'default' }));
 
 // `top`/`left` are vh/% offsets from the very top of the page (same
 // convention as ServiceBubbles' own AMBIENT_BUBBLES), so a cloud's position
@@ -150,6 +160,9 @@ interface CloudsLayerProps {
   // with it the way BackgroundClouds does. Only the opening sets want this;
   // BackgroundClouds is *meant* to sit over the landscape.
   fadeAtSectionEnd?: boolean;
+  // Draw the pre-blurred variant of each cloud's art (the mask stays crisp).
+  // What the --large/--huge sets use instead of a live CSS blur.
+  soft?: boolean;
 }
 
 // Shared by OpeningClouds (foreground) and BackgroundClouds (landscape-
@@ -157,7 +170,7 @@ interface CloudsLayerProps {
 // the page, with a scroll-linked parallax offset (each cloud's own `speed`)
 // applied directly via ref so it stays independent of the CSS keyframe
 // animation on the image inside.
-export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud', glass = false, fadeAtSectionEnd = false }: CloudsLayerProps) {
+export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudClassName = 'opening-clouds__cloud', glass = false, fadeAtSectionEnd = false, soft = false }: CloudsLayerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -261,7 +274,7 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
                 show through, which isn't the case here). */}
             <div className="opening-clouds__backing" />
             <img
-              src={CLOUD_URLS[c.img]}
+              src={(soft ? SOFT_CLOUD_URLS : CLOUD_URLS)[c.img]}
               className={cloudClassName}
               alt=""
             />
@@ -296,8 +309,23 @@ export function CloudsLayer({ clouds, layerClassName = 'opening-clouds', cloudCl
 // class on just the cloud `<img>` for a softer look befitting something that
 // size (the backing stays exactly as strong as the near set's, so they still
 // pick up real color - only the drawn cloud art itself softens).
+//
+// Every cloud here is two large translucent compositor layers (backing +
+// art) that animate forever, so the sheer *count* is what a weak GPU pays
+// for - a phone at 2x DPR can easily be holding a couple hundred MB of cloud
+// textures for the full set. Low-power devices (see deviceTier.ts) therefore
+// get a thinned version: the near set loses the three gap-fillers at the end
+// of CLOUDS (the ones a denser first pass was already trimmed back from), the
+// far set keeps every other cloud, and the huge haze layer - the three most
+// expensive layers on the page - is dropped entirely. Same look, same
+// palette, just fewer clouds; it's the difference between a hero that
+// drifts and one that stutters there.
+const LOW_POWER = isLowPowerDevice();
+const NEAR_CLOUDS = LOW_POWER ? CLOUDS.slice(0, 16) : CLOUDS;
+const FAR_CLOUDS = LOW_POWER ? LARGE_CLOUDS.filter((_, i) => i % 2 === 0) : LARGE_CLOUDS;
+
 function OpeningClouds() {
-  return <CloudsLayer clouds={CLOUDS} fadeAtSectionEnd layerClassName="opening-clouds opening-clouds--legible" />;
+  return <CloudsLayer clouds={NEAR_CLOUDS} fadeAtSectionEnd layerClassName="opening-clouds opening-clouds--legible" />;
 }
 
 // The two big sets, split out so they can be mounted in their own wrapper
@@ -316,15 +344,19 @@ function OpeningClouds() {
 export function OpeningCloudsFar() {
   return (
     <>
+      {!LOW_POWER && (
+        <CloudsLayer
+          clouds={HUGE_CLOUDS}
+          fadeAtSectionEnd
+          soft
+          layerClassName="opening-clouds opening-clouds--legible"
+          cloudClassName="opening-clouds__cloud opening-clouds__cloud--huge"
+        />
+      )}
       <CloudsLayer
-        clouds={HUGE_CLOUDS}
+        clouds={FAR_CLOUDS}
         fadeAtSectionEnd
-        layerClassName="opening-clouds opening-clouds--legible"
-        cloudClassName="opening-clouds__cloud opening-clouds__cloud--huge"
-      />
-      <CloudsLayer
-        clouds={LARGE_CLOUDS}
-        fadeAtSectionEnd
+        soft
         layerClassName="opening-clouds opening-clouds--legible"
         cloudClassName="opening-clouds__cloud opening-clouds__cloud--large"
       />

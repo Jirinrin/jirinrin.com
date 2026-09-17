@@ -24,12 +24,22 @@ const artGalleryVideos = import.meta.glob<string>(
   '../assets/art-gallery/videos/*',
   { eager: true, import: 'default' }
 );
+// Small pre-generated WebP thumbnails (see scripts/optimize-assets.mjs) used
+// for the grid tiles - the full-size jpg originals are reserved for the
+// fullscreen detail view (and video posters) below.
+const artGalleryThumbs = import.meta.glob<string>(
+  '../assets/art-gallery/thumbs/*',
+  { eager: true, import: 'default' }
+);
 
 const getImage = (id: string): string =>
   artGalleryImages[`../assets/art-gallery/images/${id}.jpg`] ?? '';
 
 const getVideo = (id: string): string =>
   artGalleryVideos[`../assets/art-gallery/videos/${id}.mp4`] ?? '';
+
+const getThumb = (id: string): string =>
+  artGalleryThumbs[`../assets/art-gallery/thumbs/${id}.webp`] ?? '';
 
 const sortedGallery = artGallery.slice().sort((a, b) => a.rank - b.rank);
 
@@ -492,7 +502,7 @@ function GalleryTile({ placed, index, onOpen }: GalleryTileProps) {
     >
       <motion.div layoutId={`art-piece-${item.id}`} className="art-gallery-tile__frame-unit">
         <img
-          src={getImage(item.image)}
+          src={getThumb(item.image)}
           alt={item.title}
           className="art-gallery-tile__image"
         />

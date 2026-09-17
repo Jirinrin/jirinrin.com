@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css?family=Cinzel:400|Cormorant:300,400,400i,600');
-
 // The grove is layered back-to-front: the scrolling field of records, then the
 // treeline they rise up behind, then the player that floats out from between
 // the trees, then the one little gate for the link that leaves the site.
@@ -505,7 +503,7 @@ $z-gate: 20;
       inset: 0;
       z-index: -1;
       border-radius: inherit;
-      background-image: url("../assets/box-light-small.png");
+      background-image: url("../assets/box-light-small.webp");
       background-size: 100% 100%;
       opacity: 0.97;
       filter: url(#landscape-color-grade) saturate(0.4);
@@ -513,7 +511,7 @@ $z-gate: 20;
 
     @media (prefers-color-scheme: dark) {
       &::before {
-        background-image: url("../assets/box-dark-small.png");
+        background-image: url("../assets/box-dark-small.webp");
       }
     }
   }
@@ -790,14 +788,14 @@ $z-gate: 20;
     inset: 0;
     z-index: -1;
     border-radius: inherit;
-    background-image: url("../assets/box-light-small.png");
+    background-image: url("../assets/box-light-small.webp");
     background-size: 100% 100%;
     opacity: 0.94;
     filter: url(#landscape-color-grade) saturate(0.4);
   }
 
   @media (prefers-color-scheme: dark) {
-    &::before { background-image: url("../assets/box-dark-small.png"); }
+    &::before { background-image: url("../assets/box-dark-small.webp"); }
   }
 
   // A slow mystical drift of light across the card, so the little gate feels

@@ -1,11 +1,11 @@
-// Frame art lives in ./frames as PNGs named `frame-{w}-{h}-{variant}.png`, where
+// Frame art lives in ./frames as WebPs named `frame-{w}-{h}-{variant}.webp`, where
 // `{w}-{h}` is the aspect ratio of the transparent window in the frame's center
 // (where the artwork shows through) and `{variant}` distinguishes different frame
-// paintings sharing that ratio (a, b, ...). Plaques are named `plaque-{name}.png`
-// (light) and `plaque-{name}-d.png` (dark, for use with light/white text).
+// paintings sharing that ratio (a, b, ...). Plaques are named `plaque-{name}.webp`
+// (light) and `plaque-{name}-d.webp` (dark, for use with light/white text).
 //
 // New variants of an existing ratio are picked up automatically - just drop the
-// PNG in ./frames following the naming convention. A genuinely new aspect ratio
+// WebP in ./frames following the naming convention. A genuinely new aspect ratio
 // also needs its pixel geometry registered in FRAME_GEOMETRY below (it can't be
 // inferred from the filename alone, since window/frame padding isn't uniform).
 
@@ -27,8 +27,8 @@ const FRAME_GEOMETRY: Record<string, Omit<FrameSpec, 'ratioKey' | 'aspect'>> = {
   '4-5': { frameW: 1000, frameH: 1200, windowW: 800, windowH: 1000 },
 };
 
-const frameImages = import.meta.glob<string>('./frames/frame-*.png', { eager: true, import: 'default' });
-const plaqueImages = import.meta.glob<string>('./frames/plaque-*.png', { eager: true, import: 'default' });
+const frameImages = import.meta.glob<string>('./frames/frame-*.webp', { eager: true, import: 'default' });
+const plaqueImages = import.meta.glob<string>('./frames/plaque-*.webp', { eager: true, import: 'default' });
 
 export interface FrameVariant {
   spec: FrameSpec;
@@ -37,7 +37,7 @@ export interface FrameVariant {
 }
 
 const FRAME_VARIANTS: FrameVariant[] = Object.entries(frameImages).flatMap(([path, url]) => {
-  const match = /frame-(\d+)-(\d+)-([a-z0-9]+)\.png$/i.exec(path);
+  const match = /frame-(\d+)-(\d+)-([a-z0-9]+)\.webp$/i.exec(path);
   if (!match) return [];
   const [, w, h, variant] = match;
   const ratioKey = `${w}-${h}`;
@@ -62,7 +62,7 @@ export interface PlaqueVariant {
 const PLAQUE_VARIANTS: PlaqueVariant[] = (() => {
   const byName = new Map<string, PlaqueVariant>();
   for (const [path, url] of Object.entries(plaqueImages)) {
-    const match = /plaque-([a-z0-9]+)(-d)?\.png$/i.exec(path);
+    const match = /plaque-([a-z0-9]+)(-d)?\.webp$/i.exec(path);
     if (!match) continue;
     const [, name, dark] = match;
     const entry = byName.get(name) ?? { name, light: '' };

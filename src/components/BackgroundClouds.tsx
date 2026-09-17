@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { CloudsLayer, type CloudSpec } from './OpeningClouds';
+import { isLowPowerDevice } from '../utils/deviceTier';
 
 // The tail end of OpeningClouds' original span (see there for the vh/speed
 // conventions) - this is the stretch where the landscape's own art actually
@@ -22,9 +23,15 @@ const CLOUDS: CloudSpec[] = [
   { img: 0, top: '204vh', left: '20%', width: '11vw', speed: 0.9,  duration: 32, delay: -22, peakOpacity: 0.24, direction: -1 },
 ];
 
+// The glass panes are nine backdrop-filters over the landscape art, each one
+// re-sampling and re-saturating whatever is behind it every frame it or the
+// scenery moves - by far the priciest thing in this layer, and the kind of
+// cost a phone GPU or iOS Safari really feels. Low-power devices get the same
+// clouds without the panes; they still pick up color from the grade via
+// their own __backing, just less vividly.
 function BackgroundClouds() {
   return (
-    <CloudsLayer clouds={CLOUDS} glass />
+    <CloudsLayer clouds={CLOUDS} glass={!isLowPowerDevice()} />
   );
 }
 

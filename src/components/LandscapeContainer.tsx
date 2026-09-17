@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import ReactMarkdown from 'react-markdown';
 import { isChromium } from 'react-device-detect';
 import type { Plugin } from 'unified';
 import type { Root } from 'hast';
@@ -15,23 +14,25 @@ import { getDeepLinkPath, resolveDeepLinkPath, OBJECT_POPUP_TYPES } from '../dee
 
 import Landscape1 from './Landscape1';
 import Landscape2 from './Landscape2';
-import ArtGallery from './ArtGallery';
-import Memories from './Memories';
-import GrooveGrove from './GrooveGrove';
-import ProjectGallery from './ProjectGallery';
 import BackgroundClouds from './BackgroundClouds';
+
+const ArtGallery = lazy(() => import('./ArtGallery'));
+const Memories = lazy(() => import('./Memories'));
+const GrooveGrove = lazy(() => import('./GrooveGrove'));
+const ProjectGallery = lazy(() => import('./ProjectGallery'));
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 import './Landscape.scss';
 
-import backArrow from '../assets/back-arrow.png';
-import shine3 from '../assets/landscape/shine-3.png';
-import sunrays from '../assets/landscape/sunrays.png';
-import jiriHead from '../assets/landscape/jiri-head.png';
+import backArrow from '../assets/back-arrow.webp';
+import shine3 from '../assets/landscape/shine-3.webp';
+import sunrays from '../assets/landscape/sunrays.webp';
+import jiriHead from '../assets/landscape/jiri-head.webp';
 import githubIcon from '../assets/objects/images/github.png';
-import landscape2Img from '../assets/landscape/landscape-2.png';
-import boxLightSmall from '../assets/box-light-small.png';
-import boxDarkSmall from '../assets/box-dark-small.png';
-import buttonBg from '../assets/button-bg.png';
+import landscape2Img from '../assets/landscape/landscape-2.webp';
+import boxLightSmall from '../assets/box-light-small.webp';
+import boxDarkSmall from '../assets/box-dark-small.webp';
+import buttonBg from '../assets/button-bg.webp';
 import privacyText from '../assets/privacy.md?raw';
 
 // Pre-import dynamic project images and markdown images (Vite replaces require())
@@ -175,6 +176,16 @@ function LandscapeContainer() {
   // all collapsed. Only one at a time, accordion-style.
   const [openHobbySection, setOpenHobbySection] = useState<number | null>(null);
 
+  // ArtGallery/Memories/GrooveGrove are lazy-loaded (framer-motion is heavy)
+  // and are otherwise always mounted (with an `open` prop, using
+  // AnimatePresence internally for their own exit animation) - to actually
+  // defer loading their chunk until needed, only start rendering each one
+  // once its `open` condition has been true at least once, and then keep it
+  // mounted so the exit animation still works on subsequent closes.
+  const [hasOpenedGallery, setHasOpenedGallery] = useState(false);
+  const [hasOpenedMemories, setHasOpenedMemories] = useState(false);
+  const [hasOpenedGroove, setHasOpenedGroove] = useState(false);
+
   // Use a ref for frameOffset so the scroll listener always sees the latest value
   const frameOffsetRef = useRef(0);
 
@@ -209,6 +220,14 @@ function LandscapeContainer() {
   useEffect(() => {
     setOpenHobbySection(null);
   }, [currentPage.popup?.id, currentPage.showPopup]);
+
+  const isGalleryOpen = currentPage.showPopup && currentPage.popup?.type === 'gallery';
+  const isMemoriesOpen = currentPage.showPopup && currentPage.popup?.type === 'memories';
+  const isGrooveOpen = currentPage.showPopup && currentPage.popup?.type === 'groove';
+
+  useEffect(() => { if (isGalleryOpen) setHasOpenedGallery(true); }, [isGalleryOpen]);
+  useEffect(() => { if (isMemoriesOpen) setHasOpenedMemories(true); }, [isMemoriesOpen]);
+  useEffect(() => { if (isGrooveOpen) setHasOpenedGroove(true); }, [isGrooveOpen]);
 
   const calculateScaleFactor = (windowSize = window.innerWidth) => windowSize / C.CANVAS_WIDTH;
 
@@ -550,9 +569,11 @@ function LandscapeContainer() {
           const { intro, sections } = splitAccordionSections(text);
           return (
             <>
-              <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
-                {intro}
-              </ReactMarkdown>
+              <Suspense fallback={null}>
+                <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
+                  {intro}
+                </ReactMarkdown>
+              </Suspense>
               <div className="accordion-list">
                 {sections.map((section, i) => {
                   const isOpen = openHobbySection === i;
@@ -571,9 +592,11 @@ function LandscapeContainer() {
                       </h3>
                       <div className="accordion-section__panel">
                         <div className="accordion-section__panel-inner">
-                          <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
-                            {section.body}
-                          </ReactMarkdown>
+                          <Suspense fallback={null}>
+                            <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
+                              {section.body}
+                            </ReactMarkdown>
+                          </Suspense>
                         </div>
                       </div>
                     </div>
@@ -585,9 +608,11 @@ function LandscapeContainer() {
         }
 
         return (
-          <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
-            {text}
-          </ReactMarkdown>
+          <Suspense fallback={null}>
+            <ReactMarkdown urlTransform={(url) => url} rehypePlugins={[rehypeUnEmoji]} components={aboutMarkdownComponents}>
+              {text}
+            </ReactMarkdown>
+          </Suspense>
         );
       }
       case 'project':
@@ -615,31 +640,35 @@ function LandscapeContainer() {
                 }
               </div>
             }
-            <ReactMarkdown
-              rehypePlugins={[rehypeUnEmoji]}
-              components={{
-                p: renderParagraph,
-                img: ({ src, alt }: { src?: string; alt?: string }) => (
-                  <img src={getProjectImage(src ?? '')} alt={alt ?? ''} />
-                ),
-                a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
-                  <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
-                    {children}
-                  </a>
-                )
-              }}
-            >
-              {popup.project?.description ?? ''}
-            </ReactMarkdown>
+            <Suspense fallback={null}>
+              <ReactMarkdown
+                rehypePlugins={[rehypeUnEmoji]}
+                components={{
+                  p: renderParagraph,
+                  img: ({ src, alt }: { src?: string; alt?: string }) => (
+                    <img src={getProjectImage(src ?? '')} alt={alt ?? ''} />
+                  ),
+                  a: ({ href, className, style, children }: { href?: string; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) => (
+                    <a href={href} className={className} style={style} target="_blank" rel="noopener noreferrer" onClick={() => href && window.open(href, '_blank')}>
+                      {children}
+                    </a>
+                  )
+                }}
+              >
+                {popup.project?.description ?? ''}
+              </ReactMarkdown>
+            </Suspense>
             {popup.project?.images[0] &&
               <>
                 <br/>
-                <ProjectGallery
-                  key={popup.project.id}
-                  images={popup.project.images}
-                  getImage={getProjectImage}
-                  landscape={popup.project.landscapeGallery}
-                />
+                <Suspense fallback={null}>
+                  <ProjectGallery
+                    key={popup.project.id}
+                    images={popup.project.images}
+                    getImage={getProjectImage}
+                    landscape={popup.project.landscapeGallery}
+                  />
+                </Suspense>
               </>
             }
           </div>
@@ -755,20 +784,32 @@ function LandscapeContainer() {
           </div>
         </CSSTransition>
 
-        <ArtGallery
-          open={currentPage.showPopup && currentPage.popup?.type === 'gallery'}
-          onClose={zoomOutCanvas}
-        />
+        {hasOpenedGallery &&
+          <Suspense fallback={null}>
+            <ArtGallery
+              open={currentPage.showPopup && currentPage.popup?.type === 'gallery'}
+              onClose={zoomOutCanvas}
+            />
+          </Suspense>
+        }
 
-        <Memories
-          open={currentPage.showPopup && currentPage.popup?.type === 'memories'}
-          onClose={zoomOutCanvas}
-        />
+        {hasOpenedMemories &&
+          <Suspense fallback={null}>
+            <Memories
+              open={currentPage.showPopup && currentPage.popup?.type === 'memories'}
+              onClose={zoomOutCanvas}
+            />
+          </Suspense>
+        }
 
-        <GrooveGrove
-          open={currentPage.showPopup && currentPage.popup?.type === 'groove'}
-          onClose={zoomOutCanvas}
-        />
+        {hasOpenedGroove &&
+          <Suspense fallback={null}>
+            <GrooveGrove
+              open={currentPage.showPopup && currentPage.popup?.type === 'groove'}
+              onClose={zoomOutCanvas}
+            />
+          </Suspense>
+        }
       </div>
 
       <img

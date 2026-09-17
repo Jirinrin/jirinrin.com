@@ -12,16 +12,16 @@ import OBJECTS from '../assets/objects';
 import CREATURES from '../assets/landscape/creatures';
 import MUSIC_NOTES from '../assets/objects/images';
 
-import boxDarkSmall from '../assets/box-dark-small.png';
-import landscape1Img from '../assets/landscape/landscape-1.png';
+import boxDarkSmall from '../assets/box-dark-small.webp';
+import landscape1Img from '../assets/landscape/landscape-1.webp';
 
 // Pre-import dynamic assets at module scope (Vite replaces require())
 const creatureImages = import.meta.glob<string>(
-  '../assets/landscape/creatures/*.gif',
+  '../assets/landscape/creatures/*.webp',
   { eager: true, import: 'default' }
 );
 const objectImages = import.meta.glob<string>(
-  '../assets/landscape/objects/*.{png,gif}',
+  '../assets/landscape/objects/*.{png,webp}',
   { eager: true, import: 'default' }
 );
 const techIconImages = import.meta.glob<string>(
@@ -34,7 +34,7 @@ const cloudImages = import.meta.glob<string>(
 );
 
 const getCreatureImage = (species: string) =>
-  creatureImages[`../assets/landscape/creatures/${species}.gif`] ?? '';
+  creatureImages[`../assets/landscape/creatures/${species}.webp`] ?? '';
 
 const getObjectImage = (id: string, ext: string) =>
   objectImages[`../assets/landscape/objects/${id}.${ext}`] ?? '';
@@ -125,7 +125,6 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
   const [zoomScale, setZoomScale] = useState(1);
   const [zoomTranslation, setZoomTranslation] = useState({ x: 0, y: 0 });
   const [bookShadow, setBookShadow] = useState<string | null>(null);
-  const [cursorPos, setCursorPos] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const [activeCreatures, setActiveCreatures] = useState<Creature[]>([]);
   const [activeMusicClouds, setActiveMusicClouds] = useState<MusicCloud[]>([]);
 
@@ -134,6 +133,14 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
   const containerRef = useRef<HTMLDivElement | null>(null);
   const prevCamera = useRef<{ camera: Camera; zoomed: boolean } | null>(null);
   const cameraAnim = useRef<{ path: (u: number) => Camera; anim: Animation } | null>(null);
+  // The eye-tracking pupils are positioned straight on the DOM node from a
+  // rAF-throttled mousemove handler, never via state: holding the cursor
+  // position in state meant every single mousemove re-rendered this whole
+  // component (every landscape object, book, creature and cloud), which is a
+  // lot of reconciliation to pay for moving two pupils a few pixels.
+  const pupilsRef = useRef<HTMLImageElement>(null);
+  const cursorRef = useRef<{ x: number; y: number } | null>(null);
+  const pupilRafRef = useRef<number | null>(null);
 
   const setContainerRef = useCallback((node: HTMLDivElement | null) => {
     containerRef.current = node;
@@ -183,7 +190,10 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
   const hideTooltip = () => setShowTooltip(false);
 
   const handleMousemove = (e: MouseEvent) => {
-    setCursorPos({ x: e.pageX, y: e.pageY });
+    cursorRef.current = { x: e.pageX, y: e.pageY };
+    // Coalesce to one layout read + style write per frame, in sync with
+    // paint, however many mousemove events the OS delivers in between.
+    if (pupilRafRef.current == null) pupilRafRef.current = requestAnimationFrame(applyPupilTranslation);
   };
 
   const displayWelcomeMessage = () => {
@@ -222,6 +232,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
       return () => {
         if (!cookies.hasVisited) window.removeEventListener('scroll', handleScroll);
         document.removeEventListener('mousemove', handleMousemove);
+        if (pupilRafRef.current != null) cancelAnimationFrame(pupilRafRef.current);
         clearInterval(creatureId);
         clearInterval(cloudId);
       };
@@ -255,9 +266,17 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tooltip]);
 
-  const getPupilTranslation = (): React.CSSProperties => {
-    if (!cursorPos.x || !cursorPos.y) return {};
-    const { x, y } = cursorPos;
+  const applyPupilTranslation = () => {
+    pupilRafRef.current = null;
+    const pupils = pupilsRef.current;
+    const cursor = cursorRef.current;
+    if (!pupils || !cursor) return;
+    const { left, top } = getPupilTranslation(cursor.x, cursor.y);
+    pupils.style.left = `${left}px`;
+    pupils.style.top = `${top}px`;
+  };
+
+  const getPupilTranslation = (x: number, y: number): { left: number; top: number } => {
     const soul = OBJECTS['jiri-soul'];
     const soulClientX = ((( soul.left ?? 0) + (soul.width ?? 0) / 2) / C.CANVAS_WIDTH) * document.documentElement.clientWidth;
     const soulClientY = C.getDocHeight() - (((C.CANVAS_HEIGHT - (soul.top ?? 0) + (soul.height ?? 0) * 0.8) / C.CANVAS_HEIGHT)) * C.getDocHeight();
@@ -462,7 +481,11 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
       style={{
         transform: getTransformation(),
         height: C.CANVAS_HEIGHT, width: C.CANVAS_WIDTH,
-        filter: `blur(${getBlur()}px)`
+        // No filter at all while zoomed out: even `blur(0px)` counts as a
+        // pixel-moving filter, which gives this whole (huge) landscape its
+        // own render surface for nothing and stops the browser compositing
+        // its transform transitions.
+        filter: getBlur() ? `blur(${getBlur()}px)` : undefined
       }}
     >
       <div className="rel-container">
@@ -516,9 +539,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
               return (
                 <div key={obj.id} {...commonProps} style={{ ...commonProps.style, width: obj.width, height: obj.height }}>
                   <img id="jiri-soul__container" src={getObjectImage(obj.id, obj.extension)} alt="jiri soul container" />
-                  <img id="jiri-soul__pupils" src={getObjectImage('jiri-soul-pupils', 'png')} alt="jiri soul pupils"
-                    style={getPupilTranslation()}
-                  />
+                  <img id="jiri-soul__pupils" ref={pupilsRef} src={getObjectImage('jiri-soul-pupils', 'png')} alt="jiri soul pupils" />
                 </div>
               );
             } else if (obj.id === 'well-of-memories') {

@@ -25,17 +25,17 @@
   display: block;
   width: 100%;
   opacity: var(--peak-opacity, 0.3);
-  // The color-grade filter (inherited from .ServiceBubbles) is genuinely
-  // being applied here - it's just that a near-white cloud pixel only ever
-  // samples the gradient's *highlight* stop, which is deliberately pale
-  // (see buildGradeStops in ColorGradeFilter.tsx), and that pale tint gets
-  // diluted further by the cloud's own translucency into "a lighter patch of
-  // whatever's behind it" rather than a color of its own. This saturation
-  // boost is a second filter pass stacked on top of the inherited one (filter
-  // passes compose in a chain, each one repainting the previous result), so
-  // it punches up whatever pale tint the clouds already picked up without
-  // needing to touch their opacity or the shared filter itself.
-  filter: saturate(2.2) brightness(1.05);
+  // No `filter` here any more. This used to carry `saturate(2.2)
+  // brightness(1.05)`, on the theory that it was a second pass on top of
+  // the color grade - but an element's own filter is applied to *its own*
+  // pixels first, and only that result then goes into the ancestor's
+  // graded group. The cloud art is pure neutral grayscale (verified: zero
+  // chroma in every PNG), and saturate() of a neutral pixel is that same
+  // pixel, so the saturate was a no-op; the brightness(1.05) was real and
+  // is now baked into the .webp art itself (scripts/optimize-assets.mjs).
+  // Dropping the filter matters because a per-element filter forces each of
+  // these ~40 animating images into its own render surface, filtered again
+  // every frame for nothing.
   animation:
     opening-cloud-drift var(--drift-duration, 35s) ease-in-out infinite,
     opening-cloud-breathe var(--breathe-duration, 55s) ease-in-out infinite;
@@ -77,18 +77,22 @@
 // the near set's saturation boost, since a hazier shape doesn't need as much
 // punch) is the difference between "huge nearby cloud" and "high, distant
 // one" at the same opacity.
-.opening-clouds__cloud--large {
-  filter: saturate(1.6) brightness(1.05) blur(3px);
-}
+//
+// That blur no longer lives here as `filter: blur(3px)`: a live blur on a
+// 30-60vw layer that never stops animating has to be re-run over the whole
+// layer every single frame, times ~19 of them, and was one of the heaviest
+// things in the hero on weak GPUs. The far sets now draw a pre-blurred copy
+// of the same art instead (`cloud-N-soft.webp`, see the `soft` prop on
+// CloudsLayer and scripts/optimize-assets.mjs) - baked once, at build time,
+// and free forever after. The CSS mask still reads the crisp variant, so the
+// backing swatch keeps its exact silhouette. (As with the near set above,
+// the old saturate() component of this filter was a no-op on neutral art.)
+.opening-clouds__cloud--large {}
 
 // The screen-filling haze behind both other sets (HUGE_CLOUDS in
-// OpeningClouds.tsx) - bigger and fainter again than --large, and blurred
-// further still so it reads as atmosphere rather than a shape with an edge,
-// which matters more here than for --large since these are meant to be
-// looked *through*, not *at*.
-.opening-clouds__cloud--huge {
-  filter: saturate(1.3) brightness(1.05) blur(3px);
-}
+// OpeningClouds.tsx) - bigger and fainter again than --large, and meant to
+// be looked *through*, not *at*. Same pre-blurred art as --large.
+.opening-clouds__cloud--huge {}
 
 // Sits *behind* the cloud image, masked to the exact same silhouette. On its
 // own this looks like nothing - a flat patch of tiled dark-gray texture in the
@@ -123,7 +127,7 @@
 .opening-clouds__backing {
   position: absolute;
   inset: 0;
-  background-image: url("../assets/background-darkgray.jpg");
+  background-image: url("../assets/background-darkgray.webp");
   background-repeat: repeat;
   background-size: cover;
   mask-image: var(--cloud-mask);
