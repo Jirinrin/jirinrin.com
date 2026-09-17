@@ -235,11 +235,14 @@ same black-and-white fallback Firefox gets. Two things to get right while doing 
 
 - **A naive `/safari/i` test matches Chrome and Edge too** — every Chromium UA carries `Safari/537.36`.
   Either negate the Chromium tokens (`/^((?!chrome|chromium|crios|edg|android).)*safari/i`) or reuse
-  `react-device-detect`, which is already a dependency and already supplies the sibling flag `isChromium`
-  used by `applyBrowserConditionals`
-  ([LandscapeContainer.tsx:125-131](src/components/LandscapeContainer.tsx#L125-L131)). Its `isSafari`
-  excludes Chromium for you, and that keeps this file's browser detection consistent with the rest of the
-  codebase rather than introducing a second hand-rolled regex.
+  `react-device-detect`'s `isSafari`, which does this exclusion for you.
+  **Do not reach for `react-device-detect`'s `isChromium` here or anywhere** (it was also the bug behind
+  `applyBrowserConditionals` in [LandscapePopup.tsx](src/components/LandscapePopup.tsx#L108-L113) showing
+  its Chromium-only callout to Brave/Chrome users, fixed 2026-09-17): despite the name, it only matches a
+  browser literally named "Chromium" (the rare open-source build) — Chrome, Brave, Edge and Opera all
+  report a different browser name and would wrongly read as non-Chromium. Use the parsed engine instead:
+  `react-device-detect`'s `engineName === 'Blink'` is true for all Chromium/Blink-based browsers alike, and
+  is what `applyBrowserConditionals` now uses.
 - **Update the three stale comments that name Firefox alone**, since they are the only in-code explanation
   of why the fallback exists: the block above `getColorGradeMode`
   ([ColorGradeFilter.tsx:127-130](src/components/ColorGradeFilter.tsx#L127-L130)), the popup-link

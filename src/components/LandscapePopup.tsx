@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { isChromium } from 'react-device-detect';
+import { engineName } from 'react-device-detect';
 import type { Plugin } from 'unified';
 import type { Root } from 'hast';
 
@@ -103,12 +103,18 @@ const rehypeUnEmoji: Plugin<[], Root> = () => (tree) => {
 // callout at the end of jiri-soul.md) only makes sense to readers who AREN'T on
 // a Chromium browser - drop the whole line for Chromium visitors, and just strip
 // the marker for everyone else, so the source stays plain markdown otherwise.
+// Checked via the parsed *engine* name rather than react-device-detect's own
+// `isChromium` flag: that flag only matches a browser literally named
+// "Chromium" (the rare open-source build), while Chrome, Brave, Edge and Opera
+// all report their browser name as something else and would wrongly count as
+// non-Chromium. The engine name is "Blink" for all of those alike.
+const isChromiumEngine = engineName === 'Blink';
 const NON_CHROMIUM_ONLY_RE = /^<!--\s*non-chromium-only\s*-->\s*/;
 
 const applyBrowserConditionals = (markdown: string): string =>
   markdown
     .split('\n')
-    .filter(line => !(isChromium && NON_CHROMIUM_ONLY_RE.test(line)))
+    .filter(line => !(isChromiumEngine && NON_CHROMIUM_ONLY_RE.test(line)))
     .map(line => line.replace(NON_CHROMIUM_ONLY_RE, ''))
     .join('\n');
 
