@@ -33,6 +33,8 @@ I walk through places/non-places. One moment I am deeply meditatively walking do
 
 I talk to people/non-people. One moment I fully feel present with the person in front of me, in their human-ness, fully sensitive to their words and all the stuff beyond the words... And the next moment I'm suddenly flying out of my body, completely overwhelmed by all energies around me and need to leave the room to get back to myself!  
 
+I create things/non-things. One moment I'm a many layers of inception into my flow, completely absorbed by the Being inside the Doing, often for weeks at a time... And the next moment I'm utterly burned out and I have to stop doing anything 'productive' for at least a few days...
+
 I dance in spaces/non-spaces. One moment I'm dancing in a state of full abandon, twisting in impossible ways, offering myself to the music... Then suddenly my body is so exhausted that I can only go sit down on the ground, straight into a deep meditation!  
 
 I vibrate in myself/my-not-self. One moment I am in deep, dark, contemplation, overwhelmed by the everythingness of it all... And the next moment I am without a care in the world, intensely enjoying the everythingness of it all without needing to understand it!
