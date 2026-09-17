@@ -28,7 +28,7 @@ const objects: ObjectsMap = {
     left: 479.5,
     top: 3765,
     hasText: true,
-    extension: isMobile ? 'png' : 'gif'
+    extension: isMobile ? 'png' : 'webp'
   },
   'hobby-heap': {
     id: 'hobby-heap',
@@ -54,7 +54,7 @@ const objects: ObjectsMap = {
     left: 1321,
     top: 4205,
     hasText: true,
-    extension: isMobile ? 'png' : 'gif'
+    extension: isMobile ? 'png' : 'webp'
   },
   'spiral-tower': {
     id: 'spiral-tower',
@@ -62,7 +62,7 @@ const objects: ObjectsMap = {
     left: 4238,
     top: 2760,
     hasText: true,
-    extension: isMobile ? 'png' : 'gif'
+    extension: isMobile ? 'png' : 'webp'
   },
   'groove-grove': {
     id: 'groove-grove',

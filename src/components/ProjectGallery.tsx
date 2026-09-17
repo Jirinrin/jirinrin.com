@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
 
-import backArrow from '../assets/back-arrow.png';
+import backArrow from '../assets/back-arrow.webp';
 import { usePinchZoom } from '../hooks/usePinchZoom';
 
 interface ProjectGalleryProps {

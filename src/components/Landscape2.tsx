@@ -5,8 +5,8 @@ import { fetchProjectDescriptions } from '../store/projectsSlice';
 import { changePage } from '../store/currentPageSlice';
 import { useAppDispatch, useAppSelector } from '../store';
 
-import boxDarkSmall from '../assets/box-dark-small.png';
-import landscape2Img from '../assets/landscape/landscape-2.png';
+import boxDarkSmall from '../assets/box-dark-small.webp';
+import landscape2Img from '../assets/landscape/landscape-2.webp';
 
 interface Landscape2Props {
   scaleFactor: number;

@@ -78,18 +78,26 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
     setThreshold1(t1);
     setThreshold2(t2);
 
-    const onScroll = (e: Event) => {
-      e.preventDefault();
-      updateScrollParams(window.pageYOffset);
+    // One state update per frame at most, rather than one per `scroll` event
+    // (which can fire several times per frame, each re-rendering the navbar).
+    // `scroll` isn't cancelable anyway, so the old preventDefault was a no-op
+    // and the listener can be passive.
+    let rafId: number | null = null;
+    const onScroll = () => {
+      if (rafId == null) rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateScrollParams(window.pageYOffset);
+      });
     };
     const onResize = () => { setWindowWidth(window.innerWidth); updateScrollParams(); };
 
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
+      if (rafId != null) cancelAnimationFrame(rafId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

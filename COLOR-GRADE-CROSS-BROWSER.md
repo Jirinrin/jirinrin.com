@@ -53,6 +53,22 @@ different picture. That is a correctness argument, not a performance one, and th
 already a written proof of this for the clouds: their colour comes from grading the cloud PNG composited
 over a masked dark `__backing`, and grading the PNG alone lands it on the table's pale highlight stop.
 
+**Filter order is the other half of this.** An element's own `filter` is applied to *its own* rendering
+first; only that result is then composited into the ancestor's group and graded. So for a child with
+its own filter the pipeline is `grade(f(A))`, never `f(grade(A))`. Two consequences worth keeping in
+mind when classifying elements:
+
+- A per-element `saturate()`/`hue-rotate()` on **neutral grayscale input is a no-op** - it runs before
+  the grade, on pixels that have no chroma yet. `OpeningClouds.scss` used to carry `saturate(2.2)` on
+  every cloud on the opposite assumption; the perf pass removed it (verified zero chroma in every cloud
+  PNG, so the output was byte-identical). Only filters *after* the `url(#…)` token in the same
+  `filter` list, as in the popup links' `url(#landscape-color-grade) saturate(0.4)`, actually act on
+  graded colour.
+- Anything that is *outside* the graded group but visually sits over it (a `backdrop-filter` pane, a
+  `mix-blend-mode` sibling) reads graded pixels; anything inside reads ungraded ones. The
+  `.opening-clouds__glass` panes work precisely because they are inside the same group *and*
+  backdrop-filter samples the group's already-painted backdrop, not the element's own input.
+
 So the work splits into three classes, and a shader only ever owns the second:
 
 - **Class A — flat colour.** The element paints one RGB. `grade()` it in JS, ship a CSS custom property.
@@ -69,6 +85,11 @@ This may resolve the entire thing, and it is the highest-value step here. Firefo
 locally; Safari goes through BrowserStack.
 
 - `npm run dev`, open in Firefox, temporarily neutralise the sniff (`getColorGradeMode` → `'on'`).
+- Measure **both device tiers**: `?perf=high` and `?perf=low` in the URL force
+  [deviceTier.ts](src/utils/deviceTier.ts) either way. The low tier drops the nine backdrop-filter
+  glass panes and about a third of the opening clouds, which is a large chunk of what the grade's group
+  has to re-filter each frame - a Firefox verdict taken only on the high tier would overstate the cost
+  for the phones that actually complain.
 - `about:support` → confirm **Compositing** reads `WebRender`, not `WebRender (Software)`. If the original
   measurement was taken on software WebRender, that alone explains 650–870 ms.
 - `about:config` → confirm `gfx.webrender.svg-filter-effects` is `true`.
@@ -104,7 +125,11 @@ as an HSL shift and says so in its own comment, so the `--color-grade-flat` tint
 what the filter produces. One implementation fixes that.
 
 Also replace the `setInterval` at [ColorGradeFilter.tsx:169](src/components/ColorGradeFilter.tsx#L169)
-with a `requestAnimationFrame` loop throttled to `TICK_MS`. `setInterval` can land mid-frame, letting the
+with a `requestAnimationFrame` loop throttled to `TICK_MS`. (Bonus: rAF stops entirely in a background
+tab, where `setInterval` is merely throttled to 1 Hz, so a tab left open behind another one stops
+recomputing 75 table values and rewriting three SVG attributes every second for nobody. Keep the
+`performance.now()`-based phase so the palette lands where it would have when the tab comes back, rather
+than resuming from where it paused.) `setInterval` can land mid-frame, letting the
 SVG write and (later) a canvas commit paint one frame apart — a visible palette tear between a graded
 frame and the graded background behind it. One rAF callback, all writes synchronous, in order:
 advance state → write SVG attributes → render canvases → write CSS vars.
@@ -182,6 +207,13 @@ and **persist the verdict in a cookie** — `react-cookie` is already a dependen
 This is what actually answers the question: it adapts to weak GPUs on *any* engine and stops punishing
 every Firefox user for one bad measurement. Keep `prefers-reduced-motion` as a hard `'off'`.
 
+There is now a static device-tier heuristic in [deviceTier.ts](src/utils/deviceTier.ts) (reduced-motion,
+mobile UA, ≤4 cores, ≤4 GB) that the cloud layers already consume to thin decoration. The watchdog's
+verdict should **feed that same tier** rather than becoming a second, separate notion of "this device is
+slow" - one flag, consumed by both the grade mode and the cloud/glass density, persisted in the same
+cookie. Otherwise a device can end up graded at full strength while its clouds are thinned, or vice
+versa, and the two knobs drift apart over time.
+
 ### 3d. Widen the mode type
 
 `getColorGradeMode()` returns `'on' | 'off'`, consumed at [App.tsx:15](src/App.tsx#L15). Widen to
@@ -198,6 +230,20 @@ every Firefox user for one bad measurement. Keep `prefers-reduced-motion` as a h
 - **Slow the tick.** `TICK_MS = 150` invalidates every referencing element 6.7×/s while the hue moves
   1.08°/tick. At 250–300 ms the step is 1.8–2.2° — against a 16 s blend, nobody will see it. Pick the
   largest value that still looks smooth on the big flat sky areas during Phase 0.
+
+  **Know what the tick does and doesn't buy, though.** The tick only matters for groups whose
+  *contents* are otherwise static between ticks (`.color-grade-background`, an open popup's parchment,
+  the Groove Grove treeline). The three biggest graded groups are never static: `.ServiceBubbles` and
+  `.opening-clouds-behind` contain ~40 clouds that drift and breathe on CSS keyframes, and
+  `.color-grade-layer` contains the sunrays rotating on a 120 s loop, the shine pulsing on a 20 s loop,
+  the animated-WebP objects and the creatures. Any change inside a filtered group re-runs the filter
+  over the group, so those three are re-graded **every frame their contents move, regardless of
+  `TICK_MS`**. Slowing the tick helps the static groups and the CPU cost of the JS writes; it does
+  nothing for the per-frame GPU cost of the big three. The levers for those are group *area* and
+  *content* (fewer/smaller animating things inside - which is what the device tier does), or taking the
+  always-animating content out of the graded group and grading it some other way (Class A/B), not the
+  tick rate. Measure the three separately in Phase 0 rather than one aggregate number, or a tick-rate
+  win on the background will hide a no-op on the hero.
 - **Optional, measure first: fold the hue rotation into the table**, dropping `feColorMatrix` and halving
   the filter graph. `hueRotate`'s rows each sum to 1, so applying it in JS to the 25 stop colours before
   building the tables is *exactly* equivalent **for greyscale input**. It is **not** equivalent for
@@ -327,3 +373,9 @@ treeline art renders at the wrong crop and the layout still looks fine, so nobod
 5. **Fallback intact** — force `'off'`, confirm the well glow and popup link underline
    ([Landscape.scss:1348-1363](src/components/Landscape.scss#L1348-L1363)) still read correctly.
 6. `npm run build` (runs `tsc --noEmit`).
+7. **Lighthouse, both form factors**, against `vite preview` — the perf branch added the recipe (see the
+   PR for `perf/lighter-site`): `CHROME_PATH=… npx lighthouse http://localhost:4173/ --preset=desktop
+   --only-categories=performance` and the same without the preset for mobile. Watch the
+   `non-composited-animations` audit specifically: anything the grade work adds that animates `filter`
+   with a `url()` in it will show up there, and that's the single cheapest early warning that a change
+   just moved a per-frame cost onto the main thread.

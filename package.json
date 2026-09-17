@@ -29,6 +29,7 @@
   "scripts": {
     "thumbs": "node scripts/gen-memories-thumbs.mjs",
     "optimize-memories": "node scripts/optimize-memories-originals.mjs",
+    "optimize-assets": "node scripts/optimize-assets.mjs",
     "prestart": "npm run thumbs",
     "prebuild": "npm run thumbs",
     "start": "vite",

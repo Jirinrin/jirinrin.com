@@ -37,21 +37,37 @@ function ServiceBubbles() {
   // scrolling back up past it, rather than being redrawn on every scroll
   // pixel (which read as janky rather than elegant).
   const [revealed, setRevealed] = useState(false);
+  const bubblesWrapperRef = useRef<HTMLDivElement>(null);
   // Separate fade applied to the whole section (real bubbles + ambient ones)
   // so everything dissolves away again before it scrolls up underneath the
-  // fixed navbar, instead of overlapping nav items like ABOUT.
-  const [sectionOpacity, setSectionOpacity] = useState(1);
-  const bubblesWrapperRef = useRef<HTMLDivElement>(null);
+  // fixed navbar, instead of overlapping nav items like ABOUT. Written
+  // straight to the node rather than held in state: this component's render
+  // tree includes every opening cloud (see OpeningClouds/OpeningCloudsFar
+  // below - several dozen elements), and a state update per `scroll` event
+  // was re-rendering all of it on every scrolled pixel for the sake of one
+  // opacity value on one div.
+  const fadeRef = useRef<HTMLDivElement>(null);
+  const revealedRef = useRef(false);
 
   useEffect(() => {
-    const handleScroll = () => {
+    // The navbar is a sibling rendered before this in App, so it exists by
+    // the time this effect runs - no need to re-query it every scroll tick.
+    const nav = document.querySelector('nav');
+    let rafId: number | null = null;
+
+    const update = () => {
+      rafId = null;
       const vh = window.innerHeight;
       // A single crossing point rather than a fade range - once past it the
-      // CSS transition below takes over and plays out on its own.
-      setRevealed(window.scrollY > vh * 0.18);
+      // CSS transition below takes over and plays out on its own. Only
+      // touches React state when the flag actually flips.
+      const nowRevealed = window.scrollY > vh * 0.18;
+      if (nowRevealed !== revealedRef.current) {
+        revealedRef.current = nowRevealed;
+        setRevealed(nowRevealed);
+      }
 
       let fadeOut = 1;
-      const nav = document.querySelector('nav');
       const wrapper = bubblesWrapperRef.current;
       if (nav && wrapper) {
         const navBottom = nav.getBoundingClientRect().bottom;
@@ -71,12 +87,21 @@ function ServiceBubbles() {
         // just because the top edge alone got close to the navbar.
         fadeOut = Math.min(1, Math.max(0, (rect.bottom - effectiveNavBottom) / (rect.bottom - rect.top)));
       }
-      setSectionOpacity(fadeOut);
+      if (fadeRef.current) fadeRef.current.style.opacity = String(fadeOut);
     };
 
-    handleScroll(); // set initial value
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Coalesce bursts of `scroll` events into one layout read + write per
+    // frame (same pattern as CloudsLayer's parallax handler).
+    const onScroll = () => {
+      if (rafId == null) rafId = requestAnimationFrame(update);
+    };
+
+    update(); // set initial value
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Subtle mouse-driven tilt so each bubble catches the light like a real
@@ -114,7 +139,7 @@ function ServiceBubbles() {
             timed to the landscape transition, rather than dissolving early
             just because the name/bubbles duck under the navbar. */}
         <OpeningClouds />
-        <div className="service-bubbles-fade" style={{ opacity: sectionOpacity }}>
+        <div className="service-bubbles-fade" ref={fadeRef}>
           {AMBIENT_BUBBLES.map((b, i) => (
             <span
               key={i}
