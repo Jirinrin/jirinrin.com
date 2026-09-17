@@ -686,16 +686,26 @@ $z-gate: 20;
     height: auto;
   }
 
-  // A flat mid-gray put through the page's own grade filter comes out as
-  // whatever color the grade is currently sitting at, so blending it over the
+  // A flat mid-gray put through the page's own grade comes out as whatever
+  // color the grade is currently sitting at, so blending it over the
   // black-and-white embed pulls the player into the same palette as
-  // everything else, with nothing having to read the filter's state.
+  // everything else.
+  //
+  // It gets there the same way .groove-vinyl__tint does - reading
+  // `--color-grade-flat`, which is that exact computation done once in JS -
+  // rather than by carrying `filter: url(#landscape-color-grade)` and making
+  // the browser re-rasterize this whole 16:9 box on every one of the filter's
+  // ticks to arrive at a single flat color. The cross-origin iframe underneath
+  // is unaffected either way: `mix-blend-mode: color` doesn't care how the
+  // tint got its color. The transition is what turns that variable's slow 8s
+  // step (see FLAT_GRADE_TICK_MS) back into a drift; unlike the vinyl tints
+  // there is only ever one of these on screen, so it needs no stagger.
   &__tint {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: #808080;
-    filter: url(#landscape-color-grade);
+    background: var(--color-grade-flat, #808080);
+    transition: background-color 1s ease-in-out;
     mix-blend-mode: color;
     opacity: 0.5;
   }

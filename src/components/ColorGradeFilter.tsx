@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppSelector } from '../store';
+import {
+  buildGradeStops,
+  createGradeClock,
+  gradeFlatColor,
+  gray01,
+  rgbToCss,
+  stopsToTables,
+  TICK_MS,
+  type GradeState,
+} from './colorGrade/gradeClock';
 
 // Maps the landscape's (and bubbles', and background's) grayscale/near-neutral
 // pixels onto a randomly generated dark/mid/light color gradient via an SVG
@@ -16,22 +26,17 @@ import { useAppSelector } from '../store';
 // commonly not GPU-shader accelerated), but sepia+hue-rotate can only ever
 // produce ONE coherent hue-family duotone (and can never recolor true black,
 // since every one of those filter functions preserves (0,0,0)) - a real
-// visual downgrade from an actual per-tone gradient. Given the performance
-// claim couldn't be conclusively verified either way (no real GPU available
-// in the sandbox this was profiled in) and the visual loss was clear and
-// immediate, this reverts to the table-based approach. If it does turn out
-// to be too heavy on real hardware, the next lever is reducing GRADE_STEPS/
-// update frequency/graded area, not the filter technique itself.
+// visual downgrade from an actual per-tone gradient.
+//
+// The palette maths itself lives in colorGrade/gradeClock.ts, not here. This
+// component is only the DOM end of it: it owns the <filter> element, runs the
+// clock, and writes the results out. Keeping the two apart is what lets the
+// flat CSS custom properties below be computed by *the same* code that drives
+// the filter, rather than by a lookalike that drifts away from it.
 export const COLOR_GRADE_FILTER_ID = 'landscape-color-grade';
 
-const HUE_ROTATE_PERIOD_MS = 50_000;
-const GRADE_BLEND_INTERVAL_MS = 55_000;
-const GRADE_BLEND_DURATION_MS = 16_000;
-const TICK_MS = 150;
-const GRADE_STEPS = 25;
-
 // Every element with `filter: url(#landscape-color-grade)` has to be
-// re-rasterized on *every* tick above, whether or not that element itself is
+// re-rasterized on *every* tick, whether or not that element itself is
 // otherwise animating - referencing a filter whose own attributes just
 // changed forces a repaint of it, full stop. That's a fine cost when only a
 // handful of things reference it at once (the landscape image, one open
@@ -40,89 +45,35 @@ const GRADE_STEPS = 25;
 // paying that cost 6-7 times a second for a dozen elements is what read as
 // broad, scroll-independent jank there specifically.
 //
-// So a second, much cheaper channel exists alongside the live filter: a flat
-// CSS custom property holding the *color* a plain mid-gray would currently
+// So a second, much cheaper channel exists alongside the live filter: flat CSS
+// custom properties holding the *color* a given flat input would currently
 // come out as if it really were pushed through the filter (see
-// `flatGradeColor` below - same stop, same hue-rotation, just evaluated once
-// in JS instead of per-pixel in SVG). Written this rarely, and consumed
-// through a slow CSS `transition: background-color`, it gives any tint that
-// doesn't need pixel-level per-tone remapping (a flat circle blended with
-// `mix-blend-mode: color`, e.g. every `.groove-vinyl__tint`) the same slowly-
-// drifting palette without ever touching the SVG filter at all.
+// `gradeFlatColor` in gradeClock.ts - same tables, same hue-rotation, just
+// evaluated once in JS instead of per-pixel in SVG). Anything that paints one
+// colour and has no children can read those instead of ever touching the
+// filter. `--color-grade-flat` is written rarely and consumed through a slow
+// CSS transition, which is what gives the vinyl tints their drift.
 const FLAT_GRADE_TICK_MS = 8_000;
 
-const rand = (min: number, max: number) => min + Math.random() * (max - min);
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  h = ((h % 360) + 360) % 360;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60)        [r, g, b] = [c, x, 0];
-  else if (h < 120)  [r, g, b] = [x, c, 0];
-  else if (h < 180)  [r, g, b] = [0, c, x];
-  else if (h < 240)  [r, g, b] = [0, x, c];
-  else if (h < 300)  [r, g, b] = [x, 0, c];
-  else               [r, g, b] = [c, 0, x];
-  return [r + m, g + m, b + m];
-}
-
-interface Stop { h: number; s: number; l: number; }
-
-// What a flat mid-gray (#808080, i.e. luminance ~0.5) comes out as through
-// the real filter at this instant: the feComponentTransfer table's middle
-// entry *is* the middle stop (see stopsToTables - t=0.5 lands almost exactly
-// there), and the hue-rotate afterward is approximated here as a plain HSL
-// hue shift rather than the SVG spec's RGB rotation matrix - close enough for
-// a low-opacity blended wash, not worth carrying the matrix math twice.
-function flatGradeColor(stops: Stop[], hueDeg: number): string {
-  const mid = stops[1];
-  const [r, g, b] = hslToRgb(mid.h + hueDeg, mid.s, mid.l);
-  return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
-}
-
-function buildGradeStops(): Stop[] {
-  const h0 = rand(0, 360);
-  // Random hue travel across the tonal range: sometimes a moody near-monochrome
-  // duotone, sometimes a wild rainbow sweep from shadows to highlights - e.g.
-  // cyan shadows into magenta highlights, or yellow into blue.
-  const spread = rand(60, 260) * (Math.random() < 0.5 ? 1 : -1);
-  return [
-    // Shadows are kept off pure black and away from max saturation - a
-    // near-black + fully-saturated (esp. red/purple) shadow reads as
-    // "evil"/horror rather than trippy, so the floor is raised and the
-    // saturation ceiling capped a bit.
-    { h: h0,                s: rand(0.45, 0.75), l: rand(0.14, 0.24) },
-    { h: h0 + spread * 0.5, s: rand(0.65, 0.95), l: rand(0.42, 0.58) },
-    { h: h0 + spread,       s: rand(0.35, 0.65), l: rand(0.8, 0.92) },
-  ];
-}
-
-function lerpStops(a: Stop[], b: Stop[], t: number): Stop[] {
-  return a.map((s, i) => ({
-    h: lerp(s.h, b[i].h, t),
-    s: lerp(s.s, b[i].s, t),
-    l: lerp(s.l, b[i].l, t),
-  }));
-}
-
-function stopsToTables(stops: Stop[], steps = GRADE_STEPS) {
-  const r: number[] = [], g: number[] = [], b: number[] = [];
-  for (let i = 0; i < steps; i++) {
-    const t = i / (steps - 1);
-    const [from, to] = t <= 0.5 ? [stops[0], stops[1]] : [stops[1], stops[2]];
-    const localT = t <= 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
-    const [rr, gg, bb] = hslToRgb(
-      lerp(from.h, to.h, localT),
-      lerp(from.s, to.s, localT),
-      lerp(from.l, to.l, localT),
-    );
-    r.push(rr); g.push(gg); b.push(bb);
-  }
-  return { r, g, b };
-}
+// The link colours, by contrast, are written every tick. They used to ride the
+// live filter on the text elements themselves, so this is what keeps them
+// moving exactly as they did before - and the thing being removed in exchange
+// (an SVG filter re-rasterizing live text glyphs 6-7 times a second) is far
+// more expensive than four setProperty calls at the same rate. See Phase 2 of
+// COLOR-GRADE-CROSS-BROWSER.md.
+//
+// Each entry is [css variable, input gray, trailing saturate()] - the inputs
+// being the greys these links used to hand to the filter, and the saturate
+// being the rest of their old `filter` chain. Reproducing that chain here
+// rather than approximating it is the whole point: `filter: url(#...)
+// saturate(0.4)` applies saturate to already-graded colour, and gradeFlatColor
+// does the same, in the same order.
+const LINK_VARS: [name: string, input: number, saturate: number][] = [
+  ['--grade-link',             70, 0.4],
+  ['--grade-link-hover',       25, 0.4],
+  ['--grade-link-dark',       205, 0.4],
+  ['--grade-link-dark-hover', 240, 0.4],
+];
 
 // Firefox measured 650-870ms max frame gaps with this filter sitting above
 // continuously-animating content (vs ~150ms with no filter), independent of
@@ -132,8 +83,19 @@ function stopsToTables(stops: Stop[], steps = GRADE_STEPS) {
 // but produces no visible effect - so it needs the same off-and-fallback
 // treatment rather than silently rendering nothing.
 export function getColorGradeMode(): 'on' | 'off' {
-  return 'on'; // temp disable sniff
   if (typeof window === 'undefined') return 'off';
+
+  // `?grade=on` / `?grade=off` forces the mode, the same way `?perf=` forces
+  // the device tier (see deviceTier.ts). This exists so that checking whether
+  // a given engine can actually render the filter does not require editing
+  // this function and rebuilding - which is how the stale Firefox verdict
+  // above got to be so hard to re-test in the first place. `on` deliberately
+  // overrides the reduced-motion check too, since otherwise it cannot be used
+  // to test on a device that has reduced motion set at the OS level.
+  const forced = new URLSearchParams(window.location.search).get('grade');
+  if (forced === 'on') return 'on';
+  if (forced === 'off') return 'off';
+
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
   const ua = navigator.userAgent;
   if (/firefox/i.test(ua)) return 'off';
@@ -163,43 +125,59 @@ function ColorGradeFilter() {
   }, [showPopup]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--color-grade-flat', flatGradeColor(initialStops, 0));
+    const root = document.documentElement;
+
+    const writeLinkVars = (state: GradeState) => {
+      for (const [name, input, saturate] of LINK_VARS) {
+        root.style.setProperty(name, rgbToCss(gradeFlatColor(gray01(input), state, saturate)));
+      }
+    };
+    const writeFlatVar = (state: GradeState) => {
+      root.style.setProperty('--color-grade-flat', rgbToCss(gradeFlatColor(gray01(128), state)));
+    };
+
+    const initialState: GradeState = { stops: initialStops, tables: initialTables, hueDeg: 0 };
+    writeFlatVar(initialState);
+    writeLinkVars(initialState);
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    let fromStops = initialStops;
-    let toStops = buildGradeStops();
-    let blendStart = performance.now();
-    const hueStart = performance.now();
+    const startedAt = performance.now();
+    const clock = createGradeClock(initialStops, startedAt);
+    let lastTick = -Infinity;
     let lastFlatWrite = 0;
+    let frame = 0;
 
-    const id = window.setInterval(() => {
+    // rAF rather than setInterval, for two reasons. It stops entirely in a
+    // background tab (setInterval is merely throttled to 1Hz), so a tab left
+    // open behind another one stops recomputing 75 table values and rewriting
+    // four SVG attributes every second for nobody. And setInterval can land
+    // mid-frame, letting the SVG attribute write and the custom-property write
+    // paint one frame apart - a palette tear between a graded element and the
+    // graded background behind it. Here every write for a tick happens
+    // synchronously inside one callback, in order.
+    const loop = () => {
+      frame = requestAnimationFrame(loop);
       const now = performance.now();
+      if (now - lastTick < TICK_MS) return;
+      lastTick = now;
 
-      const blendElapsed = now - blendStart;
-      const blendT = Math.min(1, blendElapsed / GRADE_BLEND_DURATION_MS);
-      const currentStops = blendT >= 1 ? toStops : lerpStops(fromStops, toStops, blendT);
-      const tables = stopsToTables(currentStops);
-      funcRRef.current?.setAttribute('tableValues', tables.r.join(' '));
-      funcGRef.current?.setAttribute('tableValues', tables.g.join(' '));
-      funcBRef.current?.setAttribute('tableValues', tables.b.join(' '));
+      const state = clock.sample(now);
 
-      if (blendElapsed >= GRADE_BLEND_INTERVAL_MS) {
-        fromStops = toStops;
-        toStops = buildGradeStops();
-        blendStart = now;
-      }
+      funcRRef.current?.setAttribute('tableValues', state.tables.r.join(' '));
+      funcGRef.current?.setAttribute('tableValues', state.tables.g.join(' '));
+      funcBRef.current?.setAttribute('tableValues', state.tables.b.join(' '));
+      hueRef.current?.setAttribute('values', String(state.hueDeg));
 
-      const hueElapsed = (now - hueStart) % HUE_ROTATE_PERIOD_MS;
-      const hueDeg = (hueElapsed / HUE_ROTATE_PERIOD_MS) * 360;
-      hueRef.current?.setAttribute('values', String(hueDeg));
+      writeLinkVars(state);
 
       if (now - lastFlatWrite >= FLAT_GRADE_TICK_MS) {
         lastFlatWrite = now;
-        document.documentElement.style.setProperty('--color-grade-flat', flatGradeColor(currentStops, hueDeg));
+        writeFlatVar(state);
       }
-    }, TICK_MS);
-    return () => clearInterval(id);
-  }, [initialStops]);
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [initialStops, initialTables]);
 
   return (
     <svg aria-hidden focusable="false" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>

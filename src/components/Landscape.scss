@@ -483,12 +483,13 @@ div.landscape--2-enter.landscape--2-enter-active {
       // Excludes the button below - it sets its own hover-independent text
       // color rather than following plain-link colors. Also excludes icon
       // links (the contact-details social icons): they have no visible text
-      // for this color to apply to, and this rule only overrides the input
-      // gray - the color-grade filter itself is shared with light mode below.
+      // for this color to apply to. These are the dark-mode counterparts of
+      // the two vars the light-mode rule below uses, computed from the lighter
+      // input grays dark mode needs - same mechanism, same fallback contract.
       a:not(.popup-window-button):not(:has(img)) {
-        color: rgb(205, 205, 205);
+        color: var(--grade-link-dark, rgb(205, 205, 205));
         &:hover {
-          color: rgb(240, 240, 240);
+          color: var(--grade-link-dark-hover, rgb(240, 240, 240));
         }
       }
 
@@ -884,31 +885,44 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
-  // Plain text links ride the same #landscape-color-grade filter the
-  // parchment texture and button above use, rather than a color hardcoded
-  // to look good against only one slice of the shifting gradient (that used
-  // to read as an oddly-blue outlier once the grade drifted elsewhere, in
-  // both light and dark mode). The color below is the filter's *input* - a
-  // near-neutral gray - rather than the color actually shown: the filter
-  // remaps it per-channel using the gradient, with lightness picking which
-  // point of it comes out, so light/dark mode still pick different grays to
-  // stay legible against their respective parchment.
+  // Plain text links follow the same drifting gradient the parchment texture
+  // and button above do, rather than a color hardcoded to look good against
+  // only one slice of it (that used to read as an oddly-blue outlier once the
+  // grade drifted elsewhere, in both light and dark mode).
+  //
+  // They used to get there by carrying `filter: url(#landscape-color-grade)
+  // saturate(0.4)` themselves, with the gray below as the filter's *input*.
+  // That worked, but it made an SVG filter re-rasterize live text glyphs on
+  // every one of the filter's ticks, 6-7 times a second - the most expensive
+  // and most fragile thing the grade touched. Since this element paints one
+  // flat color and the filter's output for one flat input is itself one flat
+  // color, the exact same result can be computed once in JS and handed over as
+  // a custom property (see LINK_VARS in ColorGradeFilter.tsx, which reproduces
+  // this precise chain - grade, then saturate(0.4) - rather than approximating
+  // it). No filter on text any more, and these links keep working in any
+  // future mode that has a live palette but no usable SVG filter.
+  //
+  // The fallback in each var() is exactly the old filter *input* gray, so with
+  // the grade off (Firefox, Safari, reduced-motion - see getColorGradeMode in
+  // ColorGradeFilter.tsx) nothing is written, the fallback applies, and the
+  // page renders byte-identically to how it did before. Light and dark mode
+  // still pick different grays to stay legible against their own parchment.
   a:not(.popup-window-button):not(:has(img)) {
     position: relative;
-    color: rgb(70, 70, 70);
-    filter: url(#landscape-color-grade) saturate(0.4);
+    color: var(--grade-link, rgb(70, 70, 70));
     transition: color 0.25s ease;
 
     // A faint underline, always present rather than hover-only - relying on
     // the color difference alone to mark these as links was too subtle once
-    // Firefox's near-black filter input color (this rule's own `color`, see
-    // above) ended up on screen undistorted: Firefox skips the color grade
-    // entirely (see getColorGradeMode in ColorGradeFilter.tsx), so there the
-    // link color isn't remapped through the gradient at all and just reads as
-    // a dark, easy-to-miss gray almost indistinguishable from body text.
-    // `background: currentColor` (rather than text-decoration) so it rides
-    // the very same element filter as the text it's under, staying visually
-    // tied to it as the grade shifts.
+    // the near-black fallback color above (this rule's own `color` when no
+    // palette is running) ended up on screen undistorted. Firefox and Safari
+    // both skip the color grade entirely (see getColorGradeMode in
+    // ColorGradeFilter.tsx), so there the link color isn't remapped through
+    // the gradient at all and just reads as a dark, easy-to-miss gray almost
+    // indistinguishable from body text.
+    // `background: currentColor` (rather than text-decoration) so it follows
+    // the text's own color for free, whether that color is coming from the
+    // graded custom property or from the ungraded fallback.
     &::after {
       content: '';
       position: absolute;
@@ -922,7 +936,7 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
 
     &:hover {
-      color: rgb(25, 25, 25);
+      color: var(--grade-link-hover, rgb(25, 25, 25));
 
       &::after {
         opacity: 1;
@@ -1523,8 +1537,8 @@ img.project-gallery-fullscreen__image {
     opacity: 0.55;
   }
 
-  // Without the SVG color grade running (Firefox, or reduced-motion - see
-  // getColorGradeMode in ColorGradeFilter.tsx), the well sprite itself falls
+  // Without the SVG color grade running (Firefox, Safari, or reduced-motion -
+  // see getColorGradeMode in ColorGradeFilter.tsx), the well sprite falls
   // back to its native black-and-white art, but this glow's own hardcoded
   // warm cream/orange gradient isn't part of that graded image - it's a
   // plain CSS background, so it keeps its color regardless and ends up as an

@@ -70,6 +70,17 @@ body, #root {
   background-color: #282c34;
   background-repeat: repeat;
   background-size: cover;
+  // This group is re-filtered constantly - both because the filter's own
+  // attributes tick, and because its contents (sunrays on a 120s rotation, the
+  // shine pulse, the animated objects and creatures) never stop moving, and
+  // any change inside a filtered group re-runs the filter over the whole
+  // group. Pinning it as its own compositor layer means that re-filtering
+  // happens in isolation instead of dragging its surroundings into the same
+  // repaint. It already establishes a stacking context and a containing block
+  // for fixed descendants via `filter` itself, so this adds no new layout
+  // consequence - see the note on .color-grade-background below for why that
+  // property matters here.
+  will-change: filter;
 }
 
 // A dedicated, always-present layer behind everything so the page's base
@@ -90,6 +101,13 @@ body, #root {
   background-color: #282c34;
   background-repeat: repeat;
   background-size: cover;
+  // Viewport-sized and re-rasterized on every tick of the filter, so it is the
+  // largest single graded surface on the page. Unlike .color-grade-layer its
+  // *contents* are static (it is an empty div with a tiled background), which
+  // makes it the one big graded group that genuinely only repaints on the
+  // filter's tick - and therefore the one where promoting it to its own layer
+  // buys the most per tick.
+  will-change: filter;
 }
 
 // A popup's text needs to stay readable, so the grading smoothly backs off

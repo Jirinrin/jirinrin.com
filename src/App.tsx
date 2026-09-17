@@ -11,8 +11,18 @@ import ColorGradeFilter, { getColorGradeMode } from './components/ColorGradeFilt
 
 import './App.scss';
 
+// Diagnostics only, and lazily imported so none of it reaches the normal
+// bundle: `?gradeprobe=1` mounts a panel that shows whether this engine can
+// actually render the colour grade. See GradeProbeOverlay.tsx - it exists so
+// that question can be answered on a device you cannot attach an inspector to.
+const GradeProbeOverlay = React.lazy(() => import('./components/colorGrade/GradeProbeOverlay'));
+
 function App() {
   const gradeEnabled = useMemo(() => getColorGradeMode() === 'on', []);
+  const showProbe = useMemo(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('gradeprobe'),
+    [],
+  );
 
   return (
     <CookiesProvider>
@@ -21,6 +31,11 @@ function App() {
         <div className={`App${gradeEnabled ? '' : ' color-grade-off'}`}>
           {gradeEnabled && <ColorGradeFilter />}
           {gradeEnabled && <div className="color-grade-background color-grade" aria-hidden />}
+          {showProbe && (
+            <React.Suspense fallback={null}>
+              <GradeProbeOverlay />
+            </React.Suspense>
+          )}
           <Navbar showAboutOptions={false} />
           <div id="main">
             <ServiceBubbles />
