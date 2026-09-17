@@ -157,6 +157,57 @@ body, #root {
 //            layers stacked over the landscape. If the art colours up without
 //            them, it is the memory spike the comment at the top of
 //            Landscape.scss predicted, not blending as such.
+// The candidate fixes. noanim proved the cause but is not usable as one: it
+// costs every animation on the page. Each of these instead tries to keep the
+// filtered group flattened while its contents still animate, so that a
+// promoted descendant composites through the ancestor's filter rather than
+// past it. They are one-liners with different side effects, and which of them
+// WebKit actually honours is a question only the device can answer - hence a
+// knob rather than a guess.
+//
+// fixa - isolation: isolate. Cheapest and most targeted: forces the group to
+//        be its own compositing root without claiming anything about layout.
+// fixb - contain: paint. Promises descendants never paint outside the box,
+//        which lets the engine treat the group as one unit. Riskier here: the
+//        landscape art deliberately overflows (negative bottom offsets), so
+//        watch for clipped art.
+// fixc - transform: translateZ(0). The old reliable, but it makes the group a
+//        containing block for fixed descendants - the reason .color-grade-
+//        background exists at all - so check the navbar and popup backdrop.
+// fixd - backface-visibility: hidden, the gentler cousin of fixc.
+.grade-bisect-fixa {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    isolation: isolate !important;
+  }
+}
+
+.grade-bisect-fixb {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    contain: paint !important;
+  }
+}
+
+.grade-bisect-fixc {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    transform: translateZ(0) !important;
+  }
+}
+
+.grade-bisect-fixd {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+  }
+}
+
 // noanim    - stop every animation and compositor hint inside the graded
 //             groups. A running compositable animation promotes an element to
 //             its own layer, and a promoted layer can be composited past an
