@@ -128,10 +128,15 @@ function stopsToTables(stops: Stop[], steps = GRADE_STEPS) {
 // continuously-animating content (vs ~150ms with no filter), independent of
 // whether the filter's values ever change - a bad trade for a cosmetic
 // effect, so Firefox still gets no color grade rather than a janky one.
+// Safari (desktop and iOS) doesn't render this filter at all - it mounts
+// but produces no visible effect - so it needs the same off-and-fallback
+// treatment rather than silently rendering nothing.
 export function getColorGradeMode(): 'on' | 'off' {
   if (typeof window === 'undefined') return 'off';
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
-  if (/firefox/i.test(navigator.userAgent)) return 'off';
+  const ua = navigator.userAgent;
+  if (/firefox/i.test(ua)) return 'off';
+  if (/safari/i.test(ua) && !/chrome|chromium|crios|android/i.test(ua)) return 'off';
   return 'on';
 }
 
