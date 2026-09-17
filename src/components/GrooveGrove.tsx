@@ -6,7 +6,11 @@ import ReactMarkdown from 'react-markdown';
 import VINYLS, { getCover, GROVE_TITLE, GROVE_INTRO } from '../assets/groove-grove';
 import type { GrooveVinyl, SeriesEntry } from '../assets/groove-grove';
 
-import groveImg from '../assets/grove.png';
+// grove.webp/grove-wide.webp, not the source PNGs next to them (grove.png is
+// the original artwork; grove-wide.png is an AI-extended, wider companion
+// stitched from two generations - see GroveTrees below for why it exists).
+import groveImg from '../assets/grove.webp';
+import groveWideImg from '../assets/grove-wide.webp';
 // vinyl.webp, not the 743KB source PNG next to it: the record is never drawn
 // wider than ~208px.
 import vinylImg from '../assets/vinyl.webp';
@@ -1149,7 +1153,25 @@ function GrooveGrove({ open, onClose }: GrooveGroveProps) {
             transition={{ duration: 1.25, ease: [0.16, 0.86, 0.24, 1] }}
             aria-hidden
           >
-            <img src={groveImg} alt="" className="groove-trees__img" />
+            {/* grove.png's own ratio (3.2:1) keeps demanding more height as
+                the screen gets wider than tall (a plain 1920x1080 monitor
+                alone would ask for 55vh - see .groove-trees in the
+                stylesheet), so past "wider than tall" the browser swaps in
+                grove-wide.webp instead - a ~7.7:1 companion with the real
+                grove.png pixel-perfect in the centre and two AI-generated
+                flanking panels (same art style, a genuinely different tree
+                arrangement each - not a repeat of the centre or of each
+                other) crossfaded onto its sides. That ratio is wide enough
+                to stay under the height floor for everything up to a
+                genuinely ultrawide monitor, so in practice this covers
+                nearly every landscape screen, not just extreme ones - the
+                breakpoint has to match .groove-trees's own media query
+                exactly or the box and the image it's showing fall out of
+                sync. */}
+            <picture>
+              <source srcSet={groveWideImg} media="(min-aspect-ratio: 1/1)" />
+              <img src={groveImg} alt="" className="groove-trees__img" />
+            </picture>
           </motion.div>
 
           <button className="groove-close" onClick={onClose} aria-label="Close">×</button>
