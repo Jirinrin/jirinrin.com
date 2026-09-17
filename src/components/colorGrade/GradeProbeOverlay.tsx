@@ -37,6 +37,30 @@ const LIVE_TABLES = [
 
 const SW = 22;
 
+// The sizes to try, in CSS pixels of height at full width. iOS Safari drops a
+// filter on a composited layer past some undocumented size, and does it
+// silently - no console warning, no fallback, the element simply renders
+// unfiltered. Finding roughly where that happens on the actual device is the
+// whole point of this ladder, because .color-grade-layer is far larger than
+// anything the earlier version of this panel tested (it used a 46px strip and
+// called it "large", which proved nothing).
+const SIZE_LADDER = [500, 1200, 2500, 5000];
+
+// Each rung is clipped to a thin window so the panel stays readable - the
+// filtered element underneath is still its full stated height, which is what
+// the engine is being asked about.
+const CLIP_H = 34;
+
+function measure(selector: string): string {
+  const el = document.querySelector(selector);
+  if (!el) return 'not in DOM';
+  const r = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const filter = cs.filter && cs.filter !== 'none' ? 'filter:yes' : 'filter:NONE';
+  const wc = cs.willChange && cs.willChange !== 'auto' ? `wc:${cs.willChange}` : 'wc:-';
+  return `${Math.round(r.width)}x${Math.round(r.height)} ${filter} ${wc}`;
+}
+
 const swatch: React.CSSProperties = {
   width: SW,
   height: SW,
@@ -83,6 +107,19 @@ function GradeProbeOverlay() {
         getComputedStyle(document.documentElement).getPropertyValue('--color-grade-flat').trim() || '(unset)',
       );
     }, 700);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const [sizes, setSizes] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const read = () => setSizes({
+      '.color-grade-layer': measure('.color-grade-layer'),
+      '.color-grade-background': measure('.color-grade-background'),
+      '.ServiceBubbles': measure('.ServiceBubbles'),
+      '#Landscape-container': measure('#Landscape-container'),
+    });
+    read();
+    const id = window.setInterval(read, 1500);
     return () => window.clearInterval(id);
   }, []);
 
@@ -155,6 +192,16 @@ function GradeProbeOverlay() {
         --color-grade-flat: <b>{flat}</b>
       </div>
 
+      {/* The actual graded elements, measured on this device. If one of these
+          is far larger than the first size in the ladder below that fails,
+          that is the answer. */}
+      <div style={{ fontSize: 10, opacity: 0.8, marginBottom: 6, lineHeight: 1.5 }}>
+        <div>.color-grade-layer &nbsp; <b>{sizes['.color-grade-layer']}</b></div>
+        <div>.color-grade-background &nbsp; <b>{sizes['.color-grade-background']}</b></div>
+        <div>.ServiceBubbles &nbsp; <b>{sizes['.ServiceBubbles']}</b></div>
+        <div>#Landscape-container &nbsp; <b>{sizes['#Landscape-container']}</b></div>
+      </div>
+
       <div
         style={{
           padding: '5px 7px',
@@ -180,15 +227,51 @@ function GradeProbeOverlay() {
       <div style={rowLabel}>C. url() + will-change: filter &mdash; added in the phase 4 pass</div>
       <Ramp style={{ filter: `url(#${PROBE_FILTER_ID})`, willChange: 'filter' }} />
 
-      <div style={rowLabel}>D. url() on a large layer &mdash; ios filtered-layer limits</div>
-      <div style={{ filter: `url(#${PROBE_FILTER_ID})`, width: '100%', height: 46, position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgb(128,128,128)' }} />
-        <div style={{ position: 'absolute', inset: 0 }}>
-          {expected.map(e => (
-            <span key={e.input} style={{ ...swatch, height: 46, background: `rgb(${e.input},${e.input},${e.input})` }} />
-          ))}
-        </div>
+      <div style={rowLabel}>
+        D. url() on progressively larger layers &mdash; ios filtered-layer limits.
+        the first height that goes grey is the ceiling.
       </div>
+      {SIZE_LADDER.map(h => (
+        <div key={h} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <span style={{ fontSize: 10, opacity: 0.6, width: 52, flex: '0 0 auto' }}>{h}px</span>
+          <div style={{ height: CLIP_H, overflow: 'hidden', flex: '1 1 auto' }}>
+            <div style={{ filter: `url(#${PROBE_FILTER_ID}) saturate(1)`, width: '100%', height: h }}>
+              {expected.map(e => (
+                <span
+                  key={e.input}
+                  style={{ ...swatch, height: CLIP_H, background: `rgb(${e.input},${e.input},${e.input})` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <div style={rowLabel}>
+        D2. same, but with will-change: filter &mdash; what .color-grade-layer now carries
+      </div>
+      {SIZE_LADDER.map(h => (
+        <div key={h} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <span style={{ fontSize: 10, opacity: 0.6, width: 52, flex: '0 0 auto' }}>{h}px</span>
+          <div style={{ height: CLIP_H, overflow: 'hidden', flex: '1 1 auto' }}>
+            <div
+              style={{
+                filter: `url(#${PROBE_FILTER_ID}) saturate(1)`,
+                willChange: 'filter',
+                width: '100%',
+                height: h,
+              }}
+            >
+              {expected.map(e => (
+                <span
+                  key={e.input}
+                  style={{ ...swatch, height: CLIP_H, background: `rgb(${e.input},${e.input},${e.input})` }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
 
       <div style={rowLabel}>
         E. live setAttribute rewrite &mdash; must ALTERNATE (now showing table {liveFlip + 1}/2)
