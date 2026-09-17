@@ -12,3 +12,22 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+/* Mobile Safari/Chrome paint a grey-blue box over any element you press (and
+   over ::before/::after that belong to it), which looks awful on the glass
+   bubbles and links. Kill it site-wide; `transparent` is the only value that
+   reliably removes it. */
+html,
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The other half of the "blue box on press": browsers also draw the default
+   focus ring when a touch/mouse press moves focus. Drop it only in that case -
+   :focus-visible (keyboard/assistive navigation) keeps its outline untouched,
+   so this is not an accessibility regression. */
+:focus:not(:focus-visible) {
+  outline: none;
+}

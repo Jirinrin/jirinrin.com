@@ -20,7 +20,15 @@
   position: relative;
   width: 100%;
   max-width: 1400px;
+  // 100vh on mobile is the *large* viewport (as if the browser's URL bar were
+  // retracted), while the backdrop this sits in is `position: fixed` and so
+  // sized to the visible viewport. Being bottom-aligned (align-items: flex-end)
+  // in a shorter parent, the extra height all overflowed off the *top* of the
+  // screen, taking the title with it. 100dvh tracks the actually-visible
+  // viewport; the 100vh above stays as the fallback for browsers without dvh
+  // (and is identical to dvh on desktop).
   height: 100vh;
+  height: 100dvh;
   background: transparent;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -48,7 +56,11 @@
   );
 
   @media (max-width: 700px) {
-    padding: 3rem 1.1rem 4rem;
+    // Top padding has to clear the 3rem mask fade above (at exactly 3rem the
+    // title's ascenders/glow still sit inside the fade and read as cut off),
+    // plus whatever notch/status bar the device reserves.
+    padding: calc(4.25rem + env(safe-area-inset-top, 0px)) 1.1rem
+      calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -7,10 +7,15 @@ $text-shadow-spread: 0.03;
 $text-shadow-opacity: 0;
 $text-shadow-plus: 0.6;
 
+// Shared by the nav and the centre-name anchor, which has to line up with the
+// nav's content box to stay vertically where the title used to sit.
+$nav-padding-top: 2vh;
+$nav-padding-bottom: 4vh;
+
 nav {
   position: fixed;
   top: 0;
-  padding: 2vh 0 4vh 0;
+  padding: $nav-padding-top 0 $nav-padding-bottom 0;
   background: linear-gradient(rgba(0, 0, 0, 0.644), rgba(0, 0, 0, 0.01) 75%, rgba(0, 0, 0, 0));
   background-blend-mode: multiply;
   width: 100%;
@@ -25,6 +30,26 @@ nav {
 
 .nav-filler {
   flex-grow: 10;
+}
+
+// The title is centred on the viewport instead of on the space left over by the
+// side links: those are of unequal width (ABOUT vs the longer PROJECTS), which
+// in plain flex flow drags the title off-centre. Taking it out of flow and
+// spanning the nav's content box centres it regardless of what's beside it.
+.center-name-anchor {
+  position: absolute;
+  top: $nav-padding-top;
+  bottom: $nav-padding-bottom;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  // Full-width box, so only the title itself may catch clicks (the nav items
+  // set pointer-events back to all).
+  pointer-events: none;
 }
 
 li.nav-item {
@@ -80,6 +105,9 @@ li.nav-item {
       display: flex;
       flex-direction: column;
       text-align: center;
+      // Hug the text inside the full-width anchor, rather than inheriting the
+      // nav items' flex-grow and stretching the hit area across the viewport.
+      flex: 0 0 auto;
 
       p {
         margin: 0;

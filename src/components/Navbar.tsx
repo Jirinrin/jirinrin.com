@@ -153,23 +153,27 @@ function Navbar({ showAboutOptions: initialShowAboutOptions = false }: NavbarPro
         {displayForThreshold2() && renderNavItem('about',   () => goTo({ landscape: 1 }))}
 
         <div className="nav-filler"></div>
-        <li
-          onClick={() => setOverlayMode(true)}
-          className="nav-item"
-          id="center-name"
-          style={{
-            transform: `translateY(${yOffset}px) scale(${scale})`
-          }}
-        >
-          <p>時鈴々</p>
-          <p
-            className="subtitle"
-            style={{ opacity: yOffset / BASE_Y_OFFSET }}
+        {/* The anchor takes the title out of the flex flow so it's centred on the
+            viewport; the scroll transform stays on the li itself. */}
+        <div className="center-name-anchor">
+          <li
+            onClick={() => setOverlayMode(true)}
+            className="nav-item"
+            id="center-name"
+            style={{
+              transform: `translateY(${yOffset}px) scale(${scale})`
+            }}
           >
-            Jiri Swen <br/>
-            transdimensional tree elf
-          </p>
-        </li>
+            <p>時鈴々</p>
+            <p
+              className="subtitle"
+              style={{ opacity: yOffset / BASE_Y_OFFSET }}
+            >
+              Jiri Swen <br/>
+              transdimensional tree elf
+            </p>
+          </li>
+        </div>
         <div className="nav-filler"></div>
 
         {displayForThreshold2() && renderNavItem('projects', () => goTo({ landscape: 2 }))}

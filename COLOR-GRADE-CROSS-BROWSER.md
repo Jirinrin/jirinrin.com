@@ -2,22 +2,38 @@
 
 Research notes + staged plan. Not started — Phase 0 is a measurement and may collapse most of the rest.
 
+Test results so far: **Safari, 2026-09-17 — the SVG colour grade filter does not work, same as Firefox.**
+Firefox remains unmeasured on real hardware (that is Phase 0). No other browser has been tested.
+
 ## The problem
 
 `#landscape-color-grade` ([ColorGradeFilter.tsx](src/components/ColorGradeFilter.tsx)) maps the site's
 greyscale artwork onto a drifting 3-stop HSL gradient via `feComponentTransfer type="table"` plus a
 `feColorMatrix` hue rotation, rewritten every 150 ms. It is **switched off on Firefox by a UA sniff**
-([ColorGradeFilter.tsx:134](src/components/ColorGradeFilter.tsx#L134)) and has **never been tested on
-Safari** — Safari falls through to the final `return 'on'` and gets the full grade today, unverified.
+([ColorGradeFilter.tsx:134](src/components/ColorGradeFilter.tsx#L134)).
+
+**Safari — tested 2026-09-17, confirmed broken.** The grade does not work on Safari either, in exactly
+the same way it does not on Firefox. In its current state Safari needs the *identical* treatment to
+Firefox: fall back to the whole site black-and-white. Safari is worse off than Firefox today, because it
+is not caught by the sniff — it falls through to the final `return 'on'`, so it mounts the filter, gets
+nothing back from it, and never receives the `.color-grade-off` class
+([App.tsx:21](src/App.tsx#L21)) that the black-and-white fallback rules hang off. So the popup link text
+sits at its raw near-black `rgb(70,70,70)` input colour ([Landscape.scss:765-780](src/components/Landscape.scss#L765-L780))
+and the well glow keeps its warm cream/orange gradient on an otherwise monochrome scene — the two
+regressions the `.color-grade-off` rules exist to prevent.
+
+From here on this document says **"browsers without working SVG filter support for this technique —
+confirmed: Firefox and Safari"** wherever it used to say "Firefox". No other engine has been tested.
 
 Goal: the grade running on all three engines in *exactly* the current style. No hue-rotate approximation,
 no blend-mode duotone — neither can recolour true black, and neither can hit a 3-stop map.
 
 ## What the research found
 
-The framing "Firefox and Safari can't do this" is wrong. `feComponentTransfer` + `feColorMatrix` behind
-`filter: url(#id)` are supported in all three engines and always have been. Two separate problems got
-collapsed into one:
+On paper, `feComponentTransfer` + `feColorMatrix` behind `filter: url(#id)` are supported in all three
+engines and always have been, so the research below treats "Firefox and Safari can't do this" as two
+separate problems that got collapsed into one. **The 2026-09-17 Safari test contradicts the paper answer
+for WebKit specifically** — see point 2 — so read point 1 as still open and point 2 as superseded:
 
 1. **Firefox is a stale performance verdict.** [Firefox 132](https://bugzilla.mozilla.org/show_bug.cgi?id=1906212)
    (Oct 2024) enabled `gfx.webrender.svg-filter-effects` by default, GPU-accelerating exactly the
@@ -29,11 +45,19 @@ collapsed into one:
    WebRender falls back to software rasterisation and SVG filters collapse. The 650–870 ms figure may be
    an artifact of the measuring rig.
 
-2. **Safari is a colour-fidelity question, not a perf one.** Per
+2. **Safari was assumed to be a colour-fidelity question, not a perf one — that assumption is now
+   disproven.** The written research was: per
    [fxtf-drafts#285](https://github.com/w3c/fxtf-drafts/issues/285), Gecko and Blink honour an explicit
    `color-interpolation-filters="sRGB"`; WebKit historically forced linearRGB regardless, which would
    leave the LUT indexed on linearised values and shift every midtone. WebKit changesets from 2022
-   suggest this was fixed, but it is unverified on real Safari — hence the probe in Phase 3.
+   suggest this was fixed. That predicted a *wrong-looking* grade on Safari, not an absent one.
+
+   **Confirmed by test on Safari, 2026-09-17: the filter does not work there at all.** Not a shifted
+   midtone — the grade simply doesn't apply, the same failure as Firefox. So Safari is not (only) a
+   linearRGB question; it is a "does the technique run" question, and in its current state Safari needs
+   the same black-and-white fallback Firefox gets. The linearRGB probe in Phase 3a is still worth
+   building, but it is now the *second* question to ask on Safari, not the first — Phase 0 has to
+   establish *why* nothing renders before pre-warping a table that never gets applied.
 
 Dead ends, recorded so they aren't re-litigated: CSS custom filters / `filter: shader()` were
 [removed from browsers, not shipped late](https://developer.chrome.com/blog/introduction-to-custom-filters-aka-css-shaders);
@@ -95,12 +119,26 @@ locally; Safari goes through BrowserStack.
 - `about:config` → confirm `gfx.webrender.svg-filter-effects` is `true`.
 - Firefox Profiler: max frame gap scrolling the landscape and the Groove Grove, grade on vs. off. Repeat
   with the pref forced `false` to isolate what the acceleration is carrying and predict older Firefox.
-- Same measurement on Safari.
+- Same measurement on Safari — but note the question there has changed. Safari (tested 2026-09-17) shows
+  **no grade at all**, so there is no "grade on vs. off" comparison to make until it renders something.
+  The Safari leg of Phase 0 is therefore a *diagnosis*, not a benchmark: in the Web Inspector, confirm
+  whether the `<filter>` element is reached at all, whether the `filter: url(#…)` on the HTML elements
+  resolves or is dropped as an invalid reference, and whether the live `setAttribute` rewrites of
+  `tableValues` / `values` are picked up. Only once it renders does the frame-gap measurement mean
+  anything.
 
 **Put the numbers, the Firefox version and the hardware in the commit message.** The existing comment's
 credibility problem is that it states a figure with none of those attached; don't repeat that.
 
-If Firefox is fine, Phases 1–3 still carry their own value, but Phases 5–6 should be dropped.
+If Firefox is fine, Phases 1–3 still carry their own value, but Phases 5–6 should be dropped. Safari no
+longer gates on this: it is already confirmed broken, so whatever Phase 0 concludes about Firefox, Safari
+needs the fallback treatment until something changes.
+
+**Ship the sniff widening ahead of all of this.** Independent of Phase 0's outcome, Safari today renders
+a half-broken page (mounted filter, no grade, no `.color-grade-off` fallback). Widening
+`getColorGradeMode()` to return `'off'` for Safari as well — see Phase 3 — is a small, self-contained fix
+that puts Safari into the same deliberate black-and-white state Firefox is already in, and it does not
+have to wait for the measurement work.
 
 ---
 
@@ -143,16 +181,23 @@ filter produces for mid-grey at that instant.
 
 ## Phase 2 — Class A: take the filter off flat-colour elements entirely
 
-Exact and cheap, but **not** an independent Firefox win — see the caveat below. Its real value is that
+Exact and cheap, but **not** an independent win on the browsers without working SVG filter support for
+this technique (confirmed: Firefox and Safari) — see the caveat below. Its real value is that
 it takes the SVG filter off the most fragile surfaces it touches, shrinking what Phases 3-6 have to carry.
 
-> **This does not colour anything on Firefox by itself.** Firefox is `'off'` wholesale today, so
-> `ColorGradeFilter` is never mounted ([App.tsx:22](src/App.tsx#L22)) and no custom properties are
+> **This does not colour anything on Firefox or Safari by itself.** Firefox is `'off'` wholesale today,
+> so `ColorGradeFilter` is never mounted ([App.tsx:22](src/App.tsx#L22)) and no custom properties are
 > written — the site is deliberately monochrome there. A graded link on an otherwise black-and-white page
 > would be the same mistake commit `5b056b3` fixed for the well glow. So every var introduced here must
 > carry a fallback equal to today's ungraded input colour (`color: var(--grade-link, rgb(70,70,70))`),
 > leaving `'off'` mode byte-identical. These elements only start grading on Firefox once Phase 0/3 turns
 > the grade on there.
+>
+> **Safari is the same case once the sniff is widened.** Until then Safari is nominally `'on'`, so
+> `ColorGradeFilter` *is* mounted and the custom properties *are* written — meaning a Class A element
+> would pick up a real graded colour on Safari while everything still on the SVG filter around it stays
+> grey. That is exactly the mixed-mode look this caveat exists to forbid, and it is a second reason to
+> land the Phase 3 sniff widening before Phase 2 rather than after.
 
 - **[Landscape.scss:742-746](src/components/Landscape.scss#L742-L746)** — popup anchor text. Today:
   `color: rgb(70,70,70); filter: url(#landscape-color-grade) saturate(0.4)`. The input is a flat grey and
@@ -175,6 +220,36 @@ it takes the SVG filter off the most fragile surfaces it touches, shrinking what
 The sniff is the actual bug: it hard-codes one measurement from an unknown Firefox on unknown hardware
 into a permanent rule. Replace with three runtime signals.
 
+### 3z. First, widen the sniff to match Safari (do this before the rest)
+
+The detection mechanism is a single function: **`getColorGradeMode()` in
+[ColorGradeFilter.tsx:131-136](src/components/ColorGradeFilter.tsx#L131-L136)**, whose only browser test
+is the one-line UA sniff at [ColorGradeFilter.tsx:134](src/components/ColorGradeFilter.tsx#L134):
+
+```ts
+if (/firefox/i.test(navigator.userAgent)) return 'off';
+```
+
+That is the exact line that must be widened to also match Safari, so Safari lands in `'off'` and gets the
+same black-and-white fallback Firefox gets. Two things to get right while doing it:
+
+- **A naive `/safari/i` test matches Chrome and Edge too** — every Chromium UA carries `Safari/537.36`.
+  Either negate the Chromium tokens (`/^((?!chrome|chromium|crios|edg|android).)*safari/i`) or reuse
+  `react-device-detect`, which is already a dependency and already supplies the sibling flag `isChromium`
+  used by `applyBrowserConditionals`
+  ([LandscapeContainer.tsx:125-131](src/components/LandscapeContainer.tsx#L125-L131)). Its `isSafari`
+  excludes Chromium for you, and that keeps this file's browser detection consistent with the rest of the
+  codebase rather than introducing a second hand-rolled regex.
+- **Update the three stale comments that name Firefox alone**, since they are the only in-code explanation
+  of why the fallback exists: the block above `getColorGradeMode`
+  ([ColorGradeFilter.tsx:127-130](src/components/ColorGradeFilter.tsx#L127-L130)), the popup-link
+  underline rationale ([Landscape.scss:765-780](src/components/Landscape.scss#L765-L780)), and the
+  `.color-grade-off` well-glow note ([Landscape.scss:1375](src/components/Landscape.scss#L1375)). All
+  three say "Firefox"; all three now mean "Firefox and Safari".
+
+Everything below (3a–3d) still replaces the sniff with measurement in the end. 3z is the interim
+correctness fix that stops Safari shipping a half-graded page while that work happens.
+
 ### 3a. Capability + colour-space probe
 
 New `src/utils/colorGradeProbe.ts`. Render a known greyscale ramp through a *self-contained copy* of the
@@ -182,6 +257,11 @@ filter inside an SVG `data:` URL loaded into an `<img>`, `drawImage` to a 2D can
 `data:` URLs do not taint the canvas, so readback is legal.
 
 - Ramp unchanged ⇒ engine ignored the filter ⇒ `'off'`.
+  **This branch now has a known-positive test case:** Safari should hit it. If the probe comes back
+  "filter applied" on the same Safari where the page visibly has no grade, the probe is measuring the
+  wrong thing (SVG-in-`<img>` vs. CSS `filter: url()` on an HTML element — see the caveat below) and
+  cannot be trusted to replace the sniff. Run it on Safari first; it is the cheapest available check on
+  whether 3a works at all.
 - Compare returned midtones against both an sRGB- and a linearRGB-interpolated prediction to determine
   which space the engine used.
 
@@ -189,6 +269,10 @@ Note in the code comment that this measures SVG-in-`<img>`, not CSS `filter: url
 there is no API to read back the latter. Strong evidence, not proof.
 
 ### 3b. Pre-warp the table for linearRGB engines
+
+Only relevant on an engine that renders the filter at all — which, as of 2026-09-17, does not include
+Safari. Keep this step; it is what makes Safari's *colour* right once its *rendering* is fixed, but it
+cannot be tested there until then.
 
 If 3a reports linearRGB, don't disable anything — compensate, so Safari renders the same picture. The
 engine computes `out = lin2srgb(LUT(srgb2lin(c)))`; to make that equal the intended `LUT_target(c)`,
@@ -361,16 +445,20 @@ treeline art renders at the wrong crop and the layout still looks fine, so nobod
 
 1. **Firefox locally** — Firefox Profiler max frame gap, landscape + Groove Grove, grade on vs. off,
    `gfx.webrender.svg-filter-effects` true vs. false. Numbers, version and hardware in the commit message.
-2. **Safari via BrowserStack** — first-ever check. Confirm it renders; screenshot landscape and art
-   gallery against the same palette moment in Chrome. Confirm whether 3a's linearRGB detection fires and
-   whether 3b's pre-warp makes the two match.
+2. **Safari** — no longer a first-ever check: tested 2026-09-17, the grade does **not** render. So this
+   splits in two. (a) With the Phase 3z sniff widening in place, confirm Safari gets `.color-grade-off`
+   and the full black-and-white fallback — same checklist as item 5, run on Safari: well glow neutral,
+   popup link underline readable. (b) Only if later work makes the filter render on Safari: confirm it
+   renders, screenshot landscape and art gallery against the same palette moment in Chrome, and confirm
+   whether 3a's linearRGB detection fires and whether 3b's pre-warp makes the two match.
 3. **Chrome regression check** — Phases 1, 2 and 4 change rendered output for *everyone*. Compare
    landscape, art gallery (all 27 presets), Groove Grove vinyl tints, popup parchment, and graded link
    text before/after.
 4. **Exactness test** — a node test running a 256-step ramp through `gradePixel` and through a CPU
    transcription of the GLSL, asserting max Δ ≤ 1/255. This is what makes "exactly the current style"
    checkable rather than eyeballed.
-5. **Fallback intact** — force `'off'`, confirm the well glow and popup link underline
+5. **Fallback intact** — force `'off'` (the state Firefox and Safari both land in), confirm the well glow
+   and popup link underline
    ([Landscape.scss:1348-1363](src/components/Landscape.scss#L1348-L1363)) still read correctly.
 6. `npm run build` (runs `tsc --noEmit`).
 7. **Lighthouse, both form factors**, against `vite preview` — the perf branch added the recipe (see the

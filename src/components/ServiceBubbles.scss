@@ -147,6 +147,14 @@
   text-align: center;
   cursor: pointer;
 
+  // These are links acting as buttons, so on touch there's nothing here worth
+  // selecting or long-pressing: suppress the iOS link callout/preview sheet and
+  // the text-selection flash a double-tap otherwise leaves on the labels. (The
+  // press highlight itself is killed globally in index.css.)
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+
   @include glass-shading;
   backdrop-filter: blur(10px) saturate(1.2);
   -webkit-backdrop-filter: blur(10px) saturate(1.2);

@@ -5,6 +5,41 @@ landscape-container {
   user-select: none;
 }
 
+// The landscape lives at the very bottom of the document (see
+// `.bottom-container` below - it's absolutely positioned against the bottom
+// of #main, whose height comes from the ~210-260vh ServiceBubbles section
+// above it). So "the end of the page" and "the whole graded landscape on
+// screen" are the same moment, and on mobile that's exactly where rubber-band
+// overscroll kicks in.
+//
+// That combination is what made the scene visibly fall apart on phones:
+// rubber-banding past the end doesn't scroll, it *translates the page* past
+// the document's own bounds, which invalidates the raster of everything
+// currently on screen. `.color-grade-layer` is a viewport-sized group carrying
+// `filter: url(#landscape-color-grade)` (see App.scss), so re-rasterising it
+// means re-running the SVG filter into a fresh offscreen buffer - over a
+// region that just grew - for a subtree that also stacks several full-width
+// `mix-blend-mode` layers (#shining-effect, #sunrays, #jiri-head) on top of a
+// multi-thousand-pixel canvas. Under that momentary memory spike mobile
+// WebKit/Blink start dropping layers outright (images vanish) and falling back
+// to painting individual elements *unfiltered* when the filter buffer can't be
+// allocated - which is precisely the "parts disappear and some things lose
+// their colour grading" symptom.
+//
+// Killing the overscroll removes the trigger rather than trying to make the
+// re-raster survivable: there is nothing above or below this page worth
+// rubber-banding to. `none` (not `contain`) so pull-to-refresh at the top goes
+// too - the site is a single SPA page and a stray refresh gesture mid-scroll
+// costs the visitor the whole load. Ordinary scrolling is untouched.
+//
+// Set on both html and body because UAs differ on which one propagates to the
+// viewport, and lives here rather than in App.scss/index.css purely because
+// this is the stylesheet that owns the landscape's own scroll behaviour.
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 #Landscape-container {
   img, svg {
     -webkit-user-drag: none;
@@ -519,23 +554,53 @@ div.landscape--2-enter.landscape--2-enter-active {
     &::before {
       // Same texture, but tiled down the letter's length instead of squashed
       // to fit it: the tile is box-light-small plus a vertically flipped copy
-      // of itself (generated with sharp), so every repeat meets its own
-      // mirror image and the seams disappear. Horizontally it's stretched to
-      // the full box width exactly as before; `auto` height then keeps the
-      // texture's own aspect ratio, making one mirrored tile twice as tall as
-      // the box is wide.
+      // of itself (scripts/gen-letter-tiles.mjs), so every repeat meets its
+      // own mirror image and the seams disappear. Horizontally it's stretched
+      // to the full box width exactly as before.
       background-image: url("../assets/box-light-mirror-tile.png");
-      background-size: 100% auto;
       background-repeat: repeat-y;
+
+      // Belt and braces against the seam ever showing again. The tiles used to
+      // carry the source art's antialiased outer pixel rows - ~5% transparent,
+      // and duplicated by the mirror at *both* joins - so a faint grey line of
+      // the dark landscape behind showed through at every repeat; the tiles are
+      // now flattened to fully opaque, which is the actual fix. This colour is
+      // the mean grey of the two rows that land on a join (printed by the
+      // script), so anything that still slips between repeats - a sub-pixel
+      // rounding gap at a fractional tile height, say - lands on a colour the
+      // texture already has there rather than on the backdrop.
+      background-color: rgb(196, 196, 196);
+
+      // Tile height. On desktop `auto` keeps the texture's own aspect ratio,
+      // making one mirrored tile twice as tall as the box is wide (~2000px on a
+      // 1000px-capped box) - it barely repeats over a letter's length. On a
+      // phone the box is only 85vw (~330px), so the same rule gives a ~660px
+      // tile that repeats five or six times down a long letter and reads as
+      // obviously, cheaply tiled. So below the 1000px breakpoint the tile gets
+      // a floor of 1400px instead: roughly the desktop feel (two-ish repeats
+      // over a long letter) at the cost of stretching the paper grain ~2x
+      // vertically, which is fine - it has no features whose proportions the
+      // eye can check. `max()` rather than a flat 1400px so the tile is only
+      // ever stretched, never squashed: 170vw *is* the natural height of a
+      // 85vw-wide box's tile, so wider phones/tablets slide back to undistorted
+      // on their own before the breakpoint takes over.
+      background-size: 100% max(170vw, 1400px);
+      @media (min-width: 1000px) {
+        background-size: 100% auto;
+      }
     }
   }
 
   // Same dark/light swap as the non-letter ::before above (and same
   // spiral-tower exclusion) - box-dark-mirror-tile is box-dark-small put
-  // through that same mirroring step.
+  // through that same mirroring step. The under-texture seam colour has to be
+  // swapped along with the image: left on the light grey above it would be the
+  // one thing the dark parchment could leak, which is exactly the pale line
+  // this pair of rules exists to keep from ever appearing.
   &.popup-window--letter:not(.popup-window--inverting)::before {
     @media (prefers-color-scheme: dark) {
       background-image: url("../assets/box-dark-mirror-tile.png");
+      background-color: rgb(65, 65, 65);
     }
   }
 
