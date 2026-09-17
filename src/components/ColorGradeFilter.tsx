@@ -106,12 +106,21 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // measurement rather than by a guess: see frameBudgetWatchdog.ts, whose
 // verdict lands in the shared device tier and is read back here.
 //
-// Safari (desktop and iOS) stays off, for an unrelated reason: it doesn't
-// render this filter at all. It mounts and produces no visible effect, so
-// without this it would show a half-graded page - the filter silently doing
-// nothing while the .color-grade-off fallback rules, which fix the well glow
-// and the popup link colour, never get applied. Re-test it with
-// `?gradeprobe=1` (see GradeProbeOverlay.tsx) rather than by editing this.
+// Safari (desktop and iOS) stays off, for an unrelated reason - and a
+// narrower one than this used to claim. The page shows no grade there
+// (tested 2026-09-17), which without this would leave it half-graded: the
+// filter silently doing nothing while the .color-grade-off fallback rules,
+// which fix the well glow and the popup link colour, never get applied.
+//
+// But `?gradeprobe=1` on iPad Safari (2026-09-18) came back clean - a CSS
+// `filter: url(#...)` on a real HTML element runs feComponentTransfer +
+// feColorMatrix correctly there, and in sRGB, matching the spec prediction
+// exactly. So WebKit *can* do this, and whatever breaks on the actual page
+// is something narrower than "no SVG filter support": a live setAttribute
+// rewrite not invalidating the elements referencing the filter, a filtered
+// layer too large for iOS to keep, or the fixed + negative-z-index
+// .color-grade-background. Until that is pinned down the fallback stays.
+// Re-test with `?grade=on` on the device rather than by editing this.
 export function getColorGradeMode(): 'on' | 'off' {
   if (typeof window === 'undefined') return 'off';
 

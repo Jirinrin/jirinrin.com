@@ -11,8 +11,8 @@ deleted, so they don't get re-litigated.
 | Phase 1 — one palette clock, one exact `gradePixel` | **Done.** |
 | Phase 2 — Class A, filter off flat-colour elements | **Done.** |
 | Phase 3z — widen the sniff to Safari | **Done earlier**, in `2d32f79` / `3f1d158`. |
-| Phase 3a — capability + colour-space probe | **Built, deliberately not wired in.** See below. |
-| Phase 3b — pre-warp the table for linearRGB | **Open**, and untestable until Safari renders anything. |
+| Phase 3a — capability + colour-space probe | **Built and validated on Safari**, still deliberately not wired in. See below. |
+| Phase 3b — pre-warp the table for linearRGB | **Dropped.** Safari measured as sRGB; there is nothing to pre-warp. |
 | Phase 3c — frame-budget watchdog | **Done.** It is what allowed the Firefox sniff to go. |
 | Phase 3d — widen the mode type to `full`/`raster`/`off` | **Dropped.** There is no raster mode to name. |
 | Phase 4 — cut the SVG filter's cost | **Partly done.** `will-change` landed; `TICK_MS` and the hue-fold deliberately not. |
@@ -78,10 +78,40 @@ Caching the document height, or reading it once per resize instead of per rAF, i
 cheaper win than anything in this document. **Not attempted here** — it is unrelated to colour grading
 and deserves its own change.
 
-### Safari's leg of Phase 0 is still outstanding
+### Safari's leg of Phase 0 — probe run 2026-09-18, and what it settled
 
-Safari shows **no grade at all**, so there is no "grade on vs. off" benchmark to run until it renders
-something. What is needed is a *diagnosis*, and the tooling for it now exists and needs no inspector:
+**Result: on iPad Safari, rows 1, 2 and 3 all match.** The technique works. Specifically:
+
+- **Row 1 = row 3.** A CSS `filter: url(#…)` on a real HTML element, running `feComponentTransfer` +
+  `feColorMatrix`, produces exactly what the spec says it should. WebKit can do this.
+- **Row 1 matched the *sRGB* prediction, not the linearRGB one.** WebKit is honouring
+  `color-interpolation-filters="sRGB"`; the 2022 changesets did land, and
+  [fxtf-drafts#285](https://github.com/w3c/fxtf-drafts/issues/285) is no longer a live concern here.
+  **This closes Phase 3b** — there is nothing to pre-warp.
+- **Row 1 = row 2.** The SVG-in-`<img>` path agrees with the CSS-on-HTML path on this engine, which is
+  the disagreement 3a was built to look for. The probe is measuring something real. That is one engine's
+  worth of validation, not a general proof, so 3a stays unwired — but it is no longer suspect.
+
+**This does not yet explain the 2026-09-17 observation** that the site shows no grade on Safari, and it
+does not on its own justify removing the sniff. The probe differs from the real thing in three ways, any
+one of which is consistent with "the primitives work but the page is grey":
+
+1. **The probe's filter is static; the site's is not.** The real one rewrites `tableValues` and `values`
+   via `setAttribute` every `TICK_MS`. An engine that applies a filter once but does not invalidate
+   referencing elements on a live attribute rewrite would show a *frozen* palette, which a static swatch
+   cannot distinguish from a working one.
+2. **Scale.** The probe filters 30px swatches. The site filters viewport-sized groups with dozens of
+   animating children inside them. iOS Safari has real limits on filtered layer size and drops them with
+   no signal.
+3. **`.color-grade-background` is `position: fixed; inset: 0; z-index: -1` *and* filtered** — a
+   combination iOS Safari has historically mishandled.
+
+**The decisive test is to load the real site on the device with `?grade=on`.** Coloured and drifting ⇒
+the sniff goes. Coloured but frozen ⇒ cause 1, and the fix is to rebuild the `<filter>` subtree rather
+than mutate its attributes. Still monochrome ⇒ cause 2 or 3, and the way in is to bisect by forcing the
+grade on with `.color-grade-background` removed.
+
+The tooling, for re-running any of this without an inspector:
 
 - Open the site with **`?gradeprobe=1`** on the device. The panel
   ([GradeProbeOverlay.tsx](src/components/colorGrade/GradeProbeOverlay.tsx)) shows three ramps.
@@ -148,14 +178,20 @@ midtones against both an sRGB- and a linearRGB-interpolated prediction.
 
 **It is not connected to `getColorGradeMode()`, on purpose.** It measures SVG-in-`<img>`, which is a
 different code path from `filter: url()` on an HTML element, and there is no API to read back the latter.
-Safari is the known-positive test case: if the probe reports "filter applied" on the same Safari where
-the page visibly has no grade, the probe is measuring the wrong thing and must stay disconnected. Run the
-overlay there before trusting it.
 
-### 3b — pre-warp the table for linearRGB engines — **open**
+Safari was the known-positive test case for that concern, and **as of 2026-09-18 it came back clean**:
+rows 1 and 2 of the overlay agree there, so the probe is not measuring a fiction. It stays unwired anyway,
+because one engine agreeing is not the same as the two paths being equivalent in general, and because the
+site's own Safari problem is evidently *not* the thing this probe measures — see Phase 0 above.
 
-Unchanged and still correct, but it cannot be tested until an engine renders the filter at all, which as
-of 2026-09-17 does not include Safari. If 3a reports linearRGB, compensate rather than disable: the
+### 3b — pre-warp the table for linearRGB engines — **dropped**
+
+**Measured away on 2026-09-18.** Safari's output matched the sRGB prediction, not the linearRGB one, so
+the engine is honouring `color-interpolation-filters="sRGB"` and there is no midtone shift to correct.
+No other engine was ever suspected. The recipe is kept below only in case some future engine is found to
+ignore the attribute; nothing in the codebase implements it.
+
+If 3a ever does report linearRGB, compensate rather than disable: the
 engine computes `out = lin2srgb(LUT(srgb2lin(c)))`, so build the shipped table by sampling in linear
 space — for entry `i`, `x = i/(n−1)`, `value = srgb2lin(LUT_target(lin2srgb(x)))`. Raise `GRADE_STEPS`
 from 25 to 64 for the warped table; resampling through the sRGB curve crowds the shadows and 25 entries
@@ -345,11 +381,11 @@ cannot reference a `<canvas>`.
 ## Verification
 
 1. **Firefox** — done, numbers above, and in the commit message for the sniff removal.
-2. **Safari** — still outstanding, and now the only browser question left. (a) Confirm the
+2. **Safari** — the only browser question left. (a) `?gradeprobe=1`: **done 2026-09-18, rows 1/2/3 all
+   match**, so the primitives work and the interpolation space is sRGB. (b) **Outstanding: load the real
+   site with `?grade=on` on the device** and see whether the landscape is coloured, frozen, or still
+   grey — see Phase 0 for what each outcome means. (c) While the sniff is still in place, confirm the
    `.color-grade-off` fallback reads correctly there: well glow neutral, popup link underline readable.
-   (b) Open `?gradeprobe=1` and compare rows 1, 2 and 3 as described in Phase 0 above. (c) Only if the
-   filter turns out to render: check whether 3a's linearRGB detection fires and whether 3b's pre-warp
-   makes Safari and Chrome match.
 3. **Chrome regression check** — Phases 1, 2 and 4 change rendered output for *everyone*. Compare
    landscape, art gallery (all 27 presets), Groove Grove vinyl tints, popup parchment and graded link
    text before/after. **Expect the vinyl tints to have changed**: that is Phase 1's bug fix, not a
@@ -367,6 +403,7 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- The Safari check in item 2 — the only thing standing between Safari and a decision.
+- **Item 2(b): load the real site on Safari with `?grade=on`.** One tap, and it is the only thing left
+  between Safari and a decision. The probe has already ruled out "WebKit cannot do this".
 - Item 3's Chrome regression pass and item 7's Lighthouse run.
 - `getDocHeight`'s per-frame forced layout, as its own separate change.
