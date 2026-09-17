@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppSelector } from '../store';
+import { measuredTier } from '../utils/deviceTier';
 import {
   buildGradeStops,
   createGradeClock,
@@ -75,13 +76,42 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
   ['--grade-link-dark-hover', 240, 0.4],
 ];
 
-// Firefox measured 650-870ms max frame gaps with this filter sitting above
-// continuously-animating content (vs ~150ms with no filter), independent of
-// whether the filter's values ever change - a bad trade for a cosmetic
-// effect, so Firefox still gets no color grade rather than a janky one.
-// Safari (desktop and iOS) doesn't render this filter at all - it mounts
-// but produces no visible effect - so it needs the same off-and-fallback
-// treatment rather than silently rendering nothing.
+// Whether the colour grade runs at all on this page load. There are only two things
+// left that get decided by a browser's name, and both are about whether the
+// technique *works*, never about whether it is fast enough - that second
+// question is now measured instead, by the frame-budget watchdog.
+//
+// Firefox used to be hard-coded off here, on the strength of a comment
+// claiming 650-870ms max frame gaps with no version, hardware or methodology
+// attached. That was finally re-measured on 2026-09-17, Firefox 155.0
+// (20260903215306) on Windows 11 build 26200, Intel Core Ultra 7 155H, with
+// hardware WebRender confirmed active (ANGLE -> D3D11 -> NVIDIA, in a separate
+// GPU process). Over ~10s captures on both device tiers, with the grade on:
+//
+//   compositor frame interval   median 16.68ms, max 33.4ms (high) / 35.7ms (low)
+//   intervals over 50ms         zero, in either tier, including page load
+//   Renderer-thread markers >50ms   zero
+//   this component's own JS     4 samples ~ 8ms out of 10,330ms (0.08%)
+//
+// A flat 60Hz. The old figure did not reproduce in any form; the values in
+// that band that do exist in the profiles are a RefreshObserver *registration
+// lifetime* marker (872ms, payload "Accessibility notifications") and the
+// parent-process refresh driver idling with no chrome UI to animate - neither
+// of which is a frame gap. So the Firefox test is gone.
+//
+// That is still one machine, and a fast one. The condition the old number most
+// plausibly came from - software WebRender with no usable GPU, which is what
+// the original comment's own "no real GPU available in the sandbox" describes
+// - is real and undetectable by user agent. That case is now covered by
+// measurement rather than by a guess: see frameBudgetWatchdog.ts, whose
+// verdict lands in the shared device tier and is read back here.
+//
+// Safari (desktop and iOS) stays off, for an unrelated reason: it doesn't
+// render this filter at all. It mounts and produces no visible effect, so
+// without this it would show a half-graded page - the filter silently doing
+// nothing while the .color-grade-off fallback rules, which fix the well glow
+// and the popup link colour, never get applied. Re-test it with
+// `?gradeprobe=1` (see GradeProbeOverlay.tsx) rather than by editing this.
 export function getColorGradeMode(): 'on' | 'off' {
   if (typeof window === 'undefined') return 'off';
 
@@ -97,10 +127,23 @@ export function getColorGradeMode(): 'on' | 'off' {
   if (forced === 'off') return 'off';
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
+
+  // A verdict the watchdog measured on a previous visit - on any engine, on
+  // this specific machine. Deliberately only the *measured* half of the device
+  // tier, not isLowPowerDevice(): that one also counts every phone as low
+  // power, and phones render this perfectly well today.
+  if (measuredTier() === true) return 'off';
+
   const ua = navigator.userAgent;
-  if (/firefox/i.test(ua)) return 'off';
   if (/safari/i.test(ua) && !/chrome|chromium|crios|android/i.test(ua)) return 'off';
   return 'on';
+}
+
+/** True when ?grade= pinned the mode, in which case the watchdog must not override it. */
+export function isGradeModeForced(): boolean {
+  if (typeof window === 'undefined') return false;
+  const forced = new URLSearchParams(window.location.search).get('grade');
+  return forced === 'on' || forced === 'off';
 }
 
 function ColorGradeFilter() {
@@ -176,7 +219,21 @@ function ColorGradeFilter() {
       }
     };
     frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
+
+    // Clearing the properties on the way out is load-bearing, not tidiness.
+    // This component really can unmount mid-session - the frame-budget
+    // watchdog downgrades a struggling machine while the page is open (see
+    // App.tsx) - and a custom property left behind on :root would keep its
+    // last graded value forever. The links and the vinyl tints would go on
+    // showing a colour from a palette that is no longer running, on a page
+    // that has otherwise just gone black and white: exactly the half-graded
+    // look the .color-grade-off fallback exists to prevent. Removing them
+    // hands every consumer back to the var() fallback in its own rule.
+    return () => {
+      cancelAnimationFrame(frame);
+      root.style.removeProperty('--color-grade-flat');
+      for (const [name] of LINK_VARS) root.style.removeProperty(name);
+    };
   }, [initialStops, initialTables]);
 
   return (

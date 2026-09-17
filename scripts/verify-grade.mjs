@@ -288,5 +288,64 @@ console.log('\nthe old HSL-shift approximation, for the record');
   console.log('  (informational - this is the bug Phase 1 removed, not a check)');
 }
 
+// --- 7. the frame-budget watchdog -------------------------------------------
+
+// This one decides whether anybody sees the effect at all, so it is worth
+// driving with known frame streams rather than trusting it. The module guards
+// on `typeof window`, so it needs a browser shaped just enough to run in: a
+// rAF that queues callbacks instead of waiting for a display, and a document
+// that never goes hidden. Time is supplied by the test, so a ten-second
+// measurement window runs instantly.
+console.log('\nframe-budget watchdog');
+{
+  let queue = [];
+  globalThis.window = {};
+  globalThis.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
+  globalThis.requestAnimationFrame = cb => { queue.push(cb); return queue.length; };
+  globalThis.cancelAnimationFrame = () => {};
+
+  const { startFrameBudgetWatchdog } = await import('../src/utils/frameBudgetWatchdog.ts');
+
+  const drive = (gapFor, maxFrames = 1200) => {
+    queue = [];
+    let verdict = null;
+    startFrameBudgetWatchdog(v => { verdict = v; });
+    let t = 0;
+    for (let i = 0; i < maxFrames && queue.length; i++) {
+      queue.shift()(t);
+      t += gapFor(i);
+    }
+    return verdict;
+  };
+
+  const expect = (name, actual, wanted) => {
+    checks++;
+    const ok = actual === wanted;
+    if (!ok) failures++;
+    console.log(`  [${ok ? 'PASS' : 'FAIL'}] ${name}  (got ${actual}, wanted ${wanted})`);
+  };
+
+  expect('steady 60fps is not struggling', drive(() => 16.67)?.struggling, false);
+
+  // The reference machine this threshold was calibrated against. If this ever
+  // starts failing, the threshold has drifted to somewhere that would have
+  // switched the grade off on the very hardware that proved it runs fine.
+  expect('reference machine (p95 ~37ms) keeps the grade',
+    drive(i => (i % 20 === 0 ? 37 : 16.67))?.struggling, false);
+
+  // Why the verdict is a 95th percentile and not the maximum: one stall - a
+  // GC, a tab switch, the OS scheduling something else - must not condemn a
+  // machine that is otherwise perfectly fine.
+  expect('a single 900ms stall does not condemn the machine',
+    drive(i => (i === 300 ? 900 : 16.67))?.struggling, false);
+
+  expect('sustained 20fps is struggling', drive(() => 50.5)?.struggling, true);
+  expect('sustained 15fps is struggling', drive(() => 66)?.struggling, true);
+
+  // Too little signal to judge: a visitor who left after a second.
+  expect('no verdict at all when the page closes early',
+    drive(() => 16.67, 40) === null, true);
+}
+
 console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILED`} - ${checks} checks\n`);
 process.exit(failures === 0 ? 0 : 1);
