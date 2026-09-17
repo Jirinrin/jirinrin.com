@@ -144,6 +144,13 @@ function GradeProbeOverlay() {
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [anc, setAnc] = useState<string[]>([]);
 
+  // The panel grew to fill the screen, which hides the two probes that are
+  // drawn on the page itself - so it has to be possible to get it out of the
+  // way. Collapsing clips it to its header rather than unmounting it, because
+  // the rows have to keep rendering: L and M reference the same filter, and
+  // the point is to look at the page with the panel still live.
+  const [open, setOpen] = useState(true);
+
   // Portal targets, resolved after mount because the landscape renders after
   // this panel does.
   const [hosts, setHosts] = useState<{ outer: Element | null; inner: Element | null }>({
@@ -197,7 +204,7 @@ function GradeProbeOverlay() {
         position: 'fixed',
         inset: '6px 6px auto 6px',
         zIndex: 99999,
-        maxHeight: '94vh',
+        maxHeight: open ? '70vh' : 30,
         overflowY: 'auto',
         padding: '10px 12px',
         borderRadius: 8,
@@ -228,7 +235,24 @@ function GradeProbeOverlay() {
         </defs>
       </svg>
 
-      <div style={{ fontWeight: 700 }}>colour grade bisect</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontWeight: 700, flex: '1 1 auto' }}>colour grade bisect</span>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          style={{
+            font: 'inherit',
+            fontWeight: 700,
+            padding: '4px 12px',
+            borderRadius: 5,
+            border: '1px solid #666',
+            background: '#222',
+            color: '#eee',
+          }}
+        >
+          {open ? 'hide' : 'show'}
+        </button>
+      </div>
       <div style={{ fontSize: 10, opacity: 0.55, margin: '2px 0 6px', wordBreak: 'break-all' }}>
         {navigator.userAgent}
       </div>
@@ -423,8 +447,8 @@ function GradeProbeOverlay() {
           deep inside the landscape. These two put the same ramp INSIDE that
           subtree, which is the one thing no row above does. */}
       <div style={rowLabel}>
-        L &amp; M are drawn on top of the landscape itself, not in this panel &mdash; look at the
-        top-left of the page, above the art. L is a ramp carrying the site filter itself; M is a
+        L &amp; M are drawn on top of the landscape itself, not in this panel &mdash; tap
+        &ldquo;hide&rdquo; above, scroll to the TOP of the page, and look at the top-left. L is a ramp carrying the site filter itself; M is a
         ramp carrying NO filter of its own, sitting inside .color-grade-layer, so the layer&rsquo;s
         own grade should colour it.
       </div>
@@ -433,7 +457,7 @@ function GradeProbeOverlay() {
         <div
           style={{
             position: 'absolute',
-            top: 4,
+            top: 44,
             left: 4,
             zIndex: 9999,
             filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
@@ -448,7 +472,7 @@ function GradeProbeOverlay() {
       )}
 
       {hosts.inner && createPortal(
-        <div style={{ position: 'absolute', top: 60, left: 4, zIndex: 9999 }}>
+        <div style={{ position: 'absolute', top: 100, left: 4, zIndex: 9999 }}>
           <div style={{ font: '9px monospace', color: '#fff', background: '#000' }}>M inside layer</div>
           {expected.map(e => (
             <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
