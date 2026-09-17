@@ -157,6 +157,32 @@ body, #root {
 //            layers stacked over the landscape. If the art colours up without
 //            them, it is the memory spike the comment at the top of
 //            Landscape.scss predicted, not blending as such.
+// perel - the structural alternative. If a promoted layer will not composite
+//         through an ancestor's filter, stop asking it to: take the filter off
+//         the group entirely and put it on the leaf elements instead, where it
+//         belongs to the promoted layer itself.
+//
+//         Two known costs, both real. The grade stops being applied to the
+//         composite and starts being applied per element, so anywhere the art
+//         uses mix-blend-mode the maths changes - grade(blend(a,b)) is not
+//         blend(grade(a),grade(b)) - and it will look different rather than
+//         wrong. And it multiplies the number of live filter targets, which is
+//         the cost the Class A work in phase 2 existed to reduce. Worth
+//         knowing whether it works before worrying about either.
+.grade-bisect-perel {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+  }
+
+  .color-grade-layer img,
+  .ServiceBubbles img,
+  .opening-clouds-behind img {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+}
+
 // The candidate fixes. noanim proved the cause but is not usable as one: it
 // costs every animation on the page. Each of these instead tries to keep the
 // filtered group flattened while its contents still animate, so that a

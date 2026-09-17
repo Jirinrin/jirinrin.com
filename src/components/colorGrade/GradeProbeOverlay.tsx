@@ -504,6 +504,31 @@ function GradeProbeOverlay() {
         </div>,
         hosts.inner,
       )}
+      {/* O is N plus a filter of its own. N proved a promoted layer ignores an
+          ANCESTOR's filter; the question left is whether it still honours its
+          own. If O is coloured, moving the filter down onto the leaves is a
+          viable path. If O is grey too, nothing that animates can be graded on
+          this engine at all, and the answer has to be to stop animating or to
+          stop grading. */}
+      {hosts.inner && createPortal(
+        <div
+          style={{
+            position: 'absolute',
+            top: 212,
+            left: 4,
+            zIndex: 9999,
+            animation: 'gradeprobe-drift 3s ease-in-out infinite alternate',
+            filter: siteFilterMounted ? `url(#${COLOR_GRADE_FILTER_ID}) saturate(1)` : 'none',
+          }}
+        >
+          <div style={{ font: '9px monospace', color: '#fff', background: '#000' }}>O animated + own filter</div>
+          {expected.map(e => (
+            <span key={e.input} style={{ ...swatch, background: `rgb(${e.input},${e.input},${e.input})` }} />
+          ))}
+        </div>,
+        hosts.inner,
+      )}
+
       <style>
         {'@keyframes gradeprobe-drift { from { transform: translateX(0) } to { transform: translateX(40px) } }'}
       </style>
