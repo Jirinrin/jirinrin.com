@@ -132,6 +132,7 @@ function stopsToTables(stops: Stop[], steps = GRADE_STEPS) {
 // but produces no visible effect - so it needs the same off-and-fallback
 // treatment rather than silently rendering nothing.
 export function getColorGradeMode(): 'on' | 'off' {
+  return 'on'; // temp disable sniff
   if (typeof window === 'undefined') return 'off';
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
   const ua = navigator.userAgent;
