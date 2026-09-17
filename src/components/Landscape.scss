@@ -604,6 +604,72 @@ div.landscape--2-enter.landscape--2-enter-active {
     }
   }
 
+  // The SOUL's popup: same fixed-size, internally-scrolling shape as the
+  // non-letter (project) variant, but instead of readable parchment its
+  // ::before texture is blurred and brightened into a soft glow, as if the
+  // box itself were a light and the words were floating inside it. Still
+  // rides the same #landscape-color-grade filter every other popup texture
+  // does (see the base ::before above), so the glow drifts through the
+  // site's trippy hue cycle right along with everything else.
+  &.popup-window--radiant {
+    &::before {
+      // Extends well past the box's own edges so the blur below has real
+      // room to dissipate before hitting this layer's own boundary -
+      // blurring a texture that's still clipped flush to the visible box
+      // only softens its *grain*, leaving the box's straight-edged
+      // silhouette intact underneath.
+      inset: -2vw;
+      filter: url(#landscape-color-grade) saturate(0.6) blur(2vw) brightness(1.4);
+
+      // A flat veil stacked on top of the parchment (first-listed layer
+      // below sits on top) compresses the color grade's extremes rather than
+      // its hue: the underlying gradient can swing from near-black shadows
+      // to near-white highlights, which reads fine on the plain parchment
+      // but, brightened this much, can go blinding-bright behind white text
+      // or unreadably dark behind black text depending which stop lands
+      // where. This light-mode default raises the floor (dark stops can't
+      // get too dark); dark mode below flips it to lower the ceiling
+      // instead (light stops can't get too bright).
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.32)),
+        url("../assets/box-light-small.webp");
+    }
+
+    // The "shiny" quality: a soft sheen riding on top of the blurred glow,
+    // brightest a little above center like a light shining from within.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(ellipse 70% 55% at 50% 30%, rgba(255, 255, 255, 0.55), transparent 70%);
+      mix-blend-mode: overlay;
+    }
+
+    // The halo bleeding past the box's own edges is most of what sells "light
+    // source" here - a sharp-edged glow would just look like a bright box.
+    box-shadow: 0 0 8vw 2vw rgba(255, 250, 230, 0.4);
+
+    // Dark mode's SOUL is still a light, just a dim one rather than a bright
+    // one - same shape and sheen, a dark/violet palette instead of a bright
+    // one, and the veil above flips from flooring to capping.
+    @media (prefers-color-scheme: dark) {
+      box-shadow: 0 0 8vw 2vw rgba(60, 40, 90, 0.5);
+
+      &::before {
+        background-image:
+          linear-gradient(rgba(10, 8, 16, 0.42), rgba(10, 8, 16, 0.42)),
+          url("../assets/box-dark-small.webp");
+      }
+
+      &::after {
+        background: radial-gradient(ellipse 70% 55% at 50% 30%, rgba(160, 130, 200, 0.4), transparent 70%);
+      }
+    }
+  }
+
   h1 {
     font-family: 'Cormorant', serif;
     font-weight: 600;
@@ -1045,6 +1111,26 @@ div.landscape--2-enter.landscape--2-enter-active {
 .popup-window--letter .popup-window-content {
   flex: 0 0 auto;
   overflow-y: visible;
+}
+
+// The SOUL's text dissolving into the glow at the top/bottom edge, rather
+// than being hard-clipped by the scroll container - reads as the words
+// emerging from and receding back into the light as you scroll past them.
+.popup-window--radiant .popup-window-content {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 3rem,
+    black calc(100% - 3rem),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 3rem,
+    black calc(100% - 3rem),
+    transparent 100%
+  );
 }
 
 .popup-window-background-enter {

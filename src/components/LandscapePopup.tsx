@@ -194,12 +194,18 @@ function LandscapePopup({ onClose }: LandscapePopupProps) {
   useEffect(() => { if (isMemoriesOpen) setHasOpenedMemories(true); }, [isMemoriesOpen]);
   useEffect(() => { if (isGrooveOpen) setHasOpenedGroove(true); }, [isGrooveOpen]);
 
+  // The SOUL's popup is the one 'text' object that doesn't read as a letter:
+  // it's a glowing window with its own text scrolling inside it (see
+  // `.popup-window--radiant` in Landscape.scss), so it's carved out of the
+  // letter treatment below and given the fixed-size window instead.
+  const isSoulPopup = currentPage.popup?.id === 'jiri-soul';
+
   // Landscape 1's object popups render as a "letter": one long box wrapped
   // around all of its content, scrolled as a whole by the backdrop, rather
   // than a fixed-size window with the text scrolling inside it. Landscape 2's
   // project popups (type 'project') keep the fixed-size window, since they
   // have to grow out of, and fit inside, the book.
-  const isLetterPopup = currentPage.popup?.type === 'text' || currentPage.popup?.type === 'about';
+  const isLetterPopup = (currentPage.popup?.type === 'text' || currentPage.popup?.type === 'about') && !isSoulPopup;
 
   // Blocks the page from scrolling behind the modal when the cursor is over
   // the dimmed background (not the popup box itself, which has its own
@@ -448,7 +454,7 @@ function LandscapePopup({ onClose }: LandscapePopupProps) {
           className={`popup-window-background${isLetterPopup ? ' popup-window-background--letter' : ''}`}
           onClick={hidePopup}
         >
-          <div className={`popup-window${currentPage.popup?.type === 'text' ? '' : ' popup-window-large'}${isLetterPopup ? ' popup-window--letter' : ''}${currentPage.popup?.id === 'spiral-tower' ? ' popup-window--inverting' : ''}`}>
+          <div className={`popup-window${currentPage.popup?.type === 'text' && !isSoulPopup ? '' : ' popup-window-large'}${isLetterPopup ? ' popup-window--letter' : ''}${currentPage.popup?.id === 'spiral-tower' ? ' popup-window--inverting' : ''}${isSoulPopup ? ' popup-window--radiant' : ''}`}>
             <div className="popup-window-content">
               {renderPopup()}
             </div>
