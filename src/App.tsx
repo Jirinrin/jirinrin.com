@@ -27,6 +27,20 @@ function App() {
     [],
   );
 
+  // `?gradebisect=<mode>` takes properties away from the real graded surfaces,
+  // one at a time, on the real page. The probe overlay can prove that an
+  // engine renders the filter, but it cannot honestly reproduce a
+  // viewport-wide layer thousands of pixels tall with the whole landscape
+  // animating inside it - so when the panel says yes and the page says no,
+  // this is the only way left to find the difference. See App.scss for the
+  // modes; it is a diagnostic knob, not a feature.
+  const bisect = useMemo(
+    () => (typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('gradebisect')),
+    [],
+  );
+
   // Start in the full grade and watch what this machine actually manages, then
   // back off if it is struggling - rather than deciding in advance from the
   // browser's name, which is the mistake this replaces. See
@@ -54,7 +68,9 @@ function App() {
     <CookiesProvider>
       <Provider store={store}>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-        <div className={`App${gradeEnabled ? '' : ' color-grade-off'}`}>
+        <div
+          className={`App${gradeEnabled ? '' : ' color-grade-off'}${bisect ? ` grade-bisect-${bisect}` : ''}`}
+        >
           {gradeEnabled && <ColorGradeFilter />}
           {gradeEnabled && <div className="color-grade-background color-grade" aria-hidden />}
           {showProbe && (

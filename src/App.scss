@@ -110,6 +110,51 @@ body, #root {
   will-change: filter;
 }
 
+// Diagnostic knobs for `?gradebisect=` (see App.tsx). Each one removes one
+// property from the real graded surfaces so that a browser which renders the
+// filter perfectly in isolation, but shows a grey and frozen page, can be
+// asked which property it is choking on. `!important` throughout because
+// these have to beat `.color-grade` and the `.color-grade-dimmed` rule below
+// without depending on source order.
+//
+// nowc       - keep the grade, drop the compositor hint
+// bgonly     - grade only the viewport-sized background, not the tall layer
+// layeronly  - the opposite: grade only the tall layer
+// nofilter   - no filter anywhere, palette vars still ticking. If the page is
+//              STILL frozen in this mode then the freeze is not about the
+//              filter at all and this whole line of enquiry is wrong.
+.grade-bisect-nowc {
+  .color-grade-layer,
+  .color-grade-background {
+    will-change: auto !important;
+  }
+}
+
+.grade-bisect-bgonly {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+}
+
+.grade-bisect-layeronly {
+  .color-grade-background,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+}
+
+.grade-bisect-nofilter {
+  .color-grade {
+    filter: none !important;
+    will-change: auto !important;
+  }
+}
+
 // A popup's text needs to stay readable, so the grading smoothly backs off
 // while one is open rather than fighting for contrast right behind it.
 body.color-grade-dimmed .color-grade {
