@@ -148,6 +148,30 @@ body, #root {
   }
 }
 
+// noblend  - neutralise every blend mode inside the graded group. A blended
+//            element inside a filtered group takes a different compositing
+//            path from an ordinary one, and the probe that came back coloured
+//            (M) was an ordinary div - so this is the difference between the
+//            probe and the art it sits next to.
+// noshine   - the same idea by removal: drop the three full-width blended
+//            layers stacked over the landscape. If the art colours up without
+//            them, it is the memory spike the comment at the top of
+//            Landscape.scss predicted, not blending as such.
+.grade-bisect-noblend {
+  .color-grade-layer *,
+  .ServiceBubbles * {
+    mix-blend-mode: normal !important;
+  }
+}
+
+.grade-bisect-noshine {
+  #shining-effect,
+  #sunrays,
+  #jiri-head {
+    display: none !important;
+  }
+}
+
 .grade-bisect-nofilter {
   .color-grade {
     filter: none !important;
