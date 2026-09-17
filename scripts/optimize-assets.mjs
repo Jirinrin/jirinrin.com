@@ -47,10 +47,33 @@ async function convertOne(srcPath, outPath, task) {
 // --- animated GIF -> animated WebP -----------------------------------------
 // sharp({ animated: true }) reads every frame (preserving per-frame delay
 // and loop count) and .webp() re-encodes the whole sequence as animated WebP.
-async function animatedGifToWebp(srcPath, outPath, quality = 80) {
-  await convertOne(srcPath, outPath, () =>
-    sharp(srcPath, { animated: true }).webp({ quality }).toFile(outPath)
-  );
+//
+// `frameStride` keeps only every Nth frame (each kept frame's delay is
+// multiplied by the stride to preserve total loop duration). Use it for gifs
+// recorded at a much higher frame rate than their actual motion needs - e.g.
+// spiral-tower is a static tower art with just a slow twinkle effect, shot
+// at ~33fps, where dropping to ~11fps is visually identical but a fraction
+// of the size.
+// `effort` defaults to 6 (libwebp's max useful setting below diminishing
+// returns) rather than sharp's default of 4 - it's a slower encode for a
+// free few % size cut, and this only runs at build time.
+async function animatedGifToWebp(srcPath, outPath, { quality = 80, effort = 6, frameStride = 1 } = {}) {
+  await convertOne(srcPath, outPath, async () => {
+    if (frameStride === 1) {
+      await sharp(srcPath, { animated: true }).webp({ quality, effort }).toFile(outPath);
+      return;
+    }
+    const { pages, pageHeight, delay } = await sharp(srcPath, { animated: true }).metadata();
+    const frameIdxs = [];
+    for (let i = 0; i < pages; i += frameStride) frameIdxs.push(i);
+    const frameBuffers = await Promise.all(
+      frameIdxs.map(i => sharp(srcPath, { animated: true, page: i, pages: 1 }).png().toBuffer())
+    );
+    const newDelay = frameIdxs.map(i => delay[i] * frameStride);
+    await sharp(frameBuffers, { join: { pageHeight, animated: true } })
+      .webp({ quality, effort, delay: newDelay, loop: 0 })
+      .toFile(outPath);
+  });
 }
 
 // --- static PNG (with alpha) -> WebP ----------------------------------------
@@ -97,11 +120,18 @@ async function cloudToWebp(srcPath, outPath, softOutPath, quality = 90) {
 
 async function main() {
   // 1a. Animated GIF -> animated WebP
+  // spiral-tower's source gif is a static tower shot at ~33fps with only a
+  // small twinkle effect moving - dropping to ~11fps (stride 3) plus a lower
+  // quality is visually indistinguishable but cuts the shipped WebP by ~75%.
+  const objectGifOptions = { 'spiral-tower': { quality: 58, frameStride: 3 } };
   for (const name of ['spiral-tower', 'future-building', 'octopus-tree']) {
-    await animatedGifToWebp(src(`landscape/objects/${name}.gif`), src(`landscape/objects/${name}.webp`));
+    await animatedGifToWebp(src(`landscape/objects/${name}.gif`), src(`landscape/objects/${name}.webp`), objectGifOptions[name]);
   }
+  // These are already small (under ~200KB) and their motion is real
+  // (flapping/walking), so keep full framerate and just tighten quality -
+  // same grayscale-with-alpha art as spiral-tower, so lossy is safe here too.
   for (const name of ['bat', 'bat-2', 'fly', 'gezichtje', 'giraffe', 'sheep', 'wazeba-black', 'wazeba-white']) {
-    await animatedGifToWebp(src(`landscape/creatures/${name}.gif`), src(`landscape/creatures/${name}.webp`));
+    await animatedGifToWebp(src(`landscape/creatures/${name}.gif`), src(`landscape/creatures/${name}.webp`), { quality: 70 });
   }
 
   // 1b. Static PNG -> WebP with alpha
