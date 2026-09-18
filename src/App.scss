@@ -183,6 +183,45 @@ body, #root {
   }
 }
 
+// perel2 - perel with the two things it got wrong fixed.
+//
+//          The clouds stayed grey under perel because only <img> was selected
+//          and a cloud is an <img> plus an .opening-clouds__backing div; the
+//          backing carries much of the colour. The __glass panes are left
+//          alone deliberately - they are backdrop-filters sampling the art
+//          behind them, so once that art is graded they pick the grade up for
+//          free, and filtering them as well would apply it twice.
+//
+//          The three full-width blend layers are also left ungraded, on
+//          purpose. They exist to blend over the scenery, so letting them
+//          blend over already-graded art is closer to what the group filter
+//          used to produce than grading each of them separately and then
+//          blending - which is what made them look "sorta coloured but not
+//          following the grade".
+.grade-bisect-perel2 {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+  }
+
+  .color-grade-layer img,
+  .color-grade-layer .opening-clouds__backing,
+  .ServiceBubbles img,
+  .ServiceBubbles .opening-clouds__backing,
+  .opening-clouds-behind img,
+  .opening-clouds-behind .opening-clouds__backing {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+
+  #shining-effect,
+  #sunrays,
+  #jiri-head,
+  .opening-clouds__glass {
+    filter: none !important;
+  }
+}
+
 // The candidate fixes. noanim proved the cause but is not usable as one: it
 // costs every animation on the page. Each of these instead tries to keep the
 // filtered group flattened while its contents still animate, so that a
