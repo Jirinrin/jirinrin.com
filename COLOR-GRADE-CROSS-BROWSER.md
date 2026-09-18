@@ -403,7 +403,93 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- **Item 2(b): load the real site on Safari with `?grade=on`.** One tap, and it is the only thing left
-  between Safari and a decision. The probe has already ruled out "WebKit cannot do this".
+- **Phase 7 below** — Safari is diagnosed; what is left is finishing the per-element rendering path.
 - Item 3's Chrome regression pass and item 7's Lighthouse run.
 - `getDocHeight`'s per-frame forced layout, as its own separate change.
+
+---
+
+## Phase 7 — Safari, diagnosed (2026-09-18)
+
+### The cause
+
+**An element running a compositable animation is promoted to its own layer, and WebKit composites that
+layer _past_ an ancestor's filter instead of through it.** The landscape art and the clouds animate inside
+`.color-grade-layer` / `.ServiceBubbles`, inherit the grade from those groups, and therefore render
+ungraded. The popup and the groove-grove image carry `filter: url(#landscape-color-grade)` _themselves_
+and grade correctly.
+
+This was measured on iPad Safari, not inferred. Everything below **works** there:
+
+| Tested | Result |
+| --- | --- |
+| `feComponentTransfer` + `feColorMatrix` via `filter: url()` | exact, and in **sRGB** (closes 3b) |
+| A 5000px-tall filtered element | fine |
+| `transition: filter` on a list containing `url()` | fine |
+| `will-change: filter` | fine |
+| `position: fixed` + filter | fine |
+| A filtered element with a continuously animating **child** | fine |
+| Live `setAttribute` rewrites of `tableValues` | fine — repaints correctly |
+| **M** — static child, inherits the group's filter | **coloured** |
+| **N** — animated child, inherits the group's filter | **GREY** ← the bug |
+| **O** — animated child with its **own** filter | **coloured** ← the way out |
+
+`?gradebisect=noanim` colours the entire landscape and all the clouds correctly, which is the proof on
+the real page rather than in a panel.
+
+### What does not fix it
+
+`isolation: isolate`, `contain: paint`, `transform: translateZ(0)` and `backface-visibility: hidden`
+(`?gradebisect=fixa`..`fixd`) were all tried on the device. **None work.** There is no documented
+workaround: WebKit's filter/compositing work ([109098](https://bugs.webkit.org/show_bug.cgi?id=109098),
+[PR 73910](https://github.com/WebKit/WebKit/pull/73910)) concerns filter _outsets_ on composited layers,
+not making a promoted descendant composite through an ancestor filter, and
+[229399](https://bugs.webkit.org/show_bug.cgi?id=229399) confirms composited and non-composited animations
+are separate paths there.
+
+**WebGL is not an alternative.** The grade is trivial as a shader — it is already written exactly, as
+`gradePixel` in `gradeClock.ts` — but WebGL cannot sample the DOM, and what needs grading is the
+_composite_: positioned images, `mix-blend-mode` layers, `backdrop-filter` glass, live text. Using it
+would mean rebuilding the landscape as a canvas scene. Per-image WebGL is just per-element grading with a
+heavier engine and the same blend-maths problem.
+
+### The remaining path: per-element (`perel`)
+
+Take the filter off the groups, put it on the leaves. Probe O proves a promoted layer honours its own
+filter. `?gradebisect=perel2` is the current attempt.
+
+**Two costs are inherent, not bugs to fix.** `grade(blend(a,b)) ≠ blend(grade(a),grade(b))`, so anywhere
+the art uses `mix-blend-mode` the result genuinely changes — the three full-width blend layers
+(`#shining-effect` screen, `#sunrays` and `#jiri-head` multiply) cannot be made to "follow" the grade,
+because following it _is_ the group operation WebKit refuses. And it multiplies live filter targets, which
+is the cost Phase 2 existed to reduce.
+
+**Known-open, as of the last device run:**
+
+- The main landscape grades correctly under `perel`.
+- Clouds needed `.opening-clouds__backing` as well as `img` (done in `perel2`); the background behind
+  them then came out **black**, not yet explained — `__backing` is a masked dark-gray tile now graded on
+  its own rather than as part of the composite.
+- `#jiri-head` and the gradient behind it still do not follow the grade. Expected, per the blend maths
+  above; the open question is what looks _best_, not what is correct.
+- `.opening-clouds__glass` is deliberately left unfiltered — it is a `backdrop-filter` sampling the art
+  behind it, so it picks the grade up for free once that art has it.
+
+### The diagnostic knobs
+
+All take `?grade=on` alongside. Defined in `App.scss`, wired in `App.tsx`. **These are diagnostics, not
+features** — whatever ships should be a real rule, and these should come out.
+
+`nofilter` (useless as a control — the art is monochrome at source, so grey proves nothing) · `nowc` ·
+`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `perel` · `perel2`
+
+`?gradeprobe=1` mounts the bisect panel (rows A–K in-panel, L/M/N/O portaled into the real landscape,
+plus measured sizes and an ancestor walk). It has a hide/show button.
+
+### Not bugs
+
+- **Nothing animates on iPad** — `assets/objects/index.ts` serves `isMobile ? 'png' : 'webp'`, so the
+  animated objects are deliberately static there, and `Landscape1.tsx` gates creature spawning behind
+  `!isMobile`. Both predate this work.
+- **`#Landscape-container` reports `filter: none`** — it never carries one; the grade is on
+  `.color-grade-layer` inside it.

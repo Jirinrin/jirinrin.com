@@ -106,21 +106,32 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // measurement rather than by a guess: see frameBudgetWatchdog.ts, whose
 // verdict lands in the shared device tier and is read back here.
 //
-// Safari (desktop and iOS) stays off, for an unrelated reason - and a
-// narrower one than this used to claim. The page shows no grade there
-// (tested 2026-09-17), which without this would leave it half-graded: the
-// filter silently doing nothing while the .color-grade-off fallback rules,
-// which fix the well glow and the popup link colour, never get applied.
+// Safari (desktop and iOS) stays off, and as of 2026-09-18 we know exactly
+// why - it is NOT that WebKit cannot render this filter. Measured on iPad
+// Safari with `?gradeprobe=1`, every one of these works there: the filter
+// itself, in sRGB, matching the spec prediction exactly; a 5000px-tall
+// filtered element; a filter list with a transition on it; will-change:
+// filter; a fixed-position filtered element; a filtered element with a
+// continuously animating child; and a static child inheriting the grade
+// from an ancestor group.
 //
-// But `?gradeprobe=1` on iPad Safari (2026-09-18) came back clean - a CSS
-// `filter: url(#...)` on a real HTML element runs feComponentTransfer +
-// feColorMatrix correctly there, and in sRGB, matching the spec prediction
-// exactly. So WebKit *can* do this, and whatever breaks on the actual page
-// is something narrower than "no SVG filter support": a live setAttribute
-// rewrite not invalidating the elements referencing the filter, a filtered
-// layer too large for iOS to keep, or the fixed + negative-z-index
-// .color-grade-background. Until that is pinned down the fallback stays.
-// Re-test with `?grade=on` on the device rather than by editing this.
+// The one thing that does NOT work is the one the page depends on: an
+// element that runs a compositable animation is promoted to its own layer,
+// and WebKit composites that layer PAST an ancestor filter rather than
+// through it. So the landscape art and the clouds - which animate inside
+// .color-grade-layer and .ServiceBubbles - render ungraded, while the popup
+// and the groove-grove image, which carry `filter: url(#...)` themselves,
+// grade correctly. `?gradebisect=noanim` colours the whole page in, which is
+// the proof; probes M (static, inherits, coloured) and N (animated,
+// inherits, grey) are the isolated repro.
+//
+// No flattening hint fixes it: isolation, contain: paint, translateZ(0) and
+// backface-visibility were all tried on the device and all refused
+// (`?gradebisect=fixa`..`fixd`). The remaining approach is to move the
+// filter off the groups and onto the leaves, since a promoted layer does
+// honour its OWN filter (probe O) - see `?gradebisect=perel2` and
+// COLOR-GRADE-CROSS-BROWSER.md. Until that lands and looks right, the
+// fallback stays. Re-test on the device, not by editing this.
 export function getColorGradeMode(): 'on' | 'off' {
   if (typeof window === 'undefined') return 'off';
 
