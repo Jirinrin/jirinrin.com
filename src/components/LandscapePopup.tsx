@@ -99,23 +99,31 @@ const rehypeUnEmoji: Plugin<[], Root> = () => (tree) => {
 // renderPopup below). This just splits the raw markdown on those headings;
 // everything before the first one is the always-visible intro, and each
 // heading's own text becomes one collapsible section's body.
-// A markdown line prefixed with `<!-- non-chromium-only -->` (e.g. the Chromium
-// callout at the end of jiri-soul.md) only makes sense to readers who AREN'T on
-// a Chromium browser - drop the whole line for Chromium visitors, and just strip
-// the marker for everyone else, so the source stays plain markdown otherwise.
+// A markdown line prefixed with `<!-- webkit-only -->` (the black-and-white
+// callout at the end of jiri-soul.md) only makes sense to readers who are
+// actually seeing the page in black and white - drop the whole line for
+// everyone else, and just strip the marker for the rest, so the source stays
+// plain markdown otherwise.
+//
+// This used to be a "non-Chromium" test, which was right when Firefox was also
+// excluded from the colour grade. It is not any more: Firefox was measured and
+// cleared (see COLOR-GRADE-CROSS-BROWSER.md), so a non-Chromium test now tells
+// Firefox visitors the site is monochrome for them while they are looking at
+// it in full colour. WebKit is the only engine left without the grade, and on
+// iOS every browser is WebKit, so this is also exactly "Apple devices" - which
+// is what the copy says.
+//
 // Checked via the parsed *engine* name rather than react-device-detect's own
-// `isChromium` flag: that flag only matches a browser literally named
-// "Chromium" (the rare open-source build), while Chrome, Brave, Edge and Opera
-// all report their browser name as something else and would wrongly count as
-// non-Chromium. The engine name is "Blink" for all of those alike.
-const isChromiumEngine = engineName === 'Blink';
-const NON_CHROMIUM_ONLY_RE = /^<!--\s*non-chromium-only\s*-->\s*/;
+// browser flags: `isSafari` does not match Chrome or Firefox on iOS, which are
+// WebKit underneath and just as affected.
+const isWebKitEngine = engineName === 'WebKit';
+const WEBKIT_ONLY_RE = /^<!--\s*webkit-only\s*-->\s*/;
 
 const applyBrowserConditionals = (markdown: string): string =>
   markdown
     .split('\n')
-    .filter(line => !(isChromiumEngine && NON_CHROMIUM_ONLY_RE.test(line)))
-    .map(line => line.replace(NON_CHROMIUM_ONLY_RE, ''))
+    .filter(line => !(!isWebKitEngine && WEBKIT_ONLY_RE.test(line)))
+    .map(line => line.replace(WEBKIT_ONLY_RE, ''))
     .join('\n');
 
 interface AccordionSection { title: string; body: string }

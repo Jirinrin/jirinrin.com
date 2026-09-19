@@ -1,5 +1,11 @@
 # iPad Safari: the main thread runs at ~0.3fps while the compositor runs at 60
 
+> **Closed, 2026-09-19.** The colour grade was the cause, and it is now switched off on Safari
+> permanently - see COLOR-GRADE-CROSS-BROWSER.md, Phase 7, for the verdict. With `?grade=off` the page
+> is smooth, which it was not before `getDocHeight` stopped forcing layout fifteen times a frame (fixed,
+> as its own change). This file is kept as the record of how the cost was located, because the two
+> shelved rendering paths behind `?gradebisect=` will need it if a future WebKit makes them viable.
+
 Split out of the colour-grade work (COLOR-GRADE-CROSS-BROWSER.md, Phase 7) on 2026-09-19. It is **not**
 separate from it: the measurements below point at the colour grade's SVG filter as the dominant cause,
 which makes this the thing that decides whether any of that work can ship on iOS.

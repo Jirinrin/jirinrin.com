@@ -7,11 +7,11 @@ deleted, so they don't get re-litigated.
 
 | | Status |
 |---|---|
-| Phase 0 — measure | **Done.** Firefox measured and cleared. Safari still needs the on-device check below. |
+| Phase 0 — measure | **Done.** Firefox measured and cleared. Safari measured, diagnosed and closed — see Phase 7. |
 | Phase 1 — one palette clock, one exact `gradePixel` | **Done.** |
 | Phase 2 — Class A, filter off flat-colour elements | **Done.** |
 | Phase 3z — widen the sniff to Safari | **Done earlier**, in `2d32f79` / `3f1d158`. |
-| Phase 3a — capability + colour-space probe | **Built and validated on Safari**, still deliberately not wired in. See below. |
+| Phase 3a — capability + colour-space probe | **Built, validated on Safari, used, and now removed** — it answered its questions (the filter works there, in sRGB) and had nothing left to ask. In git at `safari-perel4-full`. |
 | Phase 3b — pre-warp the table for linearRGB | **Dropped.** Safari measured as sRGB; there is nothing to pre-warp. |
 | Phase 3c — frame-budget watchdog | **Done.** It is what allowed the Firefox sniff to go. |
 | Phase 3d — widen the mode type to `full`/`raster`/`off` | **Dropped.** There is no raster mode to name. |
@@ -26,11 +26,18 @@ greyscale artwork onto a drifting 3-stop HSL gradient via `feComponentTransfer t
 `feColorMatrix` hue rotation, rewritten every 150 ms.
 
 **Firefox: fixed, and it was never really broken.** It now runs the grade like any other engine.
-**Safari: still confirmed broken** (tested 2026-09-17) and still deliberately switched off, so it gets
-the same black-and-white fallback Firefox used to get. That is the one browser problem left.
 
-Goal, unchanged: the grade running on every engine in *exactly* the current style. No hue-rotate
-approximation, no blend-mode duotone — neither can recolour true black, and neither can hit a 3-stop map.
+**Safari: closed, and it is not coming back without a browser change.** Two independent WebKit
+behaviours are in the way. The first — a promoted layer composites *past* an ancestor filter — was
+diagnosed and successfully routed around. The second — `url()` SVG filters are not GPU-accelerated,
+so filtered surface area is rasterized on the main thread — was not, because below the affordable
+budget there is not enough of the page left to colour. Both finished alternative paths are preserved
+behind `?gradebisect=` for a future browser. **Phase 7 has the whole trail and the verdict.**
+
+The goal was: the grade running on every engine in *exactly* the current style, with no hue-rotate
+approximation and no blend-mode duotone, since neither can recolour true black or hit a 3-stop map.
+That still holds for every engine that can run it. Safari gets the black-and-white fallback instead,
+which is a coherent design rather than a degraded one.
 
 ---
 
@@ -403,15 +410,11 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- **Phase 7 below** — Safari is diagnosed, `perel4` looks right and is preserved (tag
-  `safari-perel4-full`), and the cost is measured: filtered surface area per tick. `statics` was not
-  cheap enough; `flat` is the last idea and the one outstanding device question. See also
-  [IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md).
-- Item 7's Lighthouse run. **Item 3's Chrome regression pass is done** — checked 2026-09-19, no
-  regressions found.
-- ~~`getDocHeight`'s per-frame forced layout~~ — **done**, as its own change. Cached, with invalidation
-  on resize, orientationchange and a ResizeObserver.
+- **Lighthouse, both form factors** (item 7 above). The only item left in this document.
 
+Everything else that used to be listed here is done: Phase 7 below closed Safari, the Chrome
+regression pass came back clean on 2026-09-19, and `getDocHeight`'s per-frame forced layout was fixed
+as its own change.
 ---
 
 ## Phase 7 — Safari, diagnosed (2026-09-18)
@@ -687,64 +690,88 @@ area × tick rate* is the entire cost — and `gradetick` composes with the knob
 not quite there, **`?grade=on&gradebisect=flat2&gradetick=400`** is the next dial, and at 2.9° a step it
 is not visible as stepping either.
 
-### The shape that would ship, if `flat2` holds
+### `flat2` on the device — and the verdict
 
-| Layer | Ships as |
-| --- | --- |
-| `.color-grade-background`, `.color-grade-layer` | flat `--grade-shadow` + tile screened back on |
-| `#landscape-1`, `#landscape-2`, objects, books, creatures, sprites | **filtered** — real grayscale, and static on iPad |
-| `.opening-clouds__backing` (~47) | static neutral fill |
-| cloud `<img>` (~47) | left white, or `<div>` + `mask-image` with a flat fill if colour is wanted back |
-| `#shining-effect`, `#sunrays` | `<div>` + `mask-image`, flat `--grade-highlight` |
-| `#jiri-head` | `<div>` + `mask-image`, flat `--grade-shadow` |
-| `.service-bubble`, `.ambient-bubble` | flat already |
+`flat2` is the cheapest coloured page this technique can produce. Two unfiltered backdrops, the table
+paid for only on the art that uses it (both paintings plus every object, book, creature and sprite —
+all static on iPad), monochrome clouds watching no custom property, and everything else
+compositor-only. `gradetick=400` on top of that.
 
-The remaining honest costs: **the clouds are monochrome**, and **the three full-width glow layers stay
-ungraded** until the `<img>` → masked-`<div>` conversion lands. That conversion is exact (single-colour
-art, shape in alpha), cheap, and a strict improvement on Chrome too, since it removes three full-width
-SVG filter surfaces there as well.
+**It is still not smooth.** "Cloud parallax is still a bit janky, definitely not completely smooth like
+in black-and-white. Tick 400 doesn't fix it."
 
-**If `flat2` — with or without `gradetick=400` — is still jagged, that is the end of the line.** There is
-nothing further to remove: two static backdrops with no filter, one tick's worth of small static
-rasterizations, and everything else compositor-only. The cleanup then is the one already agreed: Safari
-keeps the black-and-white fallback permanently, `perel4`, `flat` and `flat2` stay as knobs for a future
-WebKit, and the rest of the bisect list comes out.
+And the looks had run out of room in the same breath: the graded objects on the graded landscape "does
+look amazing", but the sky behind them — `#shining-effect`, `#sunrays`, `#jiri-head` — is still
+monochrome, because CSS cannot repaint an `<img>` in a flat colour, and a coloured landscape under a
+black-and-white sky is worse than a coherent black-and-white one.
 
-### `perel4` is preserved, not abandoned
+So: **Safari keeps the black-and-white fallback, permanently.** Not provisionally, and not as a guess
+about performance — as the conclusion of a measurement that ran out of things to remove.
 
-It is visually finished — "everything looks quite very nice", and `perel4shine` was tried and rejected
-as fitting the landscape less well. What makes it unshippable is WebKit declining to GPU-accelerate
-`url()` filters, which is a browser limitation and not a design mistake, so it is kept whole rather than
-unpicked:
+The honest summary of why, in one line each:
 
-- tagged **`safari-perel4-full`** at the commit where it was finished;
-- kept as a live knob (`?grade=on&gradebisect=perel4`) rather than deleted, so a future Safari can be
-  re-tested in one page load instead of a git archaeology session;
-- `perel4trip`, `perel4shine`, `perel4still` and `perel4calm` are gone — their questions are answered
-  above and in the commit history, and keeping four copies of a 100-selector mixin in everyone's CSS to
-  preserve a comparison nobody needs again is not preservation, it is clutter. Trimming them took the
-  stylesheet from 62.0 kB to 53.6 kB.
+1. **WebKit composites a promoted layer past an ancestor's filter**, so anything animating inside a
+   graded group renders ungraded. No flattening hint fixes it. Routed around, successfully, by grading
+   the leaves instead of the groups.
+2. **WebKit does not GPU-accelerate `url()` SVG filters**, so filtered surface area is rasterized on the
+   main thread. Measured budget on an iPad Pro: about one landscape painting. Not routed around, because
+   below that budget there is not enough of the page left to colour.
 
-### Still ungraded under `perel4` (CSS paint, not `<img>`)
+The first is a bug to route around. The second is an architecture, and it is the one that ends this.
+
+### What is kept, and how to revive it
+
+Both finished paths stay wired behind `?gradebisect=`, because the blocker is a browser limitation and
+not a design mistake — if it lifts, these are the answers already waiting.
+
+| | What it is | Why it did not ship |
+| --- | --- | --- |
+| **`perel4`** | Full fidelity. Every surface follows the grade; clouds keep their within-cloud hue variation. Also tagged **`safari-perel4-full`** | ~100 live filtered surfaces, far past the budget |
+| **`flat2`** | The cheap end. Table only where the art uses it, flat fills everywhere else | Still not smooth, and the three glow layers stay monochrome |
+
+`?grade=on&gradebisect=perel4` or `flat2` re-tests either in a single page load. `?gradetick=<ms>`
+composes with both.
+
+**If a future WebKit accelerates `url()` filters**, `perel4` is the one to revive, and it is finished.
+
+**If it does not but the machine simply gets faster**, `flat2` is the one, and it needs one more piece of
+work to be complete: converting `#shining-effect`, `#sunrays` and `#jiri-head` from `<img>` to
+`<div>` + `mask-image` with a flat `background-color`. All three are single-colour art with their shape
+entirely in the alpha channel — two pure white (L 254–255), one pure black (99.2% of visible pixels
+below L 25) — so a flat fill is **exact**, not an approximation: grading one colour can only produce one
+colour. `gradeFlatColor` computes it; `--grade-shadow` is already published, and its two siblings are one
+array entry each. **That conversion is worth doing regardless**, since it also removes three full-width
+SVG filter surfaces from Chrome and Firefox.
+
+### What was removed in the cleanup
+
+The diagnostic apparatus, now that every question it existed to ask has an answer recorded above:
+`nowc`, `bgonly`, `layeronly`, `nofilter`, `noblend`, `noshine`, `noanim`, `fixa`–`fixd`, `justone`,
+`statics`, `flat`; the `?gradeprobe=1` panel (`GradeProbeOverlay.tsx`) and its harness
+(`utils/colorGradeProbe.ts`); and `--grade-mid` / `--grade-highlight`, which nothing reads once the
+clouds went static. All of it is in git at `safari-perel4-full`.
+
+Kept: `?grade=on|off`, `?gradebisect=perel4|flat2`, `?gradetick=<ms>`, and `--grade-shadow`. Stylesheet
+went 62.0 kB → 51.1 kB along the way.
+
+### Still ungraded on the shipping path (CSS paint, not `<img>`)
+
+Unchanged by any of the above, and only relevant to browsers that *do* run the grade:
 
 - **`h2.landscape-name`** — `mix-blend-mode: multiply` on `rgba(0,0,0,0.274)` text at `font-size: 25rem`.
-  A single flat colour, so it belongs on a custom property like `--grade-link-dark`, never on the filter.
-- **`.service-bubble` / `.ambient-bubble`** take the palette through `--color-grade-flat` — face, rim and
-  halo. Their `::before` specular glints stay white on purpose; a specular highlight is white in life.
-- **`#well-of-memories__shine`** is graded (`blur(6px)` first — blurring *after* would smear graded
-  colours together rather than grade a soft shape).
-- **`.opening-clouds__glass`** stays unfiltered: it is a `backdrop-filter` sampling the art behind it, so
-  it picks the grade up for free once that art has it.
+  It is a single flat colour, so if it should follow the grade it belongs on a custom property like
+  `--grade-link-dark`, never on the filter.
+- **`#well-of-memories__shine`** and **`.opening-clouds__glass`** are both handled — the first is inside a
+  graded group, the second is a `backdrop-filter` that samples graded art and picks the grade up free.
 
-### What to run next
+---
 
-**`?grade=on&gradebisect=flat2`**, and if it is close but not quite, the same with
-**`&gradetick=400`**. Three questions:
+## Where this leaves the plan
 
-1. **Is the cloud parallax smooth now**, and does a clicked object animate into its zoom rather than
-   jumping?
-2. **Do the graded objects look right** standing on the graded landscape?
-3. **Are monochrome clouds acceptable**, and is the grey the right grey?
-
-`#shining-effect`, `#sunrays` and `#jiri-head` will still look wrong. That is the TSX conversion, not
-this knob.
+| | Status |
+|---|---|
+| Firefox | **Done.** Runs the grade like any other engine; the sniff is gone. |
+| Safari | **Closed.** Black-and-white fallback, permanently, for the two measured reasons above. |
+| Chrome regression pass | **Done**, 2026-09-19. No regressions. |
+| `getDocHeight` forced layout | **Done**, as its own change. |
+| Lighthouse, both form factors | **Outstanding** — the only item left. |

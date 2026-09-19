@@ -76,9 +76,11 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
   ['--grade-link-dark-hover', 240, 0.4],
 ];
 
-// The three ends of the table, as flat colours, written every tick alongside
-// the link colours above. Same machinery, same cost - four setProperty calls
-// became seven.
+// The bottom of the table, as a flat colour. Read by the two full-page
+// backdrops under `?gradebisect=flat2` (see App.scss), which is a shelved
+// alternative rendering path rather than a live one - so this is one
+// setProperty call twice a second, kept so that path still works if it is
+// ever revived.
 //
 // These exist because of what the iPad measurements turned up: on WebKit a
 // `url()` filter is rasterized on the main thread, so what a page can afford
@@ -99,11 +101,12 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // Distinct from `--color-grade-flat` above, which is the same midtone but
 // written once every 8s for consumers that drift slowly on purpose. These are
 // painted over large areas and would show that cadence as a visible step.
-// Written on their own cadence, not the 150ms tick, because of who reads
-// them. A custom property that changes forces every element referencing it to
-// repaint, and these are read by the two full-page backdrops and by ~47 masked
-// cloud swatches - so at tick rate they were buying back a slice of the cost
-// the flat fills exist to remove.
+// On its own cadence, not the 150ms tick, because of what reads it. A custom
+// property that changes forces every element referencing it to repaint, and a
+// full-page backdrop is an expensive thing to repaint 6.7 times a second - at
+// tick rate this was buying back a slice of the very cost the flat fill exists
+// to remove. (~47 masked cloud swatches used to read a sibling property and
+// were made static for the same reason; that is why only this one is left.)
 //
 // 500ms is chosen against the hue clock rather than picked: HUE_ROTATE_PERIOD_MS
 // is 50s, so the palette turns 7.2 degrees per second and a 500ms step is 3.6
@@ -114,9 +117,7 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 const ART_TICK_MS = 500;
 
 const ART_VARS: [name: string, input: number, saturate: number][] = [
-  ['--grade-shadow',      0, 1],
-  ['--grade-mid',       128, 1],
-  ['--grade-highlight', 255, 1],
+  ['--grade-shadow', 0, 1],
 ];
 
 // Whether the colour grade runs at all on this page load. There are only two things
@@ -151,7 +152,7 @@ const ART_VARS: [name: string, input: number, saturate: number][] = [
 //
 // Safari (desktop and iOS) stays off, and as of 2026-09-18 we know exactly
 // why - it is NOT that WebKit cannot render this filter. Measured on iPad
-// Safari with `?gradeprobe=1`, every one of these works there: the filter
+// Safari with a purpose-built probe panel, every one of these works: the filter
 // itself, in sRGB, matching the spec prediction exactly; a 5000px-tall
 // filtered element; a filter list with a transition on it; will-change:
 // filter; a fixed-position filtered element; a filtered element with a
@@ -164,17 +165,29 @@ const ART_VARS: [name: string, input: number, saturate: number][] = [
 // through it. So the landscape art and the clouds - which animate inside
 // .color-grade-layer and .ServiceBubbles - render ungraded, while the popup
 // and the groove-grove image, which carry `filter: url(#...)` themselves,
-// grade correctly. `?gradebisect=noanim` colours the whole page in, which is
-// the proof; probes M (static, inherits, coloured) and N (animated,
-// inherits, grey) are the isolated repro.
+// grade correctly. Two probes isolated it exactly: a static child inheriting
+// an ancestor group's filter came out coloured, and an animated one came out
+// grey. (The probe panel and its harness are gone now that they have nothing
+// left to answer; they are in git at the tag `safari-perel4-full`.)
 //
 // No flattening hint fixes it: isolation, contain: paint, translateZ(0) and
-// backface-visibility were all tried on the device and all refused
-// (`?gradebisect=fixa`..`fixd`). The remaining approach is to move the
-// filter off the groups and onto the leaves, since a promoted layer does
-// honour its OWN filter (probe O) - see `?gradebisect=perel4` and
-// COLOR-GRADE-CROSS-BROWSER.md. Until that lands and looks right, the
-// fallback stays. Re-test on the device, not by editing this.
+// backface-visibility were all tried on the device and all refused. Moving
+// the filter off the groups and onto the leaves DOES work - a promoted layer
+// honours its own filter - and that path was built, tuned on the device and
+// confirmed to look right.
+//
+// It still does not ship, and the reason is a second, independent WebKit
+// limitation: url()-referenced SVG filters are not GPU-accelerated there, so
+// filtered surface area is rasterized on the main thread. Measured on an iPad
+// Pro, the affordable budget is about one landscape painting - the page went
+// from 60fps compositor animations over a main thread updating every few
+// seconds, to smooth, purely by removing filtered area. Two finished
+// alternatives are preserved behind `?gradebisect=` (`perel4`, full fidelity;
+// `flat2`, the cheap end) and neither is fast enough. See App.scss for what
+// they do and COLOR-GRADE-CROSS-BROWSER.md for the whole trail.
+//
+// So the fallback stays, and it is not provisional. Re-test on the device,
+// not by editing this.
 export function getColorGradeMode(): 'on' | 'off' {
   if (typeof window === 'undefined') return 'off';
 

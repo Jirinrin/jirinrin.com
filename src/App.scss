@@ -110,53 +110,39 @@ body, #root {
   will-change: filter;
 }
 
-// Diagnostic knobs for `?gradebisect=` (see App.tsx). Each one removes one
-// property from the real graded surfaces so that a browser which renders the
-// filter perfectly in isolation, but shows a grey and frozen page, can be
-// asked which property it is choking on. `!important` throughout because
-// these have to beat `.color-grade` and the `.color-grade-dimmed` rule below
-// without depending on source order.
+// ---------------------------------------------------------------------------
+// The two preserved alternative rendering paths, behind `?gradebisect=`
+// ---------------------------------------------------------------------------
 //
-// nowc       - keep the grade, drop the compositor hint
-// bgonly     - grade only the viewport-sized background, not the tall layer
-// layeronly  - the opposite: grade only the tall layer
-// nofilter   - no filter anywhere, palette vars still ticking. If the page is
-//              STILL frozen in this mode then the freeze is not about the
-//              filter at all and this whole line of enquiry is wrong.
-.grade-bisect-nowc {
-  .color-grade-layer,
-  .color-grade-background {
-    will-change: auto !important;
-  }
-}
+// Neither of these is live. The colour grade ships on the ordinary
+// group-filter path above, and iOS Safari (and desktop Safari) get the
+// black-and-white `.color-grade-off` fallback instead - see
+// getColorGradeMode in ColorGradeFilter.tsx.
+//
+// These two exist because that fallback is a WebKit limitation rather than a
+// design choice, and the work to route around it was finished before the
+// limitation turned out to be fatal. Both were built and tuned on a real
+// iPad and both LOOK right; what neither can be is fast, because WebKit does
+// not GPU-accelerate url()-referenced SVG filters, so filtered surface area
+// is rasterized on the main thread. Measured there, the affordable budget is
+// about one landscape painting.
+//
+//   perel4  full fidelity. Everything on the page follows the grade. ~100
+//           live filtered surfaces; far past the budget. Also tagged
+//           `safari-perel4-full`.
+//   flat2   the cheap end. Two unfiltered backdrops, the table paid for only
+//           on the art that uses it, everything else flat or static. Still
+//           not smooth enough on an iPad Pro, and the three full-width glow
+//           layers stay monochrome, which is what finally sank it.
+//
+// They are kept wired rather than deleted so that a future Safari - or a
+// future device - can be re-tested in one page load. If `?gradebisect=flat2`
+// ever runs smoothly with the glow layers converted to masked divs, this is
+// a shippable coloured Safari. COLOR-GRADE-CROSS-BROWSER.md has the whole
+// measurement trail; IPAD-SAFARI-MAIN-THREAD.md has the performance half.
+//
+// ---------------------------------------------------------------------------
 
-.grade-bisect-bgonly {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    filter: none !important;
-    will-change: auto !important;
-  }
-}
-
-.grade-bisect-layeronly {
-  .color-grade-background,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    filter: none !important;
-    will-change: auto !important;
-  }
-}
-
-// noblend  - neutralise every blend mode inside the graded group. A blended
-//            element inside a filtered group takes a different compositing
-//            path from an ordinary one, and the probe that came back coloured
-//            (M) was an ordinary div - so this is the difference between the
-//            probe and the art it sits next to.
-// noshine   - the same idea by removal: drop the three full-width blended
-//            layers stacked over the landscape. If the art colours up without
-//            them, it is the memory spike the comment at the top of
-//            Landscape.scss predicted, not blending as such.
 // perel - the per-element path. A promoted layer will not composite through
 //         an ancestor's filter on WebKit, so stop asking it to: take the
 //         filter off the groups and put it on the leaves, where it belongs to
@@ -449,318 +435,13 @@ body.color-grade-dimmed {
     background-color: #c3c7cc !important;
   }
 
-  .service-bubble {
-    background-color: color-mix(in srgb, var(--grade-mid, transparent) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--grade-mid, transparent) 40%, transparent) !important;
-  }
-
-  .ambient-bubble {
-    background-color: color-mix(in srgb, var(--grade-mid, transparent) 12%, transparent) !important;
-    box-shadow:
-      0 0 14px color-mix(in srgb, var(--grade-mid, transparent) 30%, transparent),
-      inset 0 0 6px color-mix(in srgb, var(--grade-mid, transparent) 45%, transparent) !important;
-  }
+  // Left as plain, colourless glass on purpose. perel4 tints them, and that
+  // reads well there because everything around them is vivid - but here the
+  // clouds are monochrome and the glow layers are ungraded, and the device
+  // run found a tinted bubble floating in that unconvincing. Clear glass you
+  // can see the scene through is the better answer at this colour density.
 }
 
-// flat - justone's filter budget, with the whole page still coloured.
-//
-//        statics was better than perel4 and still not good enough, which is
-//        the last piece of the arithmetic: justone (one small static filter)
-//        was smooth, statics added two HUGE static filtered surfaces - the
-//        full-viewport .color-grade-background and the full-height sky tile -
-//        and lost it again. At ~6.7 ticks/s over roughly 11 megapixels of
-//        non-accelerated SVG filter, that is the budget gone on two surfaces
-//        that are barely doing anything with it.
-//
-//        Because those two are a tiled NEAR-BLACK texture: mean luminance
-//        10/255, sd 4.8. The whole width of the lookup table is being paid for
-//        to render what amounts to one colour with a faint texture on it.
-//
-//        So: pay for the table only where the art actually uses it - the two
-//        landscape paintings, which are real grayscale and never move - and
-//        give everything else the colour the table would have returned, from
-//        --grade-shadow / --grade-mid / --grade-highlight (ColorGradeFilter.
-//        tsx). That is exact, not an approximation: grading one colour can
-//        only produce one colour, and those properties are the same tables and
-//        the same hue rotation evaluated once in JS per tick instead of per
-//        pixel in SVG.
-//
-//        The texture survives. background-blend-mode: screen composites the
-//        original tile back over the flat colour, and since the tile tops out
-//        at L 31 that lifts the flat colour by at most ~12% of its headroom -
-//        which is close to what the table did with those same tones anyway,
-//        the difference being that the variation now reads as lightness rather
-//        than as hue.
-//
-//        Live filtered surfaces: 2, both static, both small. Same budget as
-//        justone, which the device ran smoothly.
-//
-//        What this knob still cannot do, because CSS cannot repaint an <img>
-//        in a flat colour: #shining-effect, #sunrays and #jiri-head stay
-//        ungraded, as do the cloud <img>s over their now-flat backings. All
-//        four are pure white or pure black single-colour art, so converting
-//        them to mask-image divs is both exact and cheap - it is a TSX change,
-//        and it is the work this knob exists to justify. Judge the framerate
-//        and the backdrop here; those four will look wrong and are supposed to.
-.grade-bisect-flat {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    filter: none !important;
-    will-change: auto !important;
-  }
-
-  // The two big backdrops: flat colour, tile screened back on for texture, no
-  // filter at all.
-  .color-grade-background,
-  .color-grade-layer {
-    filter: none !important;
-    will-change: auto !important;
-    background-color: var(--grade-shadow, #282c34) !important;
-    background-blend-mode: screen;
-  }
-
-  // The only live filters on the page. Real grayscale art that genuinely needs
-  // a per-brightness table, and static, so they cost one rasterization per
-  // tick and nothing per frame.
-  #landscape-1,
-  #landscape-2 {
-    filter: url(#landscape-color-grade) saturate(1) !important;
-  }
-
-  .opening-clouds__backing {
-    filter: none !important;
-    background-image: none !important;
-    background-color: var(--grade-mid, #4a4a4a) !important;
-  }
-
-  .service-bubble {
-    background-color: color-mix(in srgb, var(--grade-mid, transparent) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--grade-mid, transparent) 40%, transparent) !important;
-  }
-
-  .ambient-bubble {
-    background-color: color-mix(in srgb, var(--grade-mid, transparent) 12%, transparent) !important;
-    box-shadow:
-      0 0 14px color-mix(in srgb, var(--grade-mid, transparent) 30%, transparent),
-      inset 0 0 6px color-mix(in srgb, var(--grade-mid, transparent) 45%, transparent) !important;
-  }
-}
-
-// statics - the candidate shipping shape, and the next thing to measure.
-//
-//           justone (one small static filtered element) was smooth on the
-//           device; perel4still (~100 filtered elements, animations OFF) was
-//           not. So the variable is not the element count and not animation on
-//           its own - it is how much filtered SURFACE has to be re-rasterized
-//           per tick, with animation acting as a second multiplier on top by
-//           forcing the same work per frame instead of per tick.
-//
-//           This keeps the filter on exactly the art that genuinely needs a
-//           per-brightness table and never moves: the page backdrop, the sky
-//           tile, and the two landscape paintings. Three or four static
-//           surfaces instead of a hundred live ones. If that is smooth, it is
-//           what ships.
-//
-//           Everything that moves is handed a flat colour instead, through
-//           --color-grade-flat - which is the same maths evaluated once in JS
-//           rather than per-pixel in SVG (gradeFlatColor, see
-//           ColorGradeFilter.tsx). That is exact rather than approximate here,
-//           because every animating layer in this scene is single-colour art
-//           whose shape lives entirely in the alpha channel: grading one
-//           colour can only ever produce one colour.
-//
-//           Two caveats this knob cannot avoid, both noted in
-//           COLOR-GRADE-CROSS-BROWSER.md. The clouds lose their within-cloud
-//           hue variation, because a flat fill has no tonal variation for the
-//           table to turn into hue. And #shining-effect / #sunrays / #jiri-head
-//           are <img> elements, so CSS alone cannot repaint them in a flat
-//           colour - doing that properly means turning them into masked divs,
-//           which is a TSX change and is the work this knob exists to justify.
-//           They are simply left ungraded here; judge the framerate, not them.
-.grade-bisect-statics {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    filter: none !important;
-    will-change: auto !important;
-  }
-
-  .color-grade-layer {
-    background-image: none !important;
-    background-color: transparent !important;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background-image: $background-url;
-      background-color: #282c34;
-      background-repeat: repeat;
-      background-size: cover;
-      filter: url(#landscape-color-grade) saturate(1);
-    }
-  }
-
-  #landscape-1,
-  #landscape-2 {
-    filter: url(#landscape-color-grade) saturate(1) !important;
-  }
-
-  // The cloud body, with no filter at all: the swatch stops being a near-black
-  // tile pushed up the table and simply becomes the colour the table would
-  // have returned. Flat, so the tiling's hue variation goes - that is the
-  // visible cost of this whole approach, and the one thing worth looking at
-  // here besides the framerate.
-  .opening-clouds__backing {
-    filter: none !important;
-    background-image: none !important;
-    background-color: var(--color-grade-flat, #4a4a4a) !important;
-  }
-
-  .service-bubble {
-    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--color-grade-flat, transparent) 40%, transparent) !important;
-  }
-
-  .ambient-bubble {
-    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 12%, transparent) !important;
-    box-shadow:
-      0 0 14px color-mix(in srgb, var(--color-grade-flat, transparent) 30%, transparent),
-      inset 0 0 6px color-mix(in srgb, var(--color-grade-flat, transparent) 45%, transparent) !important;
-  }
-}
-
-// The cost diagnostics. The device run on 2026-09-19 established that this is
-// NOT about the tick rate: ?gradetick=5000 - a 33x slower palette clock - was
-// exactly as choppy as 150ms, and plain ?grade=on was instantly choppy with
-// only three group filters on the page, on a Safari that was not even
-// displaying the grade. So the cost is not the attribute rewrite and not the
-// number of re-rasterizations per second. What is left is having url() SVG
-// filters on the page at all while content animates in or near them - which,
-// if true, is about the technique rather than about any amount of it.
-//
-// These two split that in half. See IPAD-SAFARI-MAIN-THREAD.md.
-//
-// justone - exactly ONE filtered element on the whole page, and a static one:
-//           the landscape image. Everything else, including
-//           .color-grade-background, gives its filter up. If this is smooth
-//           then url() filters are affordable as long as nothing animates
-//           inside them, and the way forward is to filter only the static art
-//           and hand everything that moves a flat colour instead (every
-//           animating layer in this scene is single-colour art with its shape
-//           in the alpha channel, so none of them actually needs a per-pixel
-//           filter - see the note at the top of the perel mixin). If it is
-//           choppy, one SVG filter is already too much on iOS and there is no
-//           amount of tuning that saves this.
-.grade-bisect-justone {
-  .color-grade-layer,
-  .color-grade-background,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    filter: none !important;
-    will-change: auto !important;
-  }
-
-  #landscape-1 {
-    filter: url(#landscape-color-grade) saturate(1) !important;
-  }
-}
-
-// The candidate fixes. noanim proved the cause but is not usable as one: it
-// costs every animation on the page. Each of these instead tries to keep the
-// filtered group flattened while its contents still animate, so that a
-// promoted descendant composites through the ancestor's filter rather than
-// past it. They are one-liners with different side effects, and which of them
-// WebKit actually honours is a question only the device can answer - hence a
-// knob rather than a guess.
-//
-// fixa - isolation: isolate. Cheapest and most targeted: forces the group to
-//        be its own compositing root without claiming anything about layout.
-// fixb - contain: paint. Promises descendants never paint outside the box,
-//        which lets the engine treat the group as one unit. Riskier here: the
-//        landscape art deliberately overflows (negative bottom offsets), so
-//        watch for clipped art.
-// fixc - transform: translateZ(0). The old reliable, but it makes the group a
-//        containing block for fixed descendants - the reason .color-grade-
-//        background exists at all - so check the navbar and popup backdrop.
-// fixd - backface-visibility: hidden, the gentler cousin of fixc.
-.grade-bisect-fixa {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    isolation: isolate !important;
-  }
-}
-
-.grade-bisect-fixb {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    contain: paint !important;
-  }
-}
-
-.grade-bisect-fixc {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    transform: translateZ(0) !important;
-  }
-}
-
-.grade-bisect-fixd {
-  .color-grade-layer,
-  .ServiceBubbles,
-  .opening-clouds-behind {
-    backface-visibility: hidden !important;
-    -webkit-backface-visibility: hidden !important;
-  }
-}
-
-// noanim    - stop every animation and compositor hint inside the graded
-//             groups. A running compositable animation promotes an element to
-//             its own layer, and a promoted layer can be composited past an
-//             ancestor's filter instead of through it. That is the one
-//             difference between the probe that comes back coloured (a static
-//             div inside .color-grade-layer) and the art beside it, which
-//             animates.
-.grade-bisect-noanim {
-  .color-grade-layer *,
-  .ServiceBubbles *,
-  .opening-clouds-behind * {
-    animation: none !important;
-    transition: none !important;
-    will-change: auto !important;
-  }
-}
-
-.grade-bisect-noblend {
-  .color-grade-layer *,
-  .ServiceBubbles * {
-    mix-blend-mode: normal !important;
-  }
-}
-
-.grade-bisect-noshine {
-  #shining-effect,
-  #sunrays,
-  #jiri-head {
-    display: none !important;
-  }
-}
-
-.grade-bisect-nofilter {
-  .color-grade {
-    filter: none !important;
-    will-change: auto !important;
-  }
-}
-
-// A popup's text needs to stay readable, so the grading smoothly backs off
-// while one is open rather than fighting for contrast right behind it.
 body.color-grade-dimmed .color-grade {
   filter: url(#landscape-color-grade) saturate(0.5);
 }

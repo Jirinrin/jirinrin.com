@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { CookiesProvider } from 'react-cookie';
 
@@ -13,27 +13,20 @@ import { startFrameBudgetWatchdog } from './utils/frameBudgetWatchdog';
 
 import './App.scss';
 
-// Diagnostics only, and lazily imported so none of it reaches the normal
-// bundle: `?gradeprobe=1` mounts a panel that shows whether this engine can
-// actually render the colour grade. See GradeProbeOverlay.tsx - it exists so
-// that question can be answered on a device you cannot attach an inspector to.
-const GradeProbeOverlay = React.lazy(() => import('./components/colorGrade/GradeProbeOverlay'));
-
 function App() {
   const [gradeMode, setGradeMode] = useState(getColorGradeMode);
   const gradeEnabled = gradeMode === 'on';
-  const showProbe = useMemo(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('gradeprobe'),
-    [],
-  );
 
-  // `?gradebisect=<mode>` takes properties away from the real graded surfaces,
-  // one at a time, on the real page. The probe overlay can prove that an
-  // engine renders the filter, but it cannot honestly reproduce a
-  // viewport-wide layer thousands of pixels tall with the whole landscape
-  // animating inside it - so when the panel says yes and the page says no,
-  // this is the only way left to find the difference. See App.scss for the
-  // modes; it is a diagnostic knob, not a feature.
+  // `?gradebisect=<mode>` switches the page to one of the two preserved
+  // alternative colour-grade rendering paths. Both were built for iOS Safari,
+  // which cannot run the normal group-filter path, and both were finished and
+  // then shelved when it turned out WebKit does not GPU-accelerate
+  // url()-referenced SVG filters. `perel4` is the full-fidelity one and
+  // `flat2` the cheap one; see App.scss for what each does, and
+  // COLOR-GRADE-CROSS-BROWSER.md for why neither shipped.
+  //
+  // Kept wired up so a future Safari can be re-tested in a single page load
+  // rather than a git archaeology session - the same reason `?grade=` exists.
   const bisect = useMemo(
     () => (typeof window === 'undefined'
       ? null
@@ -73,11 +66,6 @@ function App() {
         >
           {gradeEnabled && <ColorGradeFilter />}
           {gradeEnabled && <div className="color-grade-background color-grade" aria-hidden />}
-          {showProbe && (
-            <React.Suspense fallback={null}>
-              <GradeProbeOverlay />
-            </React.Suspense>
-          )}
           <Navbar showAboutOptions={false} />
           <div id="main">
             <ServiceBubbles />
