@@ -36,4 +36,4 @@ With beginless & endless love,
 
 _(© Tomorrow Corporation™, 1809 for the image Jiri traced this character from)_
 
-<!-- webkit-only -->_(P.S. this website normally has a groovy fullspectrum changing color palette, but sadly on Apple devices it's not supported so it's black-white for you!)_
+<!-- webkit-only -->_(P.S. this website normally has a groovy fullspectrum changing color palette, but sadly on Apple devices it's not supported, so it's black-white for you!)_

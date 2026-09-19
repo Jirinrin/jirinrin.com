@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
-import { isMobile } from 'react-device-detect';
+import { isMobileOnly } from 'react-device-detect';
 import { useCookies } from 'react-cookie';
 
 import { changePage } from '../store/currentPageSlice';
@@ -221,7 +221,7 @@ const Landscape1 = forwardRef<HTMLDivElement, Landscape1Props>(function Landscap
 
     setBookShadow(C.calculateBookShadow('.book--tiny'));
 
-    if (!isMobile) {
+    if (!isMobileOnly) {
       if (!cookies.hasVisited)
         window.addEventListener('scroll', handleScroll);
       document.addEventListener('mousemove', handleMousemove);
