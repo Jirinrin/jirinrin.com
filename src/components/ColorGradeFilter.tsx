@@ -129,7 +129,7 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // backface-visibility were all tried on the device and all refused
 // (`?gradebisect=fixa`..`fixd`). The remaining approach is to move the
 // filter off the groups and onto the leaves, since a promoted layer does
-// honour its OWN filter (probe O) - see `?gradebisect=perel3` and
+// honour its OWN filter (probe O) - see `?gradebisect=perel4` and
 // COLOR-GRADE-CROSS-BROWSER.md. Until that lands and looks right, the
 // fallback stays. Re-test on the device, not by editing this.
 export function getColorGradeMode(): 'on' | 'off' {
@@ -157,6 +157,28 @@ export function getColorGradeMode(): 'on' | 'off' {
   const ua = navigator.userAgent;
   if (/safari/i.test(ua) && !/chrome|chromium|crios|android/i.test(ua)) return 'off';
   return 'on';
+}
+
+// `?gradetick=<ms>` overrides TICK_MS for one page load. This is a
+// measurement tool, not a setting: every element carrying
+// `filter: url(#landscape-color-grade)` has to be re-rasterized on every tick,
+// so the tick rate multiplied by the number of live filter targets *is* the
+// grade's main-thread cost. Under the per-element path that target count goes
+// from 3 groups to something near a hundred leaves (~47 clouds x img +
+// backing, plus the landscape layers and objects), and the only honest way to
+// find out whether that is what makes a device choppy is to vary one of the
+// two factors and watch. See IPAD-SAFARI-MAIN-THREAD.md.
+//
+// Clamped rather than trusted: below ~30ms it is just asking to be blamed for
+// a hang, and above 5s the palette stops visibly moving at all, which makes
+// the thing being measured unobservable.
+export function gradeTickMs(): number {
+  if (typeof window === 'undefined') return TICK_MS;
+  const raw = new URLSearchParams(window.location.search).get('gradetick');
+  if (raw === null) return TICK_MS;
+  const ms = Number(raw);
+  if (!Number.isFinite(ms)) return TICK_MS;
+  return Math.min(5_000, Math.max(30, ms));
 }
 
 /** True when ?grade= pinned the mode, in which case the watchdog must not override it. */
@@ -204,6 +226,7 @@ function ColorGradeFilter() {
     writeLinkVars(initialState);
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    const tickMs = gradeTickMs();
     const startedAt = performance.now();
     const clock = createGradeClock(initialStops, startedAt);
     let lastTick = -Infinity;
@@ -221,7 +244,7 @@ function ColorGradeFilter() {
     const loop = () => {
       frame = requestAnimationFrame(loop);
       const now = performance.now();
-      if (now - lastTick < TICK_MS) return;
+      if (now - lastTick < tickMs) return;
       lastTick = now;
 
       const state = clock.sample(now);
