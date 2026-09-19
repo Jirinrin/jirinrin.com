@@ -404,10 +404,13 @@ cannot reference a `<canvas>`.
 ### Still to do
 
 - **Phase 7 below** — Safari is diagnosed, `perel4` looks right and is preserved (tag
-  `safari-perel4-full`), and the cost is measured: filtered surface area per tick. What ships is the
-  `statics` shape. See also [IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md).
-- Item 3's Chrome regression pass and item 7's Lighthouse run.
-- `getDocHeight`'s per-frame forced layout, as its own separate change.
+  `safari-perel4-full`), and the cost is measured: filtered surface area per tick. `statics` was not
+  cheap enough; `flat` is the last idea and the one outstanding device question. See also
+  [IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md).
+- Item 7's Lighthouse run. **Item 3's Chrome regression pass is done** — checked 2026-09-19, no
+  regressions found.
+- ~~`getDocHeight`'s per-frame forced layout~~ — **done**, as its own change. Cached, with invalidation
+  on resize, orientationchange and a ResizeObserver.
 
 ---
 
@@ -589,43 +592,76 @@ This corrects the framing in the previous round, which read "3 groups janky, 100
 "element count doesn't matter". Count doesn't matter; **area does**, and those three groups covered more
 of the page than the hundred leaves do.
 
-### The shape that can ship
+### `statics` was better and still not enough — which finishes the arithmetic
 
-Keep the filter on exactly the art that genuinely needs a per-brightness table **and never moves**, and
-hand everything that moves a flat colour instead.
+Better than `perel4`, but still no real-time cloud parallax and still no zoom animation on clicking an
+object. Put next to the earlier rows, that is the last piece:
 
-That second half is exact here, not an approximation, and this is the thing the per-element work found
-without looking for it: **every animating layer in this scene is single-colour art whose shape lives
-entirely in the alpha channel.** Clouds and both glow layers are pure white (L 254–255); the floating
-head is pure black (99.2% of visible pixels below L 25). *Grading one colour can only ever produce one
-colour* — so a flat fill through the same alpha is pixel-identical to filtering the image, on every
-browser, at no per-frame cost. `gradeFlatColor` already computes exactly that in JS, and the bubbles
-have been running on it since the last commit.
-
-| Layer | Today | Ships as |
+| Mode | Live filtered surfaces | Result |
 | --- | --- | --- |
-| `.color-grade-background`, `.color-grade-layer`'s sky tile | filtered group | **filtered**, static, unchanged in kind |
-| `#landscape-1`, `#landscape-2` | inherit the group filter | **filtered** on the leaf — real grayscale art, genuinely needs the table, and static |
-| `.opening-clouds__backing` (~47) | `brightness/contrast` + `url()` | flat `--color-grade-flat` fill through the existing mask |
-| cloud `<img>` (~47) | `url()` | flat fill through its alpha |
-| `#shining-effect`, `#sunrays`, `#jiri-head` | `url()` | flat fill through their alpha |
-| `.service-bubble`, `.ambient-bubble` | flat already | unchanged |
-| landscape objects, creatures | `url()` | to decide — static on iPad, and small |
+| `justone` | 1, small, static | **smooth enough** |
+| `statics` | 4, of which **two are enormous** — the full-viewport `.color-grade-background` and the full-height sky tile | better, not enough |
+| `perel4still` | ~100, static | full jank |
 
-**`?gradebisect=statics` is that shape as far as CSS alone can express it**, and it is the next thing to
-run. Two caveats it cannot avoid:
+`statics` added two static surfaces to `justone` and lost it again, so it really is area, and the budget
+is somewhere between "one landscape painting" and "one landscape painting plus two full-page backdrops".
+At ~6.7 ticks/s over roughly 11 megapixels of non-accelerated SVG filter, that is unsurprising.
 
-1. **The clouds lose their within-cloud hue variation.** A flat fill has no tonal variation for the
-   table to turn into hue, so the trippiness that `perel4`'s `brightness(8.5) contrast(0.75)` exists to
-   produce goes with it. This is the real cost of the approach and the one thing worth looking at
-   besides the framerate. If it is too big a loss there is a middle road: keep the backing's *tile*
-   (with its filter) and flat-fill only the ~47 cloud `<img>`s, halving the surface rather than
-   removing it.
-2. **`#shining-effect` / `#sunrays` / `#jiri-head` are `<img>` elements**, and CSS cannot repaint an
-   image in a flat colour. Doing it properly means turning them into masked `<div>`s
-   (`mask-image: url(...)` + `background-color`), which is a TSX change — and a strict improvement on
-   *every* browser, since it removes three full-width SVG filter surfaces from Chrome too. The knob
-   simply leaves them ungraded; judge the framerate, not them.
+**And those two surfaces are the ones least worth spending it on.** They are a tiled *near-black*
+texture — mean luminance 10/255, sd 4.8. The entire width of the lookup table is being paid for to
+render what amounts to one colour with a faint texture on it.
+
+### `flat` — the last idea, and it is a real one
+
+Pay for the table only where the art uses it, and give everything else the colour the table would have
+returned.
+
+- **Filtered:** `#landscape-1` and `#landscape-2` only. Real grayscale art, genuinely needs a
+  per-brightness table, and static. Two small surfaces — `justone`'s budget, which the device ran
+  smoothly.
+- **Flat:** everything else, from three new custom properties — `--grade-shadow`, `--grade-mid` and
+  `--grade-highlight` (ColorGradeFilter.tsx), written every tick beside the link colours. Four
+  `setProperty` calls became seven.
+
+This is **exact, not an approximation**, wherever the source is one colour: grading one colour can only
+produce one colour, and `gradeFlatColor` is the same tables and the same hue rotation evaluated once in
+JS instead of per-pixel in SVG. The clouds, both glow layers and the floating head all qualify — every
+one of them is single-colour art whose shape lives entirely in the alpha channel.
+
+**The backdrop keeps its texture.** `background-blend-mode: screen` composites the original tile back
+over the flat colour, and since the tile tops out at L 31 that lifts it by at most ~12% of its headroom —
+close to what the table did with those same tones, the difference being that the variation now reads as
+lightness rather than as hue.
+
+**What `flat` still cannot do**, because CSS cannot repaint an `<img>` in a flat colour:
+`#shining-effect`, `#sunrays`, `#jiri-head` and the cloud `<img>`s stay ungraded and will look wrong.
+Converting them to `mask-image` divs is exact and cheap, and is a strict improvement on Chrome too since
+it removes three full-width SVG filter surfaces there as well — but it is a TSX change, and it is the
+work this knob exists to justify. **Judge the framerate and the backdrop; ignore those four.**
+
+If `flat` is smooth, the remaining path is that conversion and nothing else, and Safari gets a real
+coloured landscape. If `flat` is *not* smooth, then two small static filters plus flat fills is already
+past the budget, there is nothing left to remove, and the grade genuinely cannot run on iOS — in which
+case the cleanup is: fallback stays permanent, `perel4` and `flat` are kept as knobs for a future
+WebKit, and everything else in the bisect list comes out.
+
+### The shape that would ship, if `flat` holds
+
+| Layer | Ships as |
+| --- | --- |
+| `.color-grade-background`, `.color-grade-layer` | flat `--grade-shadow` + tile screened back on |
+| `#landscape-1`, `#landscape-2` | **filtered** — the only live filters left |
+| `.opening-clouds__backing` (~47) | flat `--grade-mid` through the existing mask |
+| cloud `<img>` (~47) | `<div>` + `mask-image`, flat `--grade-highlight` |
+| `#shining-effect`, `#sunrays` | `<div>` + `mask-image`, flat `--grade-highlight` |
+| `#jiri-head` | `<div>` + `mask-image`, flat `--grade-shadow` |
+| `.service-bubble`, `.ambient-bubble` | flat already |
+| landscape objects, creatures | flat or unfiltered — static on iPad, and small |
+
+The cost that remains, and it is a real one: **the clouds lose their within-cloud hue variation.** A flat
+fill has no tonal variation for the table to turn into hue, so the trippiness `perel4`'s
+`brightness(8.5) contrast(0.75)` exists to produce does not survive. That is the honest trade for a
+coloured Safari, and it is a judgement call rather than a technical one.
 
 ### `perel4` is preserved, not abandoned
 
@@ -655,10 +691,13 @@ unpicked:
 
 ### What to run next
 
-1. **`?grade=on&gradebisect=statics`.** Is it smooth, and are flat clouds an acceptable loss?
-2. If smooth and the clouds are too flat: the middle road in caveat 1 above, as its own knob.
-3. Either way, the `<img>` → masked-`<div>` conversion for the three full-width layers, which is worth
-   doing on its own merits.
+**`?grade=on&gradebisect=flat`**, and only that. Two questions:
+
+1. **Is it smooth** — real-time cloud parallax, and a zoom animation that plays rather than jumps?
+2. **Does the backdrop still look like the site** — textured, coloured, drifting — with the tile screened
+   over a flat fill instead of pushed through the table?
+
+The four ungraded `<img>` layers will look wrong. That is expected and is not what is being tested.
 
 ### The diagnostic knobs
 
@@ -666,7 +705,7 @@ All take `?grade=on` alongside. Defined in `App.scss`, wired in `App.tsx`. **The
 features** — whatever ships should be a real rule, and these should come out.
 
 `nofilter` (useless as a control — the art is monochrome at source, so grey proves nothing) · `nowc` ·
-`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `justone` · `perel4` · `statics`
+`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `justone` · `perel4` · `statics` · `flat`
 
 The `perel1`..`perel3` knobs have been removed now that the runs above settled what they each asked;
 what they proved is recorded here rather than in the stylesheet. `?gradetick=<ms>` is separate from

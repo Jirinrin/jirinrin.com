@@ -373,6 +373,91 @@ body.color-grade-dimmed {
   .grade-bisect-perel4 { @include grade-per-element($sat: 0.5); }
 }
 
+// flat - justone's filter budget, with the whole page still coloured.
+//
+//        statics was better than perel4 and still not good enough, which is
+//        the last piece of the arithmetic: justone (one small static filter)
+//        was smooth, statics added two HUGE static filtered surfaces - the
+//        full-viewport .color-grade-background and the full-height sky tile -
+//        and lost it again. At ~6.7 ticks/s over roughly 11 megapixels of
+//        non-accelerated SVG filter, that is the budget gone on two surfaces
+//        that are barely doing anything with it.
+//
+//        Because those two are a tiled NEAR-BLACK texture: mean luminance
+//        10/255, sd 4.8. The whole width of the lookup table is being paid for
+//        to render what amounts to one colour with a faint texture on it.
+//
+//        So: pay for the table only where the art actually uses it - the two
+//        landscape paintings, which are real grayscale and never move - and
+//        give everything else the colour the table would have returned, from
+//        --grade-shadow / --grade-mid / --grade-highlight (ColorGradeFilter.
+//        tsx). That is exact, not an approximation: grading one colour can
+//        only produce one colour, and those properties are the same tables and
+//        the same hue rotation evaluated once in JS per tick instead of per
+//        pixel in SVG.
+//
+//        The texture survives. background-blend-mode: screen composites the
+//        original tile back over the flat colour, and since the tile tops out
+//        at L 31 that lifts the flat colour by at most ~12% of its headroom -
+//        which is close to what the table did with those same tones anyway,
+//        the difference being that the variation now reads as lightness rather
+//        than as hue.
+//
+//        Live filtered surfaces: 2, both static, both small. Same budget as
+//        justone, which the device ran smoothly.
+//
+//        What this knob still cannot do, because CSS cannot repaint an <img>
+//        in a flat colour: #shining-effect, #sunrays and #jiri-head stay
+//        ungraded, as do the cloud <img>s over their now-flat backings. All
+//        four are pure white or pure black single-colour art, so converting
+//        them to mask-image divs is both exact and cheap - it is a TSX change,
+//        and it is the work this knob exists to justify. Judge the framerate
+//        and the backdrop here; those four will look wrong and are supposed to.
+.grade-bisect-flat {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  // The two big backdrops: flat colour, tile screened back on for texture, no
+  // filter at all.
+  .color-grade-background,
+  .color-grade-layer {
+    filter: none !important;
+    will-change: auto !important;
+    background-color: var(--grade-shadow, #282c34) !important;
+    background-blend-mode: screen;
+  }
+
+  // The only live filters on the page. Real grayscale art that genuinely needs
+  // a per-brightness table, and static, so they cost one rasterization per
+  // tick and nothing per frame.
+  #landscape-1,
+  #landscape-2 {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+
+  .opening-clouds__backing {
+    filter: none !important;
+    background-image: none !important;
+    background-color: var(--grade-mid, #4a4a4a) !important;
+  }
+
+  .service-bubble {
+    background-color: color-mix(in srgb, var(--grade-mid, transparent) 10%, transparent) !important;
+    border-color: color-mix(in srgb, var(--grade-mid, transparent) 40%, transparent) !important;
+  }
+
+  .ambient-bubble {
+    background-color: color-mix(in srgb, var(--grade-mid, transparent) 12%, transparent) !important;
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--grade-mid, transparent) 30%, transparent),
+      inset 0 0 6px color-mix(in srgb, var(--grade-mid, transparent) 45%, transparent) !important;
+  }
+}
+
 // statics - the candidate shipping shape, and the next thing to measure.
 //
 //           justone (one small static filtered element) was smooth on the

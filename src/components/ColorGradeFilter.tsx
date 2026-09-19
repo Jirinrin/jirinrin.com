@@ -76,6 +76,35 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
   ['--grade-link-dark-hover', 240, 0.4],
 ];
 
+// The three ends of the table, as flat colours, written every tick alongside
+// the link colours above. Same machinery, same cost - four setProperty calls
+// became seven.
+//
+// These exist because of what the iPad measurements turned up: on WebKit a
+// `url()` filter is rasterized on the main thread, so what a page can afford
+// is bounded by filtered *surface area* per tick, and this site's largest
+// graded surfaces are also its least interesting ones. The page backdrop and
+// the sky are a tiled near-black texture (mean luminance 10/255, sd 4.8), and
+// every animating layer - clouds, both glow layers, the floating head - is
+// single-colour art whose shape lives entirely in the alpha channel.
+//
+// For all of those, a flat fill is not an approximation of the filter. It is
+// the same answer: grading one colour can only ever produce one colour, and
+// `gradeFlatColor` is the same tables and the same hue rotation evaluated once
+// in JS instead of per-pixel in SVG. What a flat fill genuinely loses is tonal
+// *variation* - a textured surface stops having its texture turned into hue -
+// which is why the backdrop keeps its tile and blends it back over the top
+// (see `.grade-bisect-flat` in App.scss) rather than going plain.
+//
+// Distinct from `--color-grade-flat` above, which is the same midtone but
+// written once every 8s for consumers that drift slowly on purpose. These are
+// painted over large areas and would show that cadence as a visible step.
+const ART_VARS: [name: string, input: number, saturate: number][] = [
+  ['--grade-shadow',      0, 1],
+  ['--grade-mid',       128, 1],
+  ['--grade-highlight', 255, 1],
+];
+
 // Whether the colour grade runs at all on this page load. There are only two things
 // left that get decided by a browser's name, and both are about whether the
 // technique *works*, never about whether it is fast enough - that second
@@ -213,7 +242,7 @@ function ColorGradeFilter() {
     const root = document.documentElement;
 
     const writeLinkVars = (state: GradeState) => {
-      for (const [name, input, saturate] of LINK_VARS) {
+      for (const [name, input, saturate] of [...LINK_VARS, ...ART_VARS]) {
         root.style.setProperty(name, rgbToCss(gradeFlatColor(gray01(input), state, saturate)));
       }
     };
@@ -275,7 +304,7 @@ function ColorGradeFilter() {
     return () => {
       cancelAnimationFrame(frame);
       root.style.removeProperty('--color-grade-flat');
-      for (const [name] of LINK_VARS) root.style.removeProperty(name);
+      for (const [name] of [...LINK_VARS, ...ART_VARS]) root.style.removeProperty(name);
     };
   }, [initialStops, initialTables]);
 

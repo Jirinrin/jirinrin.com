@@ -65,6 +65,20 @@ hundred leaves do.
 WebKit not GPU-accelerating `url()`-referenced SVG filters (unlike the native `filter` functions) is the
 underlying reason any of this is expensive enough to notice. That part stands.
 
+## Where the budget actually sits
+
+`statics` — which keeps the filter on four static surfaces, two of them full-page — was better
+than `perel4` and still not enough: no real-time cloud parallax, and clicking an object still
+jumps to the zoomed state instead of animating there. So the budget is somewhere between "one
+landscape painting" (`justone`, smooth) and "one landscape painting plus two full-page backdrops"
+(`statics`, not smooth).
+
+`?gradebisect=flat` is the response, and the last idea: filter only the two landscape paintings,
+and hand every other surface the colour the table would have returned, from three flat custom
+properties. That is exact rather than approximate wherever the source is a single colour, which here
+is everywhere except those two paintings. The backdrop keeps its texture by screening the original
+tile back over the flat fill. Details in COLOR-GRADE-CROSS-BROWSER.md.
+
 ## What follows from it
 
 The grade can run on iOS, as long as the filtered surfaces are **few, static, and no larger than they
@@ -79,10 +93,11 @@ run.
 
 `?grade=off` was "a lot better, even if some animations are still a tad choppy". That residue is worth
 its own look once the filter question is settled. The known candidate is already written down:
-**`getDocHeight`'s forced synchronous layout**, called from `getPupilTranslation` ←
-`applyPupilTranslation` inside a `requestAnimationFrame` callback, every frame. It profiled as the **#3
-self-time item on the content main thread (10.9%)** on a fast Windows desktop, ~2.3–2.5ms per frame.
-Cache the document height, or read it once per resize.
+~~**`getDocHeight`'s forced synchronous layout**~~ — **done.** It was worse than the note said:
+`getPupilTranslation` called it three times per invocation, from a `requestAnimationFrame`
+callback, so a moving cursor cost fifteen forced layouts per frame. Now cached, invalidated on resize,
+orientationchange and a ResizeObserver on `<body>`. Whether it moves the needle on the iPad residue
+is still unmeasured.
 
 After that, in rough order:
 
