@@ -28,16 +28,60 @@ export function mapRange(num: number, inMin: number, inMax: number, outMin: numb
   return (num - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 
+// Five layout reads, and every one of them flushes any pending style and
+// layout work first. That is cheap once and ruinous in a loop - and this is
+// in a loop: getPupilTranslation calls it three times, from an
+// applyPupilTranslation that runs inside a requestAnimationFrame callback, so
+// a moving cursor was costing fifteen forced synchronous layouts per frame.
+//
+// It profiled as the #3 self-time item on the content main thread (10.9% on
+// `?perf=high`, 7.9% on low, ~2.3-2.5ms of every frame) on a fast Windows
+// desktop with hardware WebRender - larger than the WebRender display list,
+// larger than style computation, and roughly 140x the colour grade's own
+// cost. See COLOR-GRADE-CROSS-BROWSER.md, which found it while looking for
+// something else entirely.
+//
+// The document's height does not change between frames of a cursor moving
+// across it, so cache it and invalidate on the things that genuinely do
+// change it. A ResizeObserver on `<body>` covers content-driven changes (the
+// landscape sections are absolutely positioned against a box whose height
+// comes from the ServiceBubbles section above them, and that box resizes when
+// the viewport does); resize and orientationchange cover the rest.
+// invalidateDocHeight() is exported for anything that knows it has just
+// changed the layout and cannot wait for the observer's next delivery.
+let docHeight: number | null = null;
+
+export function invalidateDocHeight(): void {
+  docHeight = null;
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', invalidateDocHeight, { passive: true });
+  window.addEventListener('orientationchange', invalidateDocHeight, { passive: true });
+
+  // Where ResizeObserver is missing the two listeners above still catch the
+  // common case, and a stale height here costs a few pixels of pupil aim.
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(invalidateDocHeight);
+    observer.observe(document.documentElement);
+    if (document.body) observer.observe(document.body);
+    else document.addEventListener('DOMContentLoaded', () => observer.observe(document.body), { once: true });
+  }
+}
+
 export function getDocHeight(): number {
+  if (docHeight !== null) return docHeight;
+
   const body = document.body;
   const html = document.documentElement;
-  return Math.max(
+  docHeight = Math.max(
     body.scrollHeight,
     body.offsetHeight,
     html.clientHeight,
     html.scrollHeight,
     html.offsetHeight
   );
+  return docHeight;
 }
 
 export function getBottomScrollPos(): number {
