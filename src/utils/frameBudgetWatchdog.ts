@@ -30,13 +30,16 @@ const WARMUP_FRAMES = 10;
 // genuinely expensive - with a worst case around 140ms. A device meaningfully
 // worse than that is one where the grade is costing more than it is worth.
 //
-// 50ms is therefore about 1.3x the reference p95: loose enough not to condemn
-// a machine that is merely busy, tight enough to catch one that is actually
-// struggling. It is calibrated from ONE machine and should be revisited if a
-// second data point ever disagrees - which is exactly the mistake this module
-// exists to stop repeating, so: do not quote this number without saying where
-// it came from.
-const P95_BUDGET_MS = 50;
+// 50ms was first chosen (about 1.3x the reference p95), but that proved too
+// strict: Firefox on the owner's own machine tripped it while still feeling
+// fine - a little jank, nothing that justified dropping to black-and-white.
+// 80ms is about 2x the reference p95 (roughly five dropped frames at 60Hz), so
+// only a device that is visibly, consistently choppy gets backed off. This is
+// still calibrated from a couple of anecdotal data points rather than a
+// survey, and should be revisited if more disagree - which is exactly the
+// mistake this module exists to stop repeating, so: do not quote this number
+// without saying where it came from.
+const P95_BUDGET_MS = 80;
 
 // Below this there is not enough signal to judge anything - a tab that was
 // backgrounded, or a page closed after two seconds.
