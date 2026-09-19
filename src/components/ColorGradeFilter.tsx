@@ -210,9 +210,22 @@ export function getColorGradeMode(): 'on' | 'off' {
   // power, and phones render this perfectly well today.
   if (measuredTier() === true) return 'off';
 
-  const ua = navigator.userAgent;
-  if (/safari/i.test(ua) && !/chrome|chromium|crios|android/i.test(ua)) return 'off';
+  if (isWebKitEngine()) return 'off';
   return 'on';
+}
+
+// Every browser on iOS/iPadOS is WebKit underneath - Apple requires it - so
+// Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS) and the rest hit the same
+// limitations as Safari and must take the same fallback. Their UAs say
+// "CriOS" etc. rather than "Safari"/"Chrome", so the device is what to test,
+// not the browser's name. iPadOS also reports itself as a Mac by default, hence
+// the touch-points check. Desktop Safari is the remaining WebKit case: it is
+// the only desktop UA that says "Safari" without "Chrome"/"Chromium".
+function isWebKitEngine(): boolean {
+  const ua = navigator.userAgent;
+  if (/iphone|ipad|ipod/i.test(ua)) return true;
+  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+  return /safari/i.test(ua) && !/chrome|chromium|android/i.test(ua);
 }
 
 // `?gradetick=<ms>` overrides TICK_MS for one page load. This is a
