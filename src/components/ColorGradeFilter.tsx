@@ -129,7 +129,7 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // backface-visibility were all tried on the device and all refused
 // (`?gradebisect=fixa`..`fixd`). The remaining approach is to move the
 // filter off the groups and onto the leaves, since a promoted layer does
-// honour its OWN filter (probe O) - see `?gradebisect=perel2` and
+// honour its OWN filter (probe O) - see `?gradebisect=perel3` and
 // COLOR-GRADE-CROSS-BROWSER.md. Until that lands and looks right, the
 // fallback stays. Re-test on the device, not by editing this.
 export function getColorGradeMode(): 'on' | 'off' {

@@ -403,7 +403,8 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- **Phase 7 below** — Safari is diagnosed; what is left is finishing the per-element rendering path.
+- **Phase 7 below** — Safari is diagnosed and the per-element path is at `perel3`, which needs a device
+  pass (see "What to look for on the device") before any of it can be promoted from a knob to a rule.
 - Item 3's Chrome regression pass and item 7's Lighthouse run.
 - `getDocHeight`'s per-frame forced layout, as its own separate change.
 
@@ -456,24 +457,100 @@ heavier engine and the same blend-maths problem.
 ### The remaining path: per-element (`perel`)
 
 Take the filter off the groups, put it on the leaves. Probe O proves a promoted layer honours its own
-filter. `?gradebisect=perel2` is the current attempt.
+filter. `?gradebisect=perel3` is the current attempt.
 
-**Two costs are inherent, not bugs to fix.** `grade(blend(a,b)) ≠ blend(grade(a),grade(b))`, so anywhere
-the art uses `mix-blend-mode` the result genuinely changes — the three full-width blend layers
-(`#shining-effect` screen, `#sunrays` and `#jiri-head` multiply) cannot be made to "follow" the grade,
-because following it _is_ the group operation WebKit refuses. And it multiplies live filter targets, which
-is the cost Phase 2 existed to reduce.
+**One cost is inherent, not a bug to fix.** `grade(blend(a,b)) ≠ blend(grade(a),grade(b))`, so anywhere
+the art uses `mix-blend-mode` the result genuinely changes, because following the grade _is_ the group
+operation WebKit refuses. Earlier notes here counted three full-width layers under that heading. Measured
+(`sharp`, raw RGBA, every pixel), only **one** of them is a blend layer at all:
 
-**Known-open, as of the last device run:**
+| Layer | Art | Blend | Verdict |
+| --- | --- | --- | --- |
+| `#sunrays` | pure white, L 254–255, shape entirely in alpha | **none** | ordinary alpha layer — just grade it |
+| `#shining-effect` | pure white, L 255 everywhere, shape in alpha | `screen` | `screen(x, white) = white`, so against this source the blend mode has never done anything a normal composite would not |
+| `#jiri-head` | grayscale 0–255 in RGB, soft alpha (mean 67/255) | `multiply` | the only real one |
 
-- The main landscape grades correctly under `perel`.
-- Clouds needed `.opening-clouds__backing` as well as `img` (done in `perel2`); the background behind
-  them then came out **black**, not yet explained — `__backing` is a masked dark-gray tile now graded on
-  its own rather than as part of the composite.
-- `#jiri-head` and the gradient behind it still do not follow the grade. Expected, per the blend maths
-  above; the open question is what looks _best_, not what is correct.
-- `.opening-clouds__glass` is deliberately left unfiltered — it is a `backdrop-filter` sampling the art
+So the inherent cost is one layer, not three. The other cost is real and unchanged: per-element grading
+multiplies live filter targets, which is what Phase 2 existed to reduce.
+
+**Where `perel2` got to, on the device:** the main landscape graded correctly; the clouds came out with
+a **black** patch behind them; `#jiri-head` and "the gradient behind it" did not follow the grade.
+
+### `perel3` — what those two symptoms actually were
+
+Both had ordinary causes, found by measuring the art rather than by another device round-trip.
+
+**1. The black clouds were an input problem, not a filter problem.** `background-darkgray.webp` is not
+dark gray. Measured over all 2000×2000 pixels: **mean luminance 10/255, maximum 31** — it is near-black.
+That never mattered while the whole group was graded, because the swatch was never seen on its own: the
+white cloud image on top pulled the _composite_ up to roughly 0.30 before the grade's lookup table saw it,
+and 0.30 is where the table pays out its vivid midtone stop (`s` 0.65–0.95). Grade the swatch by itself
+and the table gets 0.04, hands back the darkest stop (`l` 0.14–0.24), and at `opacity: 0.55` that paints
+a cloud-shaped hole. The filter was working the whole time.
+
+`perel3` does explicitly what the composite used to do implicitly, and lifts the swatch into the midtone
+band _before_ the grade sees it: `filter: brightness(7) url(#landscape-color-grade) saturate(1)`. ×7 maps
+the tile's 0–31 onto 0–217 — inside the vivid band, and **without clipping**, so the tiling's own tonal
+variation survives and the table still turns it into hue variation across a single cloud. ×12 would centre
+the band but clip everything above 21 to white and flatten exactly that variation, which is what
+`?gradebisect=perel3lift` exists to compare against.
+
+**2. Most of "jiri-head and the gradient behind it" was the sky, not the head.**
+`.color-grade-layer` paints the tiled backdrop as its **own CSS background**, so taking the filter off the
+group took the grade off the whole sky with it — and `#shining-effect`, `#sunrays` and `#jiri-head` were
+all explicitly excluded in `perel2` on top of that, leaving that entire region ungraded. `perel3` moves
+that paint into a `.color-grade-layer::before` that carries the filter itself (static content, so it is
+WebKit's easy case, not the promoted-layer one), and grades all three layers:
+
+- **`#sunrays`** has no `mix-blend-mode`. It is a white-on-alpha image and simply gets the filter, which
+  turns its white into the grade's highlight stop — which is exactly what the group filter produced, since
+  a white-ish composite is what it fed the top of the table.
+- **`#shining-effect`** gets the filter and **loses its `screen`**, which was a no-op against a pure white
+  source. Keeping `screen` once the source is a coloured highlight would blow it back out toward white.
+- **`#jiri-head`** is the genuine blend layer, so this is a taste call rather than a correctness one.
+  Graded by default: its darks then land on the grade's dark stop and travel with the palette instead of
+  reading as a flat neutral shadow. The cost is that its near-white areas darken slightly — with soft alpha
+  (mean 67/255) at `opacity: 0.68` that works out at a couple of percent. `?gradebisect=perel3head` is the
+  same thing with the head left ungraded, for comparison.
+
+`perel3` also re-chains the popup-dim `saturate(0.5)` onto the leaves. That response normally rides
+`.color-grade`'s own filter list, which under `perel` carries no filter at all, so without it the grading
+stops backing off behind an open popup. It snaps rather than fades: `.color-grade`'s 0.6s interpolation
+needs the filter list to keep one shape, and here the leading function differs per selector
+(`brightness` on the cloud swatches, `blur` on the well glow).
+
+### Still ungraded under `perel3` (CSS paint, not `<img>`)
+
+Deliberate, and the open question for the next device pass is whether any of them actually reads wrong:
+
+- **`.service-bubble` glass gradients, its `::before`/`::after` glints, and `.ambient-bubble`** — all
+  white/neutral CSS gradients, and all animating, so each would need its own live filter. Dozens of
+  targets for the exact cost Phase 2 was about. Left neutral: white glass on a graded page is a defensible
+  look, but it is a visible Chrome/Safari difference.
+- **`h2.landscape-name`** — `mix-blend-mode: multiply` on `rgba(0,0,0,0.274)` text at `font-size: 25rem`.
+  Grading it means an SVG filter re-rasterising giant live glyphs 6–7×/s, which is precisely what Phase 2
+  removed for the links. If it needs to follow the grade it should go through a flat custom property like
+  `--grade-link-dark` does, not through the filter.
+- **`#well-of-memories__shine`** is graded (`blur(6px)` first, then the grade — blurring _after_ would
+  smear graded colours together rather than grade a soft shape).
+- **`.opening-clouds__glass`** stays unfiltered on purpose: it is a `backdrop-filter` sampling the art
   behind it, so it picks the grade up for free once that art has it.
+
+### What to look for on the device
+
+`?grade=on&gradebisect=perel3`, then `perel3lift`, then `perel3head`. The art is monochrome at source, so
+"grey" never distinguishes "filter not applied" from "filter applied to grey art" — every question below
+is therefore about **hue and whether it moves**, not about brightness:
+
+1. **The clouds.** Do they read as coloured shapes whose hue drifts over ~a minute, or as flat patches?
+   Is there still a dark patch behind them, and if so, does _that_ patch have a hue that moves?
+2. **`perel3lift` vs `perel3`.** Brighter/more saturated clouds, or flatter ones (one hue per cloud
+   instead of variation across it)?
+3. **The sky above the landscape.** Does it now share the landscape's palette and shift with it?
+4. **`perel3head` vs `perel3`.** Which reading of the floating head looks better — does the graded one
+   look like part of the scene, or does it darken/tint the area around the head noticeably?
+5. **The service bubbles.** With everything else coloured, do neutral white bubbles look intentional?
+6. **Open a popup** and confirm the grading still backs off behind it.
 
 ### The diagnostic knobs
 
@@ -481,7 +558,7 @@ All take `?grade=on` alongside. Defined in `App.scss`, wired in `App.tsx`. **The
 features** — whatever ships should be a real rule, and these should come out.
 
 `nofilter` (useless as a control — the art is monochrome at source, so grey proves nothing) · `nowc` ·
-`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `perel` · `perel2`
+`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `perel` · `perel2` · `perel3` · `perel3lift` · `perel3head`
 
 `?gradeprobe=1` mounts the bisect panel (rows A–K in-panel, L/M/N/O portaled into the real landscape,
 plus measured sizes and an ancestor walk). It has a hide/show button.
