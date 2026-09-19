@@ -41,32 +41,25 @@ export function mapRange(num: number, inMin: number, inMax: number, outMin: numb
 // cost. See COLOR-GRADE-CROSS-BROWSER.md, which found it while looking for
 // something else entirely.
 //
-// The document's height does not change between frames of a cursor moving
-// across it, so cache it and invalidate on the things that genuinely do
-// change it. A ResizeObserver on `<body>` covers content-driven changes (the
-// landscape sections are absolutely positioned against a box whose height
-// comes from the ServiceBubbles section above them, and that box resizes when
-// the viewport does); resize and orientationchange cover the rest.
-// invalidateDocHeight() is exported for anything that knows it has just
-// changed the layout and cannot wait for the observer's next delivery.
+// The document's height does not change *within* a frame, so cache it for the
+// rest of the current frame and let the next animation frame drop it. This
+// replaces an indefinite cache invalidated by a ResizeObserver + resize
+// listeners, which went stale in Firefox: the height that matters is
+// `scrollHeight`, which also grows from absolutely-positioned overflow and
+// late image/font layout shifts that never resize <html> or <body>, so no
+// observer fires - and a stale height here puts the pupils far off, down by
+// the character's feet. A per-frame cache cannot go stale and still turns the
+// fifteen reads per frame into at most five.
 let docHeight: number | null = null;
+let clearScheduled = false;
 
 export function invalidateDocHeight(): void {
   docHeight = null;
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('resize', invalidateDocHeight, { passive: true });
-  window.addEventListener('orientationchange', invalidateDocHeight, { passive: true });
-
-  // Where ResizeObserver is missing the two listeners above still catch the
-  // common case, and a stale height here costs a few pixels of pupil aim.
-  if (typeof ResizeObserver !== 'undefined') {
-    const observer = new ResizeObserver(invalidateDocHeight);
-    observer.observe(document.documentElement);
-    if (document.body) observer.observe(document.body);
-    else document.addEventListener('DOMContentLoaded', () => observer.observe(document.body), { once: true });
-  }
+function clearDocHeight(): void {
+  clearScheduled = false;
+  docHeight = null;
 }
 
 export function getDocHeight(): number {
@@ -81,6 +74,10 @@ export function getDocHeight(): number {
     html.scrollHeight,
     html.offsetHeight
   );
+  if (!clearScheduled) {
+    clearScheduled = true;
+    requestAnimationFrame(clearDocHeight);
+  }
   return docHeight;
 }
 
