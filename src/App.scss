@@ -373,6 +373,95 @@ body.color-grade-dimmed {
   .grade-bisect-perel4 { @include grade-per-element($sat: 0.5); }
 }
 
+// flat2 - flat, with the two things the device asked for.
+//
+//         "Make the clouds black and white" turned out to be the right
+//         instinct for a reason that is not obvious: under flat the clouds
+//         already carry no filter at all, so there was nothing there to save
+//         in filtering terms. What they did carry was a reference to
+//         --grade-mid, and a custom property that changes forces every element
+//         reading it to repaint - so ~47 masked swatches were repainting on
+//         every 150ms tick. Masked repaints are far cheaper than SVG filters,
+//         but forty-seven of them several times a second is not nothing, and
+//         it was being spent on the layer that shows the jaggedness first.
+//
+//         So the clouds go fully static here: one neutral fill, no property to
+//         watch, nothing to repaint. They then only move, and moving is the
+//         compositor's job. White-ish clouds over a coloured sky is also just
+//         what clouds look like, so this is less of a concession than it
+//         sounds - and the grey is a single value to re-tune if it reads cold.
+//
+//         "Objects must be graded too" is not negotiable and should not be:
+//         a coloured landscape with black-and-white things standing on it is
+//         worse than no colour at all. They are real grayscale art rather than
+//         single-colour silhouettes, so unlike the clouds they genuinely need
+//         the table and cannot be flat-filled. What makes that affordable is
+//         that on iPad they are also completely static - assets/objects/index.ts
+//         serves .png there rather than the animated .webp, and Landscape1
+//         gates creature spawning behind !isMobile - so they cost one
+//         rasterization per tick each and nothing per frame.
+//
+//         Which makes the tick rate the whole multiplier for the first time.
+//         Under perel4 ?gradetick= did nothing, because the animations inside
+//         those filtered groups were re-filtering them every frame regardless.
+//         Here nothing animates inside anything filtered, so filtered area x
+//         tick rate is the entire cost, and gradetick composes with this knob:
+//         try ?grade=on&gradebisect=flat2&gradetick=400 if flat2 alone is
+//         close but not there. The palette still turns 7.2 degrees a second,
+//         so 400ms is a 2.9-degree step - not visible as stepping.
+.grade-bisect-flat2 {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  .color-grade-background,
+  .color-grade-layer {
+    filter: none !important;
+    will-change: auto !important;
+    background-color: var(--grade-shadow, #282c34) !important;
+    background-blend-mode: screen;
+  }
+
+  // Everything that paints real grayscale art: the two paintings, and every
+  // object, book, creature and sprite standing on them. All static on iPad.
+  .color-grade-layer img {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+
+  // The exceptions, all single-colour art whose shape is in the alpha channel,
+  // so a flat fill would be exact - but CSS cannot repaint an <img>, so for
+  // now they stay as they are. This is the TSX conversion this whole line of
+  // work has been converging on.
+  #shining-effect,
+  #sunrays,
+  #jiri-head,
+  .opening-clouds__cloud {
+    filter: none !important;
+  }
+
+  // Static, neutral, and watching no custom property.
+  .opening-clouds__backing {
+    filter: none !important;
+    background-image: none !important;
+    background-color: #c3c7cc !important;
+  }
+
+  .service-bubble {
+    background-color: color-mix(in srgb, var(--grade-mid, transparent) 10%, transparent) !important;
+    border-color: color-mix(in srgb, var(--grade-mid, transparent) 40%, transparent) !important;
+  }
+
+  .ambient-bubble {
+    background-color: color-mix(in srgb, var(--grade-mid, transparent) 12%, transparent) !important;
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--grade-mid, transparent) 30%, transparent),
+      inset 0 0 6px color-mix(in srgb, var(--grade-mid, transparent) 45%, transparent) !important;
+  }
+}
+
 // flat - justone's filter budget, with the whole page still coloured.
 //
 //        statics was better than perel4 and still not good enough, which is

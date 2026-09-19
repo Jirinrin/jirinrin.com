@@ -645,23 +645,70 @@ past the budget, there is nothing left to remove, and the grade genuinely cannot
 case the cleanup is: fallback stays permanent, `perel4` and `flat` are kept as knobs for a future
 WebKit, and everything else in the bisect list comes out.
 
-### The shape that would ship, if `flat` holds
+### `flat` on the device, and `flat2`
+
+**Close.** "It looks quite nice and it's better performance, but the clouds parallax is still just a bit
+jagged." Two things came back with it, and both are now in `flat2`.
+
+**1. "Perhaps make the clouds black and white?"** — right instinct, and for a reason that is not obvious.
+Under `flat` the clouds already carry **no filter at all**, so there was nothing there to save in
+filtering terms. What they carried was a *reference to `--grade-mid`*, and a custom property that
+changes forces every element reading it to repaint — so ~47 masked swatches were repainting on every
+150ms tick. Masked repaints are far cheaper than SVG filters, but forty-seven of them several times a
+second is not nothing, and it was being spent on the layer that shows jaggedness first.
+
+So in `flat2` the clouds are fully static: one neutral fill, no property to watch, nothing to repaint.
+They then only *move*, and moving is the compositor's job. White-ish clouds over a coloured sky is also
+just what clouds look like, so this is less of a concession than it sounds, and the grey is a single
+value to re-tune.
+
+The same finding produced a second change that costs nothing: **`--grade-shadow` / `--grade-mid` /
+`--grade-highlight` now update every 500ms rather than every tick.** They are read by the two full-page
+backdrops, so at tick rate they were buying back a slice of the very cost the flat fills exist to remove.
+500ms is chosen against the hue clock rather than picked: `HUE_ROTATE_PERIOD_MS` is 50s, so the palette
+turns 7.2°/s and a 500ms step is **3.6°** — below where stepping reads as stepping, for a 3.3× cut in
+repaints. (`--color-grade-flat`'s 8s cadence would be 58° a step: fine behind a vinyl tint's slow
+transition, strobing on a full-page backdrop.)
+
+**2. "I'm not willing to have a coloured landscape with black-and-white objects on it."** Agreed, and not
+negotiable — that is worse than no colour at all. Unlike the clouds, the objects are real grayscale art
+rather than single-colour silhouettes, so they genuinely need the table and cannot be flat-filled.
+`flat2` grades every `<img>` in `.color-grade-layer` — both paintings, and every object, book,
+creature and sprite on them — excepting only the four single-colour layers awaiting the TSX conversion.
+
+What makes that affordable is that on iPad those objects are **completely static**: `assets/objects/index.ts`
+serves `.png` there rather than the animated `.webp`, and `Landscape1` gates creature spawning behind
+`!isMobile`. One rasterization per tick each, nothing per frame.
+
+**Which makes the tick rate the whole multiplier, for the first time.** Under `perel4`, `?gradetick=`
+did nothing because the animations inside those filtered groups were re-filtering them every frame
+regardless of the palette clock. Under `flat2` nothing animates inside anything filtered, so *filtered
+area × tick rate* is the entire cost — and `gradetick` composes with the knob. If `flat2` is close but
+not quite there, **`?grade=on&gradebisect=flat2&gradetick=400`** is the next dial, and at 2.9° a step it
+is not visible as stepping either.
+
+### The shape that would ship, if `flat2` holds
 
 | Layer | Ships as |
 | --- | --- |
 | `.color-grade-background`, `.color-grade-layer` | flat `--grade-shadow` + tile screened back on |
-| `#landscape-1`, `#landscape-2` | **filtered** — the only live filters left |
-| `.opening-clouds__backing` (~47) | flat `--grade-mid` through the existing mask |
-| cloud `<img>` (~47) | `<div>` + `mask-image`, flat `--grade-highlight` |
+| `#landscape-1`, `#landscape-2`, objects, books, creatures, sprites | **filtered** — real grayscale, and static on iPad |
+| `.opening-clouds__backing` (~47) | static neutral fill |
+| cloud `<img>` (~47) | left white, or `<div>` + `mask-image` with a flat fill if colour is wanted back |
 | `#shining-effect`, `#sunrays` | `<div>` + `mask-image`, flat `--grade-highlight` |
 | `#jiri-head` | `<div>` + `mask-image`, flat `--grade-shadow` |
 | `.service-bubble`, `.ambient-bubble` | flat already |
-| landscape objects, creatures | flat or unfiltered — static on iPad, and small |
 
-The cost that remains, and it is a real one: **the clouds lose their within-cloud hue variation.** A flat
-fill has no tonal variation for the table to turn into hue, so the trippiness `perel4`'s
-`brightness(8.5) contrast(0.75)` exists to produce does not survive. That is the honest trade for a
-coloured Safari, and it is a judgement call rather than a technical one.
+The remaining honest costs: **the clouds are monochrome**, and **the three full-width glow layers stay
+ungraded** until the `<img>` → masked-`<div>` conversion lands. That conversion is exact (single-colour
+art, shape in alpha), cheap, and a strict improvement on Chrome too, since it removes three full-width
+SVG filter surfaces there as well.
+
+**If `flat2` — with or without `gradetick=400` — is still jagged, that is the end of the line.** There is
+nothing further to remove: two static backdrops with no filter, one tick's worth of small static
+rasterizations, and everything else compositor-only. The cleanup then is the one already agreed: Safari
+keeps the black-and-white fallback permanently, `perel4`, `flat` and `flat2` stay as knobs for a future
+WebKit, and the rest of the bisect list comes out.
 
 ### `perel4` is preserved, not abandoned
 
@@ -691,33 +738,13 @@ unpicked:
 
 ### What to run next
 
-**`?grade=on&gradebisect=flat`**, and only that. Two questions:
+**`?grade=on&gradebisect=flat2`**, and if it is close but not quite, the same with
+**`&gradetick=400`**. Three questions:
 
-1. **Is it smooth** — real-time cloud parallax, and a zoom animation that plays rather than jumps?
-2. **Does the backdrop still look like the site** — textured, coloured, drifting — with the tile screened
-   over a flat fill instead of pushed through the table?
+1. **Is the cloud parallax smooth now**, and does a clicked object animate into its zoom rather than
+   jumping?
+2. **Do the graded objects look right** standing on the graded landscape?
+3. **Are monochrome clouds acceptable**, and is the grey the right grey?
 
-The four ungraded `<img>` layers will look wrong. That is expected and is not what is being tested.
-
-### The diagnostic knobs
-
-All take `?grade=on` alongside. Defined in `App.scss`, wired in `App.tsx`. **These are diagnostics, not
-features** — whatever ships should be a real rule, and these should come out.
-
-`nofilter` (useless as a control — the art is monochrome at source, so grey proves nothing) · `nowc` ·
-`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `justone` · `perel4` · `statics` · `flat`
-
-The `perel1`..`perel3` knobs have been removed now that the runs above settled what they each asked;
-what they proved is recorded here rather than in the stylesheet. `?gradetick=<ms>` is separate from
-all of these and composes with any of them.
-
-`?gradeprobe=1` mounts the bisect panel (rows A–K in-panel, L/M/N/O portaled into the real landscape,
-plus measured sizes and an ancestor walk). It has a hide/show button.
-
-### Not bugs
-
-- **Nothing animates on iPad** — `assets/objects/index.ts` serves `isMobile ? 'png' : 'webp'`, so the
-  animated objects are deliberately static there, and `Landscape1.tsx` gates creature spawning behind
-  `!isMobile`. Both predate this work.
-- **`#Landscape-container` reports `filter: none`** — it never carries one; the grade is on
-  `.color-grade-layer` inside it.
+`#shining-effect`, `#sunrays` and `#jiri-head` will still look wrong. That is the TSX conversion, not
+this knob.

@@ -99,6 +99,20 @@ const LINK_VARS: [name: string, input: number, saturate: number][] = [
 // Distinct from `--color-grade-flat` above, which is the same midtone but
 // written once every 8s for consumers that drift slowly on purpose. These are
 // painted over large areas and would show that cadence as a visible step.
+// Written on their own cadence, not the 150ms tick, because of who reads
+// them. A custom property that changes forces every element referencing it to
+// repaint, and these are read by the two full-page backdrops and by ~47 masked
+// cloud swatches - so at tick rate they were buying back a slice of the cost
+// the flat fills exist to remove.
+//
+// 500ms is chosen against the hue clock rather than picked: HUE_ROTATE_PERIOD_MS
+// is 50s, so the palette turns 7.2 degrees per second and a 500ms step is 3.6
+// degrees. Below the threshold where stepping reads as stepping, and a 3.3x
+// cut in repaints. (The 8s cadence of --color-grade-flat above would be 58
+// degrees a step, which is fine for a vinyl tint drifting behind a slow CSS
+// transition and would strobe on a full-page backdrop.)
+const ART_TICK_MS = 500;
+
 const ART_VARS: [name: string, input: number, saturate: number][] = [
   ['--grade-shadow',      0, 1],
   ['--grade-mid',       128, 1],
@@ -241,11 +255,13 @@ function ColorGradeFilter() {
   useEffect(() => {
     const root = document.documentElement;
 
-    const writeLinkVars = (state: GradeState) => {
-      for (const [name, input, saturate] of [...LINK_VARS, ...ART_VARS]) {
+    const writeVars = (vars: typeof LINK_VARS, state: GradeState) => {
+      for (const [name, input, saturate] of vars) {
         root.style.setProperty(name, rgbToCss(gradeFlatColor(gray01(input), state, saturate)));
       }
     };
+    const writeLinkVars = (state: GradeState) => writeVars(LINK_VARS, state);
+    const writeArtVars = (state: GradeState) => writeVars(ART_VARS, state);
     const writeFlatVar = (state: GradeState) => {
       root.style.setProperty('--color-grade-flat', rgbToCss(gradeFlatColor(gray01(128), state)));
     };
@@ -253,6 +269,7 @@ function ColorGradeFilter() {
     const initialState: GradeState = { stops: initialStops, tables: initialTables, hueDeg: 0 };
     writeFlatVar(initialState);
     writeLinkVars(initialState);
+    writeArtVars(initialState);
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const tickMs = gradeTickMs();
@@ -260,6 +277,7 @@ function ColorGradeFilter() {
     const clock = createGradeClock(initialStops, startedAt);
     let lastTick = -Infinity;
     let lastFlatWrite = 0;
+    let lastArtWrite = 0;
     let frame = 0;
 
     // rAF rather than setInterval, for two reasons. It stops entirely in a
@@ -284,6 +302,11 @@ function ColorGradeFilter() {
       hueRef.current?.setAttribute('values', String(state.hueDeg));
 
       writeLinkVars(state);
+
+      if (now - lastArtWrite >= ART_TICK_MS) {
+        lastArtWrite = now;
+        writeArtVars(state);
+      }
 
       if (now - lastFlatWrite >= FLAT_GRADE_TICK_MS) {
         lastFlatWrite = now;
