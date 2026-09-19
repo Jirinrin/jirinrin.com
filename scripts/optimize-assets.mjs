@@ -138,7 +138,13 @@ async function main() {
   for (const name of ['landscape-1', 'landscape-2', 'shine-3']) {
     await pngToWebp(src(`landscape/${name}.png`), src(`landscape/${name}.webp`), 90);
   }
-  await pngToWebp(src('landscape/jiri-head.png'), src('landscape/jiri-head.webp'), 85);
+  // jiri-head is a flat black silhouette (alpha is essentially 0 or 173) shown
+  // full-width at 0.68 opacity, and the source is 2480px wide - 1440px is
+  // still 3x a phone's CSS width and keeps a laptop screen 1:1, at ~45% of
+  // the bytes. It is the largest image the page requests before first paint.
+  await convertOne(src('landscape/jiri-head.png'), src('landscape/jiri-head.webp'), () =>
+    sharp(src('landscape/jiri-head.png')).resize({ width: 1440 }).webp({ quality: 80, alphaQuality: 80 }).toFile(src('landscape/jiri-head.webp'))
+  );
   for (const name of ['box-dark-small', 'box-light-small', 'back-arrow', 'button-bg']) {
     await pngToWebp(src(`${name}.png`), src(`${name}.webp`), 90);
   }
