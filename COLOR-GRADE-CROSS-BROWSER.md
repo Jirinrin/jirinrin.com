@@ -410,7 +410,7 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- **Lighthouse, both form factors** (item 7 above). The only item left in this document.
+- Nothing. Lighthouse ran 2026-09-19 (below), which was the last item.
 
 Everything else that used to be listed here is done: Phase 7 below closed Safari, the Chrome
 regression pass came back clean on 2026-09-19, and `getDocHeight`'s per-frame forced layout was fixed
@@ -774,4 +774,40 @@ Unchanged by any of the above, and only relevant to browsers that *do* run the g
 | Safari | **Closed.** Black-and-white fallback, permanently, for the two measured reasons above. |
 | Chrome regression pass | **Done**, 2026-09-19. No regressions. |
 | `getDocHeight` forced layout | **Done**, as its own change. |
-| Lighthouse, both form factors | **Outstanding** — the only item left. |
+| Lighthouse, both form factors | **Done**, 2026-09-19 — see below. |
+
+### Lighthouse, 2026-09-19
+
+Lighthouse 12.8.2 against `vite preview`, master at `f64d585`. Both runs rendered correctly and graded
+(checked from the final screenshots).
+
+| | Mobile | Desktop |
+| --- | --- | --- |
+| **Performance** | **75** | **98** |
+| FCP | 2.0 s | 0.4 s |
+| LCP | 5.0 s | 1.0 s |
+| TBT | 190 ms | 0 ms |
+| CLS | 0.003 | 0.001 |
+| Speed Index | 4.1 s | 0.9 s |
+| Total weight | 1,665 KiB | 2,637 KiB |
+
+For reference, the 2026-09-17 baseline was mobile 68 (LCP 8.2 s) and desktop 93. Most of that gap is
+the earlier page-weight work, not this document; nothing here changed the shipping render path for
+Chromium beyond removing ~11 kB of diagnostic CSS, and the `getDocHeight` fix only matters while a
+cursor moves, which a Lighthouse load never does.
+
+**`non-composited-animations` flags exactly one element**: `.color-grade-layer`, for `transition: filter`
+("Filter-related property may move pixels"). That is the popup-dim transition, which only runs when a
+popup opens or closes, so it costs nothing during load or scroll. Expected, and fine.
+
+**The one weak number is mobile LCP, and it is not the colour grade.** The LCP element is
+`h2.landscape-name`, and its 5.0 s is 0.46 s TTFB plus **4.5 s of render delay**. It is not the fonts:
+both woff2 files had arrived by ~320 ms, and `font-display: swap` passes. The heading lives inside
+`Landscape1`, which is mounted by a `CSSTransition` gated on `projects[0].book.xOffset`, so it cannot paint
+until the app has booted and computed book positions. Under 4× CPU throttling that lands at ~4 s, and the
+main thread breakdown says why: **Style & Layout 1.8 s** and **Other 1.9 s**, against only 0.43 s of
+script evaluation. That points at the size of the DOM being laid out (clouds, masks, glass panes) rather
+than at JavaScript. The render-blocking Google Fonts stylesheet (~450 ms estimated) is the cheaper,
+smaller win.
+
+Neither is colour-grade work, so both are left for their own change.
