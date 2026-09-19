@@ -37,55 +37,43 @@ unavailable for the entire duration of the animation and then catching up in one
 | `…&gradetick=1000` | Still choppy; palette still only updating every 2–3s. |
 | `…&gradetick=5000` | **No meaningful difference.** Still choppy, popup transitions still skipped. |
 
-## What that rules out
+## What it is
 
-**It is not the tick rate.** `gradetick=5000` is a 33× slower palette clock — 0.2 attribute rewrites per
-second instead of 6.7 — and it changed nothing. So the cost is not the `setAttribute` rewrites, and not
-the per-tick re-rasterization of everything referencing the filter. That was the leading hypothesis and
-it is dead.
+**Filtered surface area re-rasterized per tick**, with animation acting as a second multiplier on top.
 
-**It is not the number of filtered elements.** Plain `?grade=on` has **three** filtered groups and is
-instantly choppy; `perel4` has roughly a hundred and is not dramatically worse. A cost that barely moves
-between 3 and 100 is not a per-element cost.
+Two further loads settled it:
 
-**It is not about the grade being visible.** On Safari, plain `?grade=on` renders the landscape and
-clouds *ungraded* — they composite past the ancestor filter, which is the bug Phase 7 diagnosed. The
-page is paying the full cost of a filter whose output is not even on screen.
+| Mode | Filtered surfaces | Animating inside? | Result |
+| --- | --- | --- | --- |
+| `?gradebisect=justone` | **1**, small, static (`#landscape-1`) | no | **smooth enough** — clouds parallax in real time, palette updates a few times a second |
+| `?gradebisect=perel4still` | ~100 | **no** | **full jank** |
 
-## What is left
+`perel4still` is the decisive row: a hundred filtered elements with **every animation stopped** is still
+unusable, while one small static one is fine. So it is not animation on its own. And `justone` proves it
+is not "SVG filters at all", which was the previous reading here.
 
-**Having `url()` SVG filters on the page at all, while content animates in or near them.** WebKit does
-not GPU-accelerate `url()`-referenced SVG filters (unlike the native `filter` functions), so the filtered
-surface is rasterized on the main thread, and anything that changes inside or beneath a filtered group
-forces that work again — every frame, regardless of whether the filter's own parameters changed.
+What animation adds is a *rate*: it forces the same rasterization per frame instead of per tick. That is
+why `gradetick=5000` did nothing for `perel4` — the animations were re-filtering those surfaces
+regardless of what the palette clock was doing — and why plain `?grade=on` was the worst case of all:
+its three groups cover a viewport, a full-height layer and a ~260vh section, *and* everything on the
+page moves inside them. Enormous area × per-frame invalidation.
 
-That is consistent with every row of the table: constant over tick rate, roughly constant over element
-count, and present even when the filtered output is being composited past.
+**The earlier "3 groups janky, 100 leaves janky, therefore count doesn't matter" reading was too
+coarse.** Count doesn't matter; area does, and those three groups cover more of the page than the
+hundred leaves do.
 
-If it holds, **the colour grade cannot ship on iOS in any form that filters animated content**, and no
-amount of tuning `perel` changes that.
+WebKit not GPU-accelerating `url()`-referenced SVG filters (unlike the native `filter` functions) is the
+underlying reason any of this is expensive enough to notice. That part stands.
 
-## The two loads that settle it
+## What follows from it
 
-Both are new knobs, both take `?grade=on` alongside.
+The grade can run on iOS, as long as the filtered surfaces are **few, static, and no larger than they
+have to be**. Everything that moves gets a flat colour instead — which is exact, not an approximation,
+because every animating layer in this scene is single-colour art with its shape in the alpha channel.
+The full design, the element-by-element table and the remaining caveats are in
+COLOR-GRADE-CROSS-BROWSER.md under "The shape that can ship"; `?gradebisect=statics` is the next load to
+run.
 
-1. **`?gradebisect=justone`** — exactly **one** filtered element on the whole page, and a static one:
-   the landscape image. Everything else, `.color-grade-background` included, gives its filter up.
-   - **Smooth** ⇒ `url()` filters are affordable as long as nothing animates inside them. That is a
-     workable architecture, and a good one: filter only the static art, and hand everything that moves a
-     flat colour instead. Every animating layer in this scene turns out to be **single-colour art with
-     its shape in the alpha channel** — clouds and both glow layers are pure white, the floating head is
-     pure black — so none of them actually needs a per-pixel filter. They need one colour, which
-     `gradeFlatColor` already computes in JS and publishes as a custom property (the Phase 2 channel).
-   - **Choppy** ⇒ one SVG filter is already too much on iOS, and there is nothing to tune. Safari keeps
-     the `.color-grade-off` fallback, and the per-element work stands as a Chrome/Firefox improvement
-     and a written-up dead end.
-
-2. **`?gradebisect=perel4still`** — `perel4`'s ~100 filters with every animation inside the graded groups
-   stopped. Separates "too many filtered elements" from "filtered elements whose contents keep moving".
-   - **Smooth** ⇒ confirms it is the per-frame re-filtering, not the count. Same conclusion as a smooth
-     `justone`, from the other direction.
-   - **Choppy** ⇒ the filters cost that much even at rest, which is the worse answer.
 
 ## The second, smaller problem
 

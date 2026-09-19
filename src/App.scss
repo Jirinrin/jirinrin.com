@@ -197,8 +197,7 @@ body, #root {
 //   a compressed 5.7/0.4 was rejected outright. So the squash is deliberately
 //   gentle. 8.5/0.75 puts 0-31 at roughly 0.13-0.72 - nearly perel3's range,
 //   but with the floor lifted off the shadow stop, which is the only part of
-//   that range anyone objected to. perel4trip restores perel3's map exactly
-//   (x7, no squash) for a side-by-side.
+//   that range anyone objected to, and the device run confirmed it.
 //
 // $sky-pull - the shine and sunrays. Both are pure white, so grading them
 //   lands them at t=1.0, the palest the table ever gets, which is why the sky
@@ -216,7 +215,17 @@ body, #root {
 //   even fully opaque (max alpha < 255, at opacity 0.68) it stays a veil
 //   rather than becoming a sticker. The device run confirmed it over multiply.
 //
-// Still a diagnostic, not a feature: whatever ships should be one real rule.
+// STATUS, 2026-09-19. This is the full-fidelity per-element path and it is
+// visually finished - the device run called it "quite very nice" and it is
+// tagged `safari-perel4-full` so it can be revived wholesale. It is kept as a
+// knob rather than deleted for exactly that reason: WebKit not
+// GPU-accelerating url() filters is what makes it unusable, and that is a
+// browser bug, not a design mistake. Re-run `?grade=on&gradebisect=perel4` on
+// a future Safari and this is the answer waiting.
+//
+// It cannot ship today: ~100 live filtered surfaces is far past what iOS will
+// rasterize. See `statics` below for the shape that can, and
+// COLOR-GRADE-CROSS-BROWSER.md for the measurements behind both.
 @mixin grade-per-element(
   $cloud-lift: 8.5,
   $cloud-squash: 0.75,
@@ -351,45 +360,6 @@ body, #root {
   @include grade-per-element;
 }
 
-// The device run asked whether the shine could be made to colour the floating
-// head the way it does on other browsers. It can't as it stands, and the
-// reason is worth writing down: under a group filter the shine and the head
-// go into ONE composite and out through ONE table lookup, so stacking order
-// is irrelevant to the colour. Per-element there is no composite to grade -
-// each layer is coloured alone and then merely stacked - so order becomes
-// everything, and #shining-effect sits at z-index 1, BELOW #jiri-head at 11.
-// It paints on the sky and never touches the head at all.
-//
-// (Making the shine an opaque white-on-black asset instead, as suggested,
-// does not fix that and adds a problem: grade(black) is the shadow stop, not
-// black, so an opaque base would screen a ~19%-lightness colour over the
-// entire landscape as uniform fog.)
-//
-// perel4shine tries the version that can work: drop the head below the two
-// glow layers so the already-graded shine passes over it, and put the shine
-// on overlay, which leaves the backdrop's structure alone while pushing its
-// hue toward the source. Costs nothing and needs no new art. It does put the
-// head behind the rays rather than in front of them, which is a real change
-// to the scene and may simply be wrong - hence a knob.
-.grade-bisect-perel4shine {
-  @include grade-per-element;
-
-  #jiri-head {
-    z-index: 0 !important;
-  }
-
-  #shining-effect {
-    mix-blend-mode: overlay !important;
-  }
-}
-
-// perel3's cloud map exactly - a pure x7 multiply, no squash - inside
-// everything else perel4 fixed. Black patches and all, since that spread is
-// what the trippiness was made of.
-.grade-bisect-perel4trip {
-  @include grade-per-element($cloud-lift: 7, $cloud-squash: 1);
-}
-
 // The popup-dim response, which normally rides the filter list on
 // .color-grade itself (see body.color-grade-dimmed below). Under perel those
 // groups carry no filter, so the same saturate() has to be re-chained onto
@@ -401,7 +371,92 @@ body, #root {
 // cheaper half of the trade while this is still a knob.
 body.color-grade-dimmed {
   .grade-bisect-perel4 { @include grade-per-element($sat: 0.5); }
-  .grade-bisect-perel4trip { @include grade-per-element($cloud-lift: 7, $cloud-squash: 1, $sat: 0.5); }
+}
+
+// statics - the candidate shipping shape, and the next thing to measure.
+//
+//           justone (one small static filtered element) was smooth on the
+//           device; perel4still (~100 filtered elements, animations OFF) was
+//           not. So the variable is not the element count and not animation on
+//           its own - it is how much filtered SURFACE has to be re-rasterized
+//           per tick, with animation acting as a second multiplier on top by
+//           forcing the same work per frame instead of per tick.
+//
+//           This keeps the filter on exactly the art that genuinely needs a
+//           per-brightness table and never moves: the page backdrop, the sky
+//           tile, and the two landscape paintings. Three or four static
+//           surfaces instead of a hundred live ones. If that is smooth, it is
+//           what ships.
+//
+//           Everything that moves is handed a flat colour instead, through
+//           --color-grade-flat - which is the same maths evaluated once in JS
+//           rather than per-pixel in SVG (gradeFlatColor, see
+//           ColorGradeFilter.tsx). That is exact rather than approximate here,
+//           because every animating layer in this scene is single-colour art
+//           whose shape lives entirely in the alpha channel: grading one
+//           colour can only ever produce one colour.
+//
+//           Two caveats this knob cannot avoid, both noted in
+//           COLOR-GRADE-CROSS-BROWSER.md. The clouds lose their within-cloud
+//           hue variation, because a flat fill has no tonal variation for the
+//           table to turn into hue. And #shining-effect / #sunrays / #jiri-head
+//           are <img> elements, so CSS alone cannot repaint them in a flat
+//           colour - doing that properly means turning them into masked divs,
+//           which is a TSX change and is the work this knob exists to justify.
+//           They are simply left ungraded here; judge the framerate, not them.
+.grade-bisect-statics {
+  .color-grade-layer,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  .color-grade-layer {
+    background-image: none !important;
+    background-color: transparent !important;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: $background-url;
+      background-color: #282c34;
+      background-repeat: repeat;
+      background-size: cover;
+      filter: url(#landscape-color-grade) saturate(1);
+    }
+  }
+
+  #landscape-1,
+  #landscape-2 {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+
+  // The cloud body, with no filter at all: the swatch stops being a near-black
+  // tile pushed up the table and simply becomes the colour the table would
+  // have returned. Flat, so the tiling's hue variation goes - that is the
+  // visible cost of this whole approach, and the one thing worth looking at
+  // here besides the framerate.
+  .opening-clouds__backing {
+    filter: none !important;
+    background-image: none !important;
+    background-color: var(--color-grade-flat, #4a4a4a) !important;
+  }
+
+  .service-bubble {
+    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 10%, transparent) !important;
+    border-color: color-mix(in srgb, var(--color-grade-flat, transparent) 40%, transparent) !important;
+  }
+
+  .ambient-bubble {
+    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 12%, transparent) !important;
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--color-grade-flat, transparent) 30%, transparent),
+      inset 0 0 6px color-mix(in srgb, var(--color-grade-flat, transparent) 45%, transparent) !important;
+  }
 }
 
 // The cost diagnostics. The device run on 2026-09-19 established that this is
@@ -437,23 +492,6 @@ body.color-grade-dimmed {
 
   #landscape-1 {
     filter: url(#landscape-color-grade) saturate(1) !important;
-  }
-}
-
-// perel4still - perel4's ~100 filters, with every animation inside the graded
-//               groups stopped. Separates "too many filtered elements" from
-//               "filtered elements whose contents keep moving". Smooth here
-//               and choppy under perel4 means the count is fine and it is the
-//               per-frame re-filtering that costs; choppy here too means the
-//               count alone is the problem.
-.grade-bisect-perel4still {
-  @include grade-per-element;
-
-  .color-grade-layer *,
-  .ServiceBubbles *,
-  .opening-clouds-behind * {
-    animation: none !important;
-    transition: none !important;
   }
 }
 

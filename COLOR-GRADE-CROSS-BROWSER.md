@@ -403,9 +403,9 @@ cannot reference a `<canvas>`.
 
 ### Still to do
 
-- **Phase 7 below** — Safari is diagnosed and `perel4` looks right on the device. What gates it is cost,
-  and the cost is measured to be neither the tick rate nor the element count: see
-  [IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md) and run `justone` before anything else.
+- **Phase 7 below** — Safari is diagnosed, `perel4` looks right and is preserved (tag
+  `safari-perel4-full`), and the cost is measured: filtered surface area per tick. What ships is the
+  `statics` shape. See also [IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md).
 - Item 3's Chrome regression pass and item 7's Lighthouse run.
 - `getDocHeight`'s per-frame forced layout, as its own separate change.
 
@@ -565,61 +565,87 @@ already-graded shine passes over it, and put the shine on `overlay`, which leave
 structure alone while pushing its hue toward the source. No new art, no cost. It does put the head
 behind the rays instead of in front of them, which is a real change to the scene.
 
-### The cost question, which is now the only one that matters
+### The cost question, answered
 
-The same run settled what this is **not**, and the answer is worse than expected.
+Three device runs settled it. The middle row is the one that mattered.
 
-| Mode | Result |
-| --- | --- |
-| `?grade=off` | much better (a residue of choppiness remains) |
-| `?grade=on`, plain — **3** group filters | **instantly choppy** |
-| `perel4` — ~**100** leaf filters | choppy |
-| `perel4` at `gradetick=1000` | still choppy |
-| `perel4` at `gradetick=5000` | **no meaningful difference** |
+| Mode | Filtered surfaces | Animating inside? | Result |
+| --- | --- | --- | --- |
+| `?grade=off` | 0 | — | much better (a small residue remains) |
+| `justone` | **1**, small, static (`#landscape-1`) | no | **smooth enough.** Clouds parallax in real time; the palette updates a few times a second |
+| `perel4still` | ~100 | **no** | **full jank** |
+| `perel4` | ~100 | yes | full jank |
+| `?grade=on` plain | 3, but *enormous* (a viewport, a full-height layer, a ~260vh section) | yes | instantly choppy |
+| `perel4` @ `gradetick=5000` | ~100 | yes | no meaningful difference |
 
-**Not the tick rate.** A 33× slower palette clock changed nothing, so it is not the `setAttribute`
-rewrites and not the per-tick re-rasterization of everything referencing the filter. That was this
-document's leading hypothesis and it is dead.
+**The variable is filtered surface area re-rasterized per tick.** `perel4still` is the row that says so:
+a hundred filtered elements with **every animation stopped** is still unusable, while one small static
+one is fine. Animation is a second multiplier on top — it forces the same work *per frame* instead of
+per tick, which is why `gradetick=5000` did nothing for `perel4` (the animations were re-filtering it
+anyway) and why the three-group case was the worst of all: enormous surfaces *and* everything on the
+page moving inside them.
 
-**Not the element count.** Three filtered groups are already unusable; a hundred is not dramatically
-worse. A cost that barely moves between 3 and 100 is not a per-element cost — which also means the
-Phase 2 instinct (fewer live filter targets) does not help here.
+This corrects the framing in the previous round, which read "3 groups janky, 100 leaves janky" as
+"element count doesn't matter". Count doesn't matter; **area does**, and those three groups covered more
+of the page than the hundred leaves do.
 
-**Not even about the grade being visible.** Plain `?grade=on` on Safari renders the landscape and clouds
-*ungraded* — they composite past the ancestor filter, which is the Phase 7 bug. The page pays the full
-cost of a filter whose output never reaches the screen.
+### The shape that can ship
 
-What is left is **having `url()` SVG filters on the page at all, while content animates in or near
-them.** WebKit does not GPU-accelerate `url()`-referenced filters the way it does the native `filter`
-functions, so the filtered surface rasterizes on the main thread and anything moving inside or beneath
-it forces that work again every frame, whatever the filter's own parameters are doing. If that holds,
-**the grade cannot ship on iOS in any form that filters animated content**, and no amount of tuning
-`perel` changes it.
+Keep the filter on exactly the art that genuinely needs a per-brightness table **and never moves**, and
+hand everything that moves a flat colour instead.
 
-Two new knobs split that in half, and they are the next thing to run —
-see **[IPAD-SAFARI-MAIN-THREAD.md](IPAD-SAFARI-MAIN-THREAD.md)** for the full reasoning:
+That second half is exact here, not an approximation, and this is the thing the per-element work found
+without looking for it: **every animating layer in this scene is single-colour art whose shape lives
+entirely in the alpha channel.** Clouds and both glow layers are pure white (L 254–255); the floating
+head is pure black (99.2% of visible pixels below L 25). *Grading one colour can only ever produce one
+colour* — so a flat fill through the same alpha is pixel-identical to filtering the image, on every
+browser, at no per-frame cost. `gradeFlatColor` already computes exactly that in JS, and the bubbles
+have been running on it since the last commit.
 
-- **`justone`** — one filtered element on the whole page, and a static one (the landscape image);
-  everything else, `.color-grade-background` included, gives its filter up.
-- **`perel4still`** — `perel4`'s ~100 filters with every animation inside the graded groups stopped.
+| Layer | Today | Ships as |
+| --- | --- | --- |
+| `.color-grade-background`, `.color-grade-layer`'s sky tile | filtered group | **filtered**, static, unchanged in kind |
+| `#landscape-1`, `#landscape-2` | inherit the group filter | **filtered** on the leaf — real grayscale art, genuinely needs the table, and static |
+| `.opening-clouds__backing` (~47) | `brightness/contrast` + `url()` | flat `--color-grade-flat` fill through the existing mask |
+| cloud `<img>` (~47) | `url()` | flat fill through its alpha |
+| `#shining-effect`, `#sunrays`, `#jiri-head` | `url()` | flat fill through their alpha |
+| `.service-bubble`, `.ambient-bubble` | flat already | unchanged |
+| landscape objects, creatures | `url()` | to decide — static on iPad, and small |
 
-**If `justone` is smooth there is a real way forward**, and the per-element work has already found it
-without meaning to. Every animating layer in this scene is **single-colour art with its shape in the
-alpha channel** — the clouds and both glow layers are pure white, the floating head is pure black. None
-of them needs a per-pixel filter; each needs *one colour*, which `gradeFlatColor` already computes in JS
-and publishes as a custom property. The architecture would be: **filter only the static art, and hand
-everything that moves a flat colour through its own alpha.** The bubbles already work exactly this way
-as of this commit. The one thing that genuinely needs a table is the landscape art itself, which is
-static.
+**`?gradebisect=statics` is that shape as far as CSS alone can express it**, and it is the next thing to
+run. Two caveats it cannot avoid:
 
-**If `justone` is choppy**, Safari keeps the `.color-grade-off` fallback and `perel` stands as a
-Chrome/Firefox improvement plus a well-documented dead end.
+1. **The clouds lose their within-cloud hue variation.** A flat fill has no tonal variation for the
+   table to turn into hue, so the trippiness that `perel4`'s `brightness(8.5) contrast(0.75)` exists to
+   produce goes with it. This is the real cost of the approach and the one thing worth looking at
+   besides the framerate. If it is too big a loss there is a middle road: keep the backing's *tile*
+   (with its filter) and flat-fill only the ~47 cloud `<img>`s, halving the surface rather than
+   removing it.
+2. **`#shining-effect` / `#sunrays` / `#jiri-head` are `<img>` elements**, and CSS cannot repaint an
+   image in a flat colour. Doing it properly means turning them into masked `<div>`s
+   (`mask-image: url(...)` + `background-color`), which is a TSX change — and a strict improvement on
+   *every* browser, since it removes three full-width SVG filter surfaces from Chrome too. The knob
+   simply leaves them ungraded; judge the framerate, not them.
+
+### `perel4` is preserved, not abandoned
+
+It is visually finished — "everything looks quite very nice", and `perel4shine` was tried and rejected
+as fitting the landscape less well. What makes it unshippable is WebKit declining to GPU-accelerate
+`url()` filters, which is a browser limitation and not a design mistake, so it is kept whole rather than
+unpicked:
+
+- tagged **`safari-perel4-full`** at the commit where it was finished;
+- kept as a live knob (`?grade=on&gradebisect=perel4`) rather than deleted, so a future Safari can be
+  re-tested in one page load instead of a git archaeology session;
+- `perel4trip`, `perel4shine`, `perel4still` and `perel4calm` are gone — their questions are answered
+  above and in the commit history, and keeping four copies of a 100-selector mixin in everyone's CSS to
+  preserve a comparison nobody needs again is not preservation, it is clutter. Trimming them took the
+  stylesheet from 62.0 kB to 53.6 kB.
 
 ### Still ungraded under `perel4` (CSS paint, not `<img>`)
 
 - **`h2.landscape-name`** — `mix-blend-mode: multiply` on `rgba(0,0,0,0.274)` text at `font-size: 25rem`.
-  Grading it means an SVG filter re-rasterising giant live glyphs, which is what Phase 2 removed for the
-  links. It is a single flat colour, so it belongs on a custom property like `--grade-link-dark`.
+  A single flat colour, so it belongs on a custom property like `--grade-link-dark`, never on the filter.
 - **`.service-bubble` / `.ambient-bubble`** take the palette through `--color-grade-flat` — face, rim and
   halo. Their `::before` specular glints stay white on purpose; a specular highlight is white in life.
 - **`#well-of-memories__shine`** is graded (`blur(6px)` first — blurring *after* would smear graded
@@ -627,12 +653,12 @@ Chrome/Firefox improvement plus a well-documented dead end.
 - **`.opening-clouds__glass`** stays unfiltered: it is a `backdrop-filter` sampling the art behind it, so
   it picks the grade up for free once that art has it.
 
-### What to run next, in order
+### What to run next
 
-1. **`?grade=on&gradebisect=justone`** and **`…=perel4still`**. Everything else is downstream of these.
-2. Only if one of them is smooth: **`perel4`** again for the retune (clouds trippier, bubble colour on
-   the rim, rays more visible, head more colourful), **`perel4trip`** for `perel3`'s exact cloud map, and
-   **`perel4shine`** for the head-under-the-glow experiment.
+1. **`?grade=on&gradebisect=statics`.** Is it smooth, and are flat clouds an acceptable loss?
+2. If smooth and the clouds are too flat: the middle road in caveat 1 above, as its own knob.
+3. Either way, the `<img>` → masked-`<div>` conversion for the three full-width layers, which is worth
+   doing on its own merits.
 
 ### The diagnostic knobs
 
@@ -640,7 +666,7 @@ All take `?grade=on` alongside. Defined in `App.scss`, wired in `App.tsx`. **The
 features** — whatever ships should be a real rule, and these should come out.
 
 `nofilter` (useless as a control — the art is monochrome at source, so grey proves nothing) · `nowc` ·
-`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `justone` · `perel4` · `perel4trip` · `perel4shine` · `perel4still`
+`bgonly` · `layeronly` · `noblend` · `noshine` · `noanim` · `fixa`..`fixd` · `justone` · `perel4` · `statics`
 
 The `perel1`..`perel3` knobs have been removed now that the runs above settled what they each asked;
 what they proved is recorded here rather than in the stylesheet. `?gradetick=<ms>` is separate from
