@@ -1,105 +1,112 @@
 # iPad Safari: the main thread runs at ~0.3fps while the compositor runs at 60
 
-Split out of the colour-grade work (COLOR-GRADE-CROSS-BROWSER.md, Phase 7) on 2026-09-19, because it
-is almost certainly a bigger problem than the grade and deserves its own investigation. It is **not**
-cleanly separate from it, though — see "How much of this is the grade" below. Read that before
-assuming this is someone else's bug.
+Split out of the colour-grade work (COLOR-GRADE-CROSS-BROWSER.md, Phase 7) on 2026-09-19. It is **not**
+separate from it: the measurements below point at the colour grade's SVG filter as the dominant cause,
+which makes this the thing that decides whether any of that work can ship on iOS.
+
+Device throughout: an iPad Pro (good hardware), on the real site.
 
 ## The observation
 
-Reported on an iPad Pro (good hardware), loading the real site with `?grade=on&gradebisect=perel3`.
+**Smooth, at what looks like full framerate** — and note that every one of these is a CSS keyframe
+animation on `transform` or `opacity`, i.e. handed to the compositor and then run without the main
+thread's involvement at all:
 
-**Smooth, at what looks like full framerate:**
+- `#sunrays` rotating, cloud drift/breathe, service-bubble float/breathe, ambient bubbles rising.
 
-- `#sunrays` rotating (`sunray-spin`, 120s linear)
-- cloud drift and breathe (`opening-cloud-drift` / `opening-cloud-breathe`)
-- service-bubble float and breathe (`bubble-float` / `bubble-breathe`)
-- ambient bubbles rising (`bubble-rise`)
+**Choppy — "one frame every couple of seconds", ~5s to settle after a scroll stops** — and every one of
+these needs the main thread:
 
-**Choppy — "one frame every couple of seconds", items taking ~5s to settle after a scroll stops:**
-
-- the colour grade itself: the palette updates about every 3s instead of every 150ms
-- cloud parallax (the scroll-driven `transform` written to `.opening-clouds__layer` via a ref)
+- the colour grade's own palette updates
+- cloud parallax (scroll-driven `transform` written via a ref)
 - the 時鈴々 title's scroll animation
-- service bubbles revealing and dissolving as they enter/leave
-- popup open/close transitions
+- service bubbles revealing and dissolving
+- popup open/close: clicking the octopus tree **freezes, then the dialog is suddenly in position** —
+  the whole zoom-and-blur transition is skipped rather than played slowly
 
-## What that split means
+That last detail matters. A skipped transition is not a slow frame rate; it is the main thread being
+unavailable for the entire duration of the animation and then catching up in one commit.
 
-The smooth list is exactly **the CSS keyframe animations on `transform` and `opacity`** — the ones
-that get handed to the compositor and then run without the main thread's involvement at all. The
-choppy list is exactly **everything that needs the main thread**: JavaScript scroll handlers, style
-recalculation, and the grade's own `setAttribute` writes.
+## What was measured, 2026-09-19
 
-So this is not a GPU problem and not a "the device is weak" problem. The compositor is fine. **The
-main thread is saturated**, and every frame of work that has to pass through it is arriving seconds
-late. A 5s settle after a scroll ends is the signature of a backlog being worked off, not of
-something running slowly-but-steadily.
+| Mode | Result |
+| --- | --- |
+| `?grade=off` | **Much better.** Some animations still "a tad choppy" — so there is a second, smaller problem underneath, but it is not what makes the site unusable. |
+| `?grade=on` (plain, 3 group filters) | **Instantly choppy.** Clouds and nav title take seconds to settle after a scroll. |
+| `?grade=on&gradebisect=perel4` (~100 leaf filters) | Choppy. |
+| `…&gradetick=1000` | Still choppy; palette still only updating every 2–3s. |
+| `…&gradetick=5000` | **No meaningful difference.** Still choppy, popup transitions still skipped. |
 
-## How much of this is the grade
+## What that rules out
 
-Possibly most of it, and this has to be measured before anything else is investigated.
+**It is not the tick rate.** `gradetick=5000` is a 33× slower palette clock — 0.2 attribute rewrites per
+second instead of 6.7 — and it changed nothing. So the cost is not the `setAttribute` rewrites, and not
+the per-tick re-rasterization of everything referencing the filter. That was the leading hypothesis and
+it is dead.
 
-Every element carrying `filter: url(#landscape-color-grade)` must be **re-rasterized on every tick** —
-not because the element changed, but because the filter it references did. That is the cost
-`FLAT_GRADE_TICK_MS` and the flat custom properties exist to avoid (see ColorGradeFilter.tsx, and
-Phase 2 of the colour-grade document).
+**It is not the number of filtered elements.** Plain `?grade=on` has **three** filtered groups and is
+instantly choppy; `perel4` has roughly a hundred and is not dramatically worse. A cost that barely moves
+between 3 and 100 is not a per-element cost.
 
-Under the group filter that was **3 elements**: `.color-grade-layer`, `.color-grade-background`,
-`.ServiceBubbles`. Under the per-element path (`perel`) it is roughly **a hundred**: ~47 clouds ×
-(`<img>` + `.opening-clouds__backing`), plus the sky pseudo-element, the three full-width landscape
-layers, the landscape art, and every landscape object. At `TICK_MS = 150` that is ~6.7 × 100
-re-rasterizations per second, on the main thread, on iOS.
+**It is not about the grade being visible.** On Safari, plain `?grade=on` renders the landscape and
+clouds *ungraded* — they composite past the ancestor filter, which is the bug Phase 7 diagnosed. The
+page is paying the full cost of a filter whose output is not even on screen.
 
-If that is the cause, it is a direct finding about the colour grade, not a pre-existing site bug: it
-would mean the per-element path cannot ship at `TICK_MS = 150` however good it looks.
+## What is left
 
-But the symptom is broader than the grade — popup transitions and scroll handlers have no reason to
-care about a filter — so there is plausibly a second, independent cause underneath. The known
-candidate is already written down: **`getDocHeight`'s forced synchronous layout**, called from
-`getPupilTranslation` ← `applyPupilTranslation` inside a `requestAnimationFrame` callback, every
-frame. It profiled as the **#3 self-time item on the content main thread (10.9%)** on a fast Windows
-desktop, ~2.3–2.5ms per frame. On a taller document with ~100 filtered layers dirtying the layout
-tree, a forced layout read per frame is far more expensive than that.
+**Having `url()` SVG filters on the page at all, while content animates in or near them.** WebKit does
+not GPU-accelerate `url()`-referenced SVG filters (unlike the native `filter` functions), so the filtered
+surface is rasterized on the main thread, and anything that changes inside or beneath a filtered group
+forces that work again — every frame, regardless of whether the filter's own parameters changed.
 
-## How to tell them apart — in one device pass
+That is consistent with every row of the table: constant over tick rate, roughly constant over element
+count, and present even when the filtered output is being composited past.
 
-Each of these is a page load, in this order. The question every time is only "is the *choppy* list
-above still choppy", since the smooth list is expected to stay smooth throughout.
+If it holds, **the colour grade cannot ship on iOS in any form that filters animated content**, and no
+amount of tuning `perel` changes that.
 
-1. **`?grade=off`** — no filter anywhere, everything else identical.
-   Still choppy ⇒ the grade is not the cause, go to `getDocHeight`. Smooth ⇒ it is, continue.
-2. **`?grade=on`** with no `gradebisect` — the original group filter, 3 targets. It renders grey on
-   Safari, which does not matter here; the tick still runs and still repaints.
-   Smooth ⇒ it is the *number* of filter targets, i.e. the per-element path specifically.
-   Choppy ⇒ it is the filter at all, at any target count.
-3. **`?grade=on&gradebisect=perel4&gradetick=1000`** — per-element, but ticking 6.7× slower.
-   Smooth ⇒ confirms cost = tick rate × target count, and the fix is a budget rather than a rewrite.
-   Then try `gradetick=400` and `gradetick=250` to find where it breaks down.
-4. **`?grade=on&gradebisect=perel4&gradetick=5000`** — the extreme. If even this is choppy, the cost
-   is not the tick at all; something about simply *having* ~100 filtered layers is the problem, and
-   per-element grading is dead on iOS regardless of tick rate.
+## The two loads that settle it
 
-`?gradetick=<ms>` was added for exactly this (ColorGradeFilter.tsx, clamped to 30–5000ms). It is a
-measurement tool, not a setting.
+Both are new knobs, both take `?grade=on` alongside.
 
-## If it turns out not to be the grade
+1. **`?gradebisect=justone`** — exactly **one** filtered element on the whole page, and a static one:
+   the landscape image. Everything else, `.color-grade-background` included, gives its filter up.
+   - **Smooth** ⇒ `url()` filters are affordable as long as nothing animates inside them. That is a
+     workable architecture, and a good one: filter only the static art, and hand everything that moves a
+     flat colour instead. Every animating layer in this scene turns out to be **single-colour art with
+     its shape in the alpha channel** — clouds and both glow layers are pure white, the floating head is
+     pure black — so none of them actually needs a per-pixel filter. They need one colour, which
+     `gradeFlatColor` already computes in JS and publishes as a custom property (the Phase 2 channel).
+   - **Choppy** ⇒ one SVG filter is already too much on iOS, and there is nothing to tune. Safari keeps
+     the `.color-grade-off` fallback, and the per-element work stands as a Chrome/Firefox improvement
+     and a written-up dead end.
 
-Then the things to look at, in rough order of how much the existing profile implicates them:
+2. **`?gradebisect=perel4still`** — `perel4`'s ~100 filters with every animation inside the graded groups
+   stopped. Separates "too many filtered elements" from "filtered elements whose contents keep moving".
+   - **Smooth** ⇒ confirms it is the per-frame re-filtering, not the count. Same conclusion as a smooth
+     `justone`, from the other direction.
+   - **Choppy** ⇒ the filters cost that much even at rest, which is the worse answer.
 
-1. **`getDocHeight` / `applyPupilTranslation`** — forced sync layout per rAF. Cache the document
-   height, or read it once per resize. Already flagged in COLOR-GRADE-CROSS-BROWSER.md as deserving
-   its own change; this would make it urgent rather than merely worthwhile.
-2. **The scroll handlers**, particularly the cloud parallax in OpeningClouds.tsx and whatever drives
-   the 時鈴々 animation. Check whether any of them read layout (`offsetTop`, `getBoundingClientRect`,
+## The second, smaller problem
+
+`?grade=off` was "a lot better, even if some animations are still a tad choppy". That residue is worth
+its own look once the filter question is settled. The known candidate is already written down:
+**`getDocHeight`'s forced synchronous layout**, called from `getPupilTranslation` ←
+`applyPupilTranslation` inside a `requestAnimationFrame` callback, every frame. It profiled as the **#3
+self-time item on the content main thread (10.9%)** on a fast Windows desktop, ~2.3–2.5ms per frame.
+Cache the document height, or read it once per resize.
+
+After that, in rough order:
+
+1. **Scroll handlers** — the cloud parallax in OpeningClouds.tsx, and whatever drives the 時鈴々
+   animation. Check whether any of them read layout (`offsetTop`, `getBoundingClientRect`,
    `scrollHeight`) inside the handler rather than from a cached value, which turns every scroll event
    into a layout flush.
-3. **`backdrop-filter` count.** `.opening-clouds__glass` and `.service-bubble` both use one, and iOS
-   composites those on a path that can fall back to the main thread. `isLowPowerDevice()` already
-   thins the cloud count; an iPad Pro will not trip it.
-4. **IntersectionObserver / reveal logic** for the service bubbles, if the reveal is driven from a
-   scroll handler rather than an observer.
+2. **`backdrop-filter` count** — `.opening-clouds__glass` and `.service-bubble` both use one, and iOS
+   composites those on a path that can fall back to the main thread. `isLowPowerDevice()` thins the cloud
+   count, but an iPad Pro will not trip it.
+3. **Reveal logic** for the service bubbles, if it is driven from a scroll handler rather than an
+   IntersectionObserver.
 
-None of this has been measured on the device yet. Safari's Web Inspector can be attached to an iPad
-over USB from a Mac and will show the timeline directly, which would settle all of it faster than the
-bisect above — the bisect exists because it needs no Mac.
+Safari's Web Inspector attached to the iPad over USB from a Mac would show all of this directly and
+settle it far faster than load-by-load bisection. The bisection exists because it needs no Mac.

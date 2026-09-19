@@ -192,10 +192,13 @@ body, #root {
 //   otherwise beautiful clouds. Adding contrast(), which pivots about 0.5
 //   rather than 0, turns the multiply into a lift *and* a squash, so the whole
 //   tile lands inside a band instead of spanning to the floor.
-//   7.9/0.55 puts 0-31 at roughly 0.23-0.58 - still a wide enough spread for
-//   the tiling to read as hue variation across a single cloud (the funk worth
-//   keeping), but with a floor well clear of the shadow stop. perel4calm's
-//   5.7/0.4 is the same map compressed harder, ~0.30-0.51.
+//   The device run wanted MORE of that variation, not less: perel3's raw x7
+//   was liked for exactly the spread that also produced its black patches, and
+//   a compressed 5.7/0.4 was rejected outright. So the squash is deliberately
+//   gentle. 8.5/0.75 puts 0-31 at roughly 0.13-0.72 - nearly perel3's range,
+//   but with the floor lifted off the shadow stop, which is the only part of
+//   that range anyone objected to. perel4trip restores perel3's map exactly
+//   (x7, no squash) for a side-by-side.
 //
 // $sky-pull - the shine and sunrays. Both are pure white, so grading them
 //   lands them at t=1.0, the palest the table ever gets, which is why the sky
@@ -205,20 +208,19 @@ body, #root {
 //   where the real art's highlights sit and they pick up the same colour the
 //   landscape's whites do, instead of sitting above them on the pale stop.
 //
-// $head-blend - #jiri-head. It is a flat black silhouette, so multiply()ing it
+// #jiri-head - a flat black silhouette, so multiply()ing it
 //   over the sky gives backdrop x shadow-stop, and a product of two hues is a
 //   muddy third one - the "still kinda brown-ish even when the darks are deep
 //   purple" the device run reported. Graded and composited normally it paints
 //   the shadow stop's actual colour instead, and since nothing in the art is
 //   even fully opaque (max alpha < 255, at opacity 0.68) it stays a veil
-//   rather than becoming a sticker. perel4head keeps multiply, to compare.
+//   rather than becoming a sticker. The device run confirmed it over multiply.
 //
 // Still a diagnostic, not a feature: whatever ships should be one real rule.
 @mixin grade-per-element(
-  $cloud-lift: 7.9,
-  $cloud-squash: 0.55,
+  $cloud-lift: 8.5,
+  $cloud-squash: 0.75,
   $sky-pull: 0.75,
-  $head-blend: normal,
   $sat: 1
 ) {
   .color-grade-layer,
@@ -272,6 +274,15 @@ body, #root {
     filter: brightness($sky-pull) url(#landscape-color-grade) saturate($sat) !important;
   }
 
+  // $sky-pull darkens these to land them where the real art's highlights sit,
+  // which is what gave the sky its colour back - but darkening a glow also
+  // makes it recede, and the rays went from "there" to "nearly gone". The
+  // opacity buys back what the brightness spent. Only the rays: the shine sits
+  // at 0.8 already and is doing most of the sky's colouring.
+  #sunrays {
+    opacity: 0.58 !important;
+  }
+
   // screen(x, white) is white, so against a pure white source this blend mode
   // never did anything a normal composite would not. Keeping it once the
   // source is a coloured highlight would just blow that colour back out toward
@@ -280,8 +291,16 @@ body, #root {
     mix-blend-mode: normal !important;
   }
 
+  // Flat black art, so the grade hands it the shadow stop - the darkest and
+  // next-to-least colourful place on the table. brightness() cannot lift it
+  // (anything x 0 is 0), but contrast() pivots about 0.5, so contrast(0.7)
+  // moves black to 0.15 and the table then answers a third of the way up the
+  // shadow-to-midtone lerp instead of at its very bottom. The trailing
+  // saturate is on top of that, not instead of it: it amplifies the chroma the
+  // table hands back rather than moving where on the table we land.
   #jiri-head {
-    mix-blend-mode: $head-blend !important;
+    filter: contrast(0.7) url(#landscape-color-grade) saturate($sat * 1.5) !important;
+    mix-blend-mode: normal !important;
   }
 
   // Its own blur has to stay, and has to stay *first*: the grade is a
@@ -298,9 +317,26 @@ body, #root {
   // written once every 8s and already carries its own slow transition. This
   // paints *under* the existing gradients rather than restating them: the
   // white stops fade to 0.02 alpha, so a wash below them shows through.
-  .service-bubble,
+  // A 35% wash across the whole face read as flat paint rather than as glass.
+  // What other browsers actually show is colour concentrated at the rim and
+  // the halo, with the face staying mostly clear - which is how glass behaves,
+  // since a thin curved shell has far more material to look through at its
+  // edge than at its centre. So: a faint wash, and the real colour on the
+  // border and the glow.
+  .service-bubble {
+    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 10%, transparent) !important;
+    border-color: color-mix(in srgb, var(--color-grade-flat, transparent) 40%, transparent) !important;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--color-grade-flat, transparent) 65%, transparent) !important;
+    }
+  }
+
   .ambient-bubble {
-    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 35%, transparent) !important;
+    background-color: color-mix(in srgb, var(--color-grade-flat, transparent) 12%, transparent) !important;
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--color-grade-flat, transparent) 30%, transparent),
+      inset 0 0 6px color-mix(in srgb, var(--color-grade-flat, transparent) 45%, transparent) !important;
   }
 
   // Still a backdrop-filter sampling the art behind it, so it picks the grade
@@ -315,16 +351,43 @@ body, #root {
   @include grade-per-element;
 }
 
-// The same cloud map compressed harder - less variation across a single
-// cloud, further from the shadow stop. Calmer, less trippy.
-.grade-bisect-perel4calm {
-  @include grade-per-element($cloud-lift: 5.7, $cloud-squash: 0.4);
+// The device run asked whether the shine could be made to colour the floating
+// head the way it does on other browsers. It can't as it stands, and the
+// reason is worth writing down: under a group filter the shine and the head
+// go into ONE composite and out through ONE table lookup, so stacking order
+// is irrelevant to the colour. Per-element there is no composite to grade -
+// each layer is coloured alone and then merely stacked - so order becomes
+// everything, and #shining-effect sits at z-index 1, BELOW #jiri-head at 11.
+// It paints on the sky and never touches the head at all.
+//
+// (Making the shine an opaque white-on-black asset instead, as suggested,
+// does not fix that and adds a problem: grade(black) is the shadow stop, not
+// black, so an opaque base would screen a ~19%-lightness colour over the
+// entire landscape as uniform fog.)
+//
+// perel4shine tries the version that can work: drop the head below the two
+// glow layers so the already-graded shine passes over it, and put the shine
+// on overlay, which leaves the backdrop's structure alone while pushing its
+// hue toward the source. Costs nothing and needs no new art. It does put the
+// head behind the rays rather than in front of them, which is a real change
+// to the scene and may simply be wrong - hence a knob.
+.grade-bisect-perel4shine {
+  @include grade-per-element;
+
+  #jiri-head {
+    z-index: 0 !important;
+  }
+
+  #shining-effect {
+    mix-blend-mode: overlay !important;
+  }
 }
 
-// The same, with #jiri-head back on multiply, to compare the two readings of
-// the silhouette on the device.
-.grade-bisect-perel4head {
-  @include grade-per-element($head-blend: multiply);
+// perel3's cloud map exactly - a pure x7 multiply, no squash - inside
+// everything else perel4 fixed. Black patches and all, since that spread is
+// what the trippiness was made of.
+.grade-bisect-perel4trip {
+  @include grade-per-element($cloud-lift: 7, $cloud-squash: 1);
 }
 
 // The popup-dim response, which normally rides the filter list on
@@ -338,8 +401,60 @@ body, #root {
 // cheaper half of the trade while this is still a knob.
 body.color-grade-dimmed {
   .grade-bisect-perel4 { @include grade-per-element($sat: 0.5); }
-  .grade-bisect-perel4calm { @include grade-per-element($cloud-lift: 5.7, $cloud-squash: 0.4, $sat: 0.5); }
-  .grade-bisect-perel4head { @include grade-per-element($head-blend: multiply, $sat: 0.5); }
+  .grade-bisect-perel4trip { @include grade-per-element($cloud-lift: 7, $cloud-squash: 1, $sat: 0.5); }
+}
+
+// The cost diagnostics. The device run on 2026-09-19 established that this is
+// NOT about the tick rate: ?gradetick=5000 - a 33x slower palette clock - was
+// exactly as choppy as 150ms, and plain ?grade=on was instantly choppy with
+// only three group filters on the page, on a Safari that was not even
+// displaying the grade. So the cost is not the attribute rewrite and not the
+// number of re-rasterizations per second. What is left is having url() SVG
+// filters on the page at all while content animates in or near them - which,
+// if true, is about the technique rather than about any amount of it.
+//
+// These two split that in half. See IPAD-SAFARI-MAIN-THREAD.md.
+//
+// justone - exactly ONE filtered element on the whole page, and a static one:
+//           the landscape image. Everything else, including
+//           .color-grade-background, gives its filter up. If this is smooth
+//           then url() filters are affordable as long as nothing animates
+//           inside them, and the way forward is to filter only the static art
+//           and hand everything that moves a flat colour instead (every
+//           animating layer in this scene is single-colour art with its shape
+//           in the alpha channel, so none of them actually needs a per-pixel
+//           filter - see the note at the top of the perel mixin). If it is
+//           choppy, one SVG filter is already too much on iOS and there is no
+//           amount of tuning that saves this.
+.grade-bisect-justone {
+  .color-grade-layer,
+  .color-grade-background,
+  .ServiceBubbles,
+  .opening-clouds-behind {
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  #landscape-1 {
+    filter: url(#landscape-color-grade) saturate(1) !important;
+  }
+}
+
+// perel4still - perel4's ~100 filters, with every animation inside the graded
+//               groups stopped. Separates "too many filtered elements" from
+//               "filtered elements whose contents keep moving". Smooth here
+//               and choppy under perel4 means the count is fine and it is the
+//               per-frame re-filtering that costs; choppy here too means the
+//               count alone is the problem.
+.grade-bisect-perel4still {
+  @include grade-per-element;
+
+  .color-grade-layer *,
+  .ServiceBubbles *,
+  .opening-clouds-behind * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 // The candidate fixes. noanim proved the cause but is not usable as one: it
