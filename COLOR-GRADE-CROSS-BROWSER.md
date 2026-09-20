@@ -208,8 +208,8 @@ will band there. The unwarped path stays byte-identical everywhere else.
 
 [src/utils/frameBudgetWatchdog.ts](src/utils/frameBudgetWatchdog.ts). Starts in the full grade, samples
 rAF frame intervals for 6 s (covering the opening cloud animation, the heaviest moment on the page), and
-if the 95th-percentile gap exceeds **50 ms** it drops the grade immediately and persists the verdict in a
-`grade-tier` cookie with a 30-day max-age, so the next load starts in the right mode instead of
+if the 95th-percentile gap exceeds **80 ms** (originally 50) it drops the grade immediately and persists the verdict in a
+`grade-tier-2` cookie (versioned per budget calibration; the original `grade-tier` came from the 50ms budget and is ignored) with a 30-day max-age, so the next load starts in the right mode instead of
 re-janking its way to the same answer.
 
 It is a **p95, not a max**, so a single GC pause or tab switch cannot condemn a machine that is otherwise

@@ -27,7 +27,14 @@ import { Cookies } from 'react-cookie';
 // difference on a machine that would otherwise never see the other one. A
 // forced tier also suppresses the watchdog, so testing never writes a verdict.
 
-const TIER_COOKIE = 'grade-tier';
+// The suffix is the watchdog's calibration generation. A stored verdict is only
+// as good as the budget that produced it, and once "low" is stored nothing
+// re-measures (the grade is off, so the watchdog never runs), so a verdict
+// written under a too-strict budget would pin a device to black-and-white for
+// the full max-age. Bump this whenever P95_BUDGET_MS changes.
+//   grade-tier    - 50ms budget (wrongly condemned Firefox on a fine machine)
+//   grade-tier-2  - 80ms budget
+const TIER_COOKIE = 'grade-tier-2';
 
 // Long enough that a returning visitor isn't re-measured on every visit, short
 // enough that a verdict from a bad afternoon - a thermally throttled laptop, a
