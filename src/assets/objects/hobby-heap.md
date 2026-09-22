@@ -29,7 +29,7 @@ I wouldn't be a Tree Elf if I didn't find myself in Nature and Trees almost ever
 
 _(Ah and do note that we really cannot possibly be 'in Nature', because we ARE Nature!! This is a statement that I've heard many times from different sources, and more and more I'm starting to feel how extremely profound it is 😌)_
 
-No but there is seriously something very special about just spending a couple hours in the Woods. Just walking around, connected to the trees and the animals and the elements... Having a nap, followed by a refreshing little fairy dance... Meditating... Climbing a tree or two, or three, or more! Really taking my time, sitting up there, chillin' with the insects up there, sometimes even taking my backpack up there and enjoying a little Treetop Picknick, enjoying the view... And then Oops, I didn't notice it's already getting dark!
+No but there is seriously something very special about just spending a couple hours in the Woods. Just walking around, connected to the trees and the animals and the elements... Having a nap, followed by a refreshing little fairy dance... Meditating... Climbing a tree or two, or three, or more! Really taking my time, sitting up there, chillin' with the insects up there, sometimes even taking my backpack up there and enjoying a little Treetop Picnic, enjoying the view... And then Oops, I didn't notice it's already getting dark!
 
 I'm telling ya, it's something spiritual. Out in nature, I feel connected to... something. Something inside myself, something about this world. Just the purest version of me, in my full human-ness, without all that worldly clutter or ego-based stuff, and the trees, just being themselves. The Forest being all one organism, one system. The fairies, you'll never know where exactly they are, but you can feel them...  
 That's all I'll say about it for now ☺️
@@ -98,7 +98,7 @@ Anyway. These are some fantastical worlds I've got beautifully lost in in the pa
 
 ### Quiet places
 
-I'm an Introvert, which makes my natural habitat Quite Places! Whether it's my house, a lonely arbour in a public garden, or a forgotten pathway deep in the mountains, I can be there for hours without any 'filler', and even, I need to be there from time to time to recharge from all the being-around-people~!
+I'm an Introvert, which makes my natural habitat Quiet Places! Whether it's my house, a lonely arbour in a public garden, or a forgotten pathway deep in the mountains, I can be there for hours without any 'filler', and even, I need to be there from time to time to recharge from all the being-around-people~!
 
 Lately there's an extra twist to this: I used to be a proper Hermit, but lately I've also been enjoying being-around-people so much that I need to actively remind myself that these quiet retreats are still necessary to return to my Center, so I don't burn out! Finding this rhythm between outward and inward focus is a beautiful process to be going through 😊
 
