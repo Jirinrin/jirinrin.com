@@ -1,6 +1,6 @@
 # Heyyy~!!!! I'm Jiri's _SOUL_ :D
 
-### Welcome to Jiri's Domain, make yourself at home~!
+### Maazaranaazara! Welcome to Jiri's Domain, make yourself at home~!
 
 Maazaranaazara! So I'm, like, Jiri Soul, you know? I'm the red thread in Jiri's life, or I guess when the trippy changing colors of the site are on, the whatever-color-I'm-now thread. Or even, rather, 正確に, Jiri is just a tiny fragment of me pretending it's separate from me, but let's keep that game going for a bit, shall we~?
 
