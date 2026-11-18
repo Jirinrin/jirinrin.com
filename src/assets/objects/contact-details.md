@@ -8,5 +8,5 @@ Wanna find out more about me? Yay gezellig!! You can find me here:
 
 Want to, like, hit me up or something? I do in fact also have a phone and stuff, so feel free to reach out ♡
 
-[jiri@nosk.be](mailto:http://jiri@nosk.be)  
+[usuzukuzuz@gmail.com](mailto:http://usuzukuzuz@gmail.com)  
 [+75-0-86139806](tel-obf:+75-0-86139806)
