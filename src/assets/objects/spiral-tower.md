@@ -57,6 +57,17 @@ _Self-Love._ Lately I've had some breakthroughs, and been feeling sooo much of L
 
 _Radical vulnerability._ I'm still slowly peeling back the layers of that Little Jiri inside myself that is scared of being hurt. But how precious it is to be able to share beautiful vulnerable silence... To be able to show our most fragile selves to each other, with all the tears and emotions and insecurities, as one of the most powerful ways to connect... Soooo much more powerful than getting into arguments and defending ourselves etc... Every single time I've stepped through the Fear and succeeded in being deeply vulnerable like this, I've felt soooo intensely in touch with myself, and felt such deep compassion and connection to another human, who, through seeing such intentional fragility, inevitably _also_ starts peeling back some layers of defending themselves... It's one of the most rewarding feelings I know!!
 
-_Dark vs Light._ If all of us have both of them in ourselves (that's the whole point of a world of Duality!), then does it really serve anyone to try to put people/situations in terms of Good vs Bad, Like vs Don't Like, etc...?
+_Dark vs Light._ If all of us have both of them in ourselves (that's the whole point of a world of Duality!), then does it really serve anyone to try to put people/situations in terms of Good vs Bad, Like vs Don't Like, etc...?  
+And in a similar vein, I've been finding great satisfaction in looking at the Darkness (in myself and in others) not as something that's 'bad', just as Night as opposed to Day. Both have their place.
+
+_Heaven vs Earth._
+
+_Action vs Patience._
+
+_Head vs Heart._
+
+_The Masculine vs Feminine._
+
+_Organic vs Synthetic._
 
 _...And there are many more such topics, that just don't pop into my head right now~_

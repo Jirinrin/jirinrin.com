@@ -38,7 +38,7 @@ const projects: ProjectBase[] = [
     images: []
   },
   {
-    id: 'projekt-kinoko',
+    id: 'kinoco',
     title: 'LOOK WITHIN',
     github: false,
     images: [],

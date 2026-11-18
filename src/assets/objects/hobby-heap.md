@@ -48,7 +48,7 @@ Fun ideas for insect-related activities: chilling near some flowers, seeing the 
 
 It feels strange to talk about Spirituality as a Hobby or an Interest, but it's no matter, as I put it in this list anyway 😁
 
-So there's this thing called The Spiritual Path, although it's a completely unique journey for everyone, so maybe better to call it A Spiritual Path. Anyway! [This blogpost I wrote](https://kinoko.nosk.be/blog/what-is-the-spiritual-path) explains it in more detail, but in a nutshell, it's the path through the darkness, in which we seek out the most true version of what we are, and with it the most true version of what this world is about.
+So there's this thing called The Spiritual Path, although it's a completely unique journey for everyone, so maybe better to call it A Spiritual Path. Anyway! [This blogpost I wrote](https://kinoco.space/blog/what-is-the-spiritual-path) explains it in more detail, but in a nutshell, it's the path through the darkness, in which we seek out the most true version of what we are, and with it the most true version of what this world is about.
 
 It's really cool, in this search for Truth, you peel back the layers of what you are, discovering more and more lies about the life you lived! And so we die a thousand deaths. And seriously, some of the difficult looking-inward and 'dark nights' can almost feels like a physical death. But we also rebirth a thousand times! And so, a new You gradually reveals itself. More and more, you become a being whose identity doesn't depend on someone else's validation, who notices when an old fear-based belief triggers and finds a way to transmute it into something love-based, who takes responsibility for their life, takes care of your body and mind, who others experience as oh so genuine and loving... More and more, you start to embody Your True Self!
 
@@ -66,7 +66,7 @@ And if you're more material-minded and this all feels a little bit much, it migh
 
 Who or What is The Mushroom? You shall never quite know, unless you embark on a Journey with it... And so I did. On multiple different occasions over the past years, once every couple months, I have been working with the Mushroom, with Intention & Reverence & Playfulness. When approached in such a sacred way, this _Plant Teacher_ opens gates into the Other, toward Soul Expansion but also diving into deeeep Strangeness...  
 
-And boy, it turned my world upside down, showed me a completely new way of looking at the world and set into motion a whole journey of spiritual seeking, healing and soul-searching! To quote what I wrote on the website for [Project KINOKO](https://kinoko.nosk.be):
+And boy, it turned my world upside down, showed me a completely new way of looking at the world and set into motion a whole journey of spiritual seeking, healing and soul-searching! To quote what I wrote on the website for [Project KINOCO](https://kinoco.space):
 
 _"The Mushroom aided me deeply on the spiritual path; brought me in touch with my most authentic dorky self, worrying less about others' opinions; gave me the self-love to start the work of healing my childhood trauma; led me to seek out a much healthier lifestyle; made me see the world more playfully and optimistically; made me live more in the Now; tapped me into my inner intuition, which led me to quit my previous job to go do something personally important to me in the world..._
 

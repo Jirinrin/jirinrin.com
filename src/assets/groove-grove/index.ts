@@ -218,7 +218,7 @@ const VINYLS: GrooveVinyl[] = [
       'More music for journeys that go inward, written up properly over on my Mushroom website! (Opens in a new tab)',
     section: 'recommends',
     cover: 'more-music-tips',
-    href: 'https://kinoko.nosk.be/blog/music',
+    href: 'https://kinoco.space/blog/music',
   },
 ];
 
