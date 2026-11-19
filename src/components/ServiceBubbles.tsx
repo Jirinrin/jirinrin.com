@@ -159,7 +159,7 @@ function ServiceBubbles() {
           >
             <a
               className="service-bubble float-a"
-              href="https://kinoco.space"
+              href="https://kinoko.voyage"
               target="_blank"
               rel="noopener noreferrer"
               onMouseMove={handleTilt}

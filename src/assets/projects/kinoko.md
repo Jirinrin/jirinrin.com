@@ -4,4 +4,4 @@ What can I say, it's my current calling! These sacred Mushrooms have deeply tran
 
 If this interests you even just a little bit, it's well worth a look, even just for the strange art-project-ey quality of what that site turned into~
 
-[LOOK WITHIN](https://kinoco.space)
+[LOOK WITHIN](https://kinoko.voyage)

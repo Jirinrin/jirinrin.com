@@ -2,7 +2,7 @@
 
 Every user-facing string comes from here. Buttons, empty states, errors, emails, the about page, the tooltips on the effort scale. If a string sounds like it came from a SaaS product, it's wrong and it gets rewritten.
 
-This is derived from Jiri's own writing on [kinoco.space](https://kinoco.space), which is her serious register (that site is about something people approach carefully, so it's deliberately more intentional and grounded than she normally writes). **KODAMAP sits further toward play.** Same warmth, same person, lighter feet. The anti-AI writing checklist that used to live in a separate file is folded into the bottom of this one, trimmed to what actually applies to KODAMAP's copy.
+This is derived from Jiri's own writing on [kinoko.voyage](https://kinoko.voyage), which is her serious register (that site is about something people approach carefully, so it's deliberately more intentional and grounded than she normally writes). **KODAMAP sits further toward play.** Same warmth, same person, lighter feet. The anti-AI writing checklist that used to live in a separate file is folded into the bottom of this one, trimmed to what actually applies to KODAMAP's copy.
 
 ---
 
@@ -10,7 +10,7 @@ This is derived from Jiri's own writing on [kinoco.space](https://kinoco.space),
 
 A tree elf. Not a brand, not a team, not "we at KODAMAP". Someone who has spent a lot of hours up trees and wants you to have that too, and who is a bit odd about it and unembarrassed by being odd about it.
 
-The stance is **fellow traveller, never instructor.** From KINOCO: _"I'm just a fellow traveler of Life."_ The site knows things about trees and shares them sideways, at eye level. It never lectures, never congratulates you on your journey, and never implies you're doing it wrong.
+The stance is **fellow traveller, never instructor.** From KINOKO: _"I'm just a fellow traveler of Life."_ The site knows things about trees and shares them sideways, at eye level. It never lectures, never congratulates you on your journey, and never implies you're doing it wrong.
 
 It is on the side of the trees, and mildly on the side of you.
 
@@ -20,7 +20,7 @@ It is on the side of the trees, and mildly on the side of you.
 
 These are lifted from how Jiri actually writes. Use them; don't use all of them at once.
 
-**Capitalise the big abstractions into characters.** KINOCO has the Mushroom, the Journey, Life, the Now, the Sea of Everythingness. KODAMAP has the Tree, the Climb, the Canopy, the Wood. Treat them as entities with their own intentions — _"this tree wants to be climbed"_ rather than _"this tree is climbable"_. Use it sparingly enough that it stays a spell and doesn't become a house style tic. This extends to Jiri's own persona too, not just tree-nouns: _"that's not the style of the Tree Elf"_, capital T, capital E, is her doing to herself what she does to the Tree. It can even land on something small and invented for a beat of whimsy — _"a little Treetop Picknick"_ — as long as it's rare.
+**Capitalise the big abstractions into characters.** KINOKO has the Mushroom, the Journey, Life, the Now, the Sea of Everythingness. KODAMAP has the Tree, the Climb, the Canopy, the Wood. Treat them as entities with their own intentions — _"this tree wants to be climbed"_ rather than _"this tree is climbable"_. Use it sparingly enough that it stays a spell and doesn't become a house style tic. This extends to Jiri's own persona too, not just tree-nouns: _"that's not the style of the Tree Elf"_, capital T, capital E, is her doing to herself what she does to the Tree. It can even land on something small and invented for a beat of whimsy — _"a little Treetop Picknick"_ — as long as it's rare.
 
 **Trail off with a tilde, but use it carefully.** `~` and `～` at the end of a warm sentence (_"read on, read on～!"_, _"perhaps I'm someone who can help you~!"_) is her most distinctive tic, but it can tip into cringe fast if it shows up too often. Ration it: at most one per screen, and treat `♥` as the usual replacement when a line wants warmth (it reads as loving rather than twee, and can afford to show up a bit more often than the tilde). A sparkle (`✨`) is available too, but sparingly — once in a while, not as a second default. None of the three go anywhere near safety or error copy. Whichever one is used, it has to survive the i18n layer as a literal character in the string; don't append it in a component.
 
@@ -32,7 +32,7 @@ These are lifted from how Jiri actually writes. Use them; don't use all of them 
 
 **Go easy on the "'s" contraction.** Jiri doesn't lean on `'s` where the word is really _is_ or _has_. _"This tree's queued"_ reads a little clipped and a little not-her; _"This tree is queued"_ is the register. This is about the contraction that swallows a verb, not about contractions in general: `didn't`, `don't`, `I'll`, `you're`, `can't` and `I'm` are all natural and should stay. Possessives are untouched by this, obviously (_"this tree's location"_ is fine, it isn't a contraction). Nouns and indefinite pronouns are where it grates most: prefer _"Nothing is lost"_, _"Nobody has rated this yet"_, _"The queue is empty"_ over their contracted forms. `That's` and `It's` are common enough in speech to stay where they land naturally.
 
-**Undercut yourself in a parenthetical.** KINOCO does this constantly: _"(Having said that, it's certainly not been an easy journey to get here, so don't go thinking the Mushroom will fix you instantly!)"_. It's the move that keeps enthusiasm honest. In KODAMAP it's how you deliver a caveat without sounding like a warning label.
+**Undercut yourself in a parenthetical.** KINOKO does this constantly: _"(Having said that, it's certainly not been an easy journey to get here, so don't go thinking the Mushroom will fix you instantly!)"_. It's the move that keeps enthusiasm honest. In KODAMAP it's how you deliver a caveat without sounding like a warning label.
 
 **Be concrete and slightly too specific.** She lists real things: _"climbing trees, meditating, reading spiritual books, expressing my weirdest self through dance, improvising on the piano"_. The specificity is the warmth. A tree page saying _"the second fork is the best place I have ever sat"_ is the whole product.
 
@@ -40,7 +40,7 @@ These are lifted from how Jiri actually writes. Use them; don't use all of them 
 
 **Let a sentence be short when it matters.** _"Through is the only door."_ Three words. She can do this, so the site can.
 
-**Ask rather than tell.** The KINOCO poem is almost entirely questions. An empty state that asks _"what's out there?"_ is better than one that instructs _"add a tree to get started."_
+**Ask rather than tell.** The KINOKO poem is almost entirely questions. An empty state that asks _"what's out there?"_ is better than one that instructs _"add a tree to get started."_
 
 **Let the sentence search for its word instead of reaching for a fancier one.** When something is genuinely hard to name, she repeats the placeholder rather than upgrading the vocabulary: _"I feel connected to... something. Something inside myself, something about this world."_ The repetition reads as honest reaching, not as a rough draft that needs editing down.
 
@@ -88,7 +88,7 @@ This is warmer than the hard safety disclaimer (that one stays completely flat, 
 
 ## The register dial
 
-KINOCO is reverent because someone is deciding whether to do something significant, sitting down, with time. KODAMAP is read one-handed, in a wood, in the rain, with 2 bars of signal.
+KINOKO is reverent because someone is deciding whether to do something significant, sitting down, with time. KODAMAP is read one-handed, in a wood, in the rain, with 2 bars of signal.
 
 So the whimsy has to be **short**. This is the single most important constraint in this file, and it's where a build agent will go wrong: it will write a charming paragraph. `DESIGN.md` says _spacious_ and _breathing_ and _if a screen feels dense, delete something_, and a charming paragraph is density.
 
